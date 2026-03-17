@@ -19,6 +19,17 @@ const styles = [
   "Minimalist", "Vintage", "Smart Casual"
 ];
 
+/** Map API/fuzzy value to an allowed option (case-insensitive, contains). */
+function mapToOption(value, options) {
+  if (!value || !options || !options.length) return null;
+  const v = String(value).trim().toLowerCase();
+  if (!v) return null;
+  const exact = options.find((o) => o.trim().toLowerCase() === v);
+  if (exact) return exact;
+  const contains = options.find((o) => o.toLowerCase().includes(v) || v.includes(o.toLowerCase()));
+  return contains || null;
+}
+
 function AddItem() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -90,10 +101,14 @@ function AddItem() {
         if (cancelled) return;
         if (res.ok) {
           const data = await res.json();
-          if (data.type && clothingTypes.includes(data.type)) setType(data.type);
-          if (data.color && colors.includes(data.color)) setColor(data.color);
-          if (data.season && seasons.includes(data.season)) setSeason(data.season);
-          if (data.style && styles.includes(data.style)) setStyle(data.style);
+          const t = mapToOption(data.type, clothingTypes);
+          const c = mapToOption(data.color, colors);
+          const s = mapToOption(data.season, seasons);
+          const st = mapToOption(data.style, styles);
+          if (t) setType(t);
+          if (c) setColor(c);
+          if (s) setSeason(s);
+          if (st) setStyle(st);
         }
       } catch (_) {
         /* ignore; user can fill manually */

@@ -2,30 +2,27 @@
  * Image analysis service for clothing metadata extraction.
  *
  * This module provides a single entry point for analyzing item images.
- * Currently returns mocked metadata. To plug in a real AI/vision API:
+ * Raw results are normalized to canonical metadata options so the API
+ * always returns values that match frontend dropdowns.
  *
- * 1. Set environment variables (e.g. OPENAI_API_KEY for OpenAI Vision).
- * 2. Replace the stub in analyzeItemImage() with a call to your provider.
- * 3. Map the provider's response to { type, color, season, style }.
- *
- * Expected return shape: { type?: string, color?: string, season?: string, style?: string }
- * All fields optional; frontend will leave existing values or use fallbacks.
+ * To plug in a real AI/vision API: replace the stub in analyzeItemImage(),
+ * then pass the raw response through normalizeMetadata() before returning.
  */
 
+const { normalizeMetadata } = require('../lib/metadataOptions');
+
 /**
- * Analyze an item image and return suggested metadata.
+ * Analyze an item image and return suggested metadata (canonical values only).
  * @param {Buffer} imageBuffer - Raw image bytes
  * @param {string} [mimeType] - e.g. 'image/jpeg'
  * @returns {Promise<{ type?: string, color?: string, season?: string, style?: string }>}
  */
 async function analyzeItemImage(imageBuffer, mimeType) {
-  // Stub: return mocked suggestions. Replace with real API call when ready.
-  // Example for OpenAI Vision: use openai.chat.completions.create with vision model
-  // and a prompt asking for type, color, season, style in JSON.
   if (!imageBuffer || imageBuffer.length === 0) {
     return {};
   }
-  return new Promise((resolve) => {
+  // Stub: return mocked suggestions. Replace with real API call when ready.
+  const raw = await new Promise((resolve) => {
     setTimeout(() => {
       resolve({
         type: 'Shirt',
@@ -35,6 +32,8 @@ async function analyzeItemImage(imageBuffer, mimeType) {
       });
     }, 600);
   });
+  const normalized = normalizeMetadata(raw);
+  return Object.fromEntries(Object.entries(normalized).filter(([, v]) => v != null));
 }
 
 module.exports = { analyzeItemImage };
