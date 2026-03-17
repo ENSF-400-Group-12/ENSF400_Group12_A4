@@ -6,11 +6,12 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 
-// import AddItem from "./pages/AddItem";
-// import GenerateOutfit from "./pages/GenerateOutfit";
-// import Results from "./pages/Results";
-// import Favorites from "./pages/Favorites";
-// import Admin from "./pages/Admin";
+import AddItem from "./pages/AddItem";
+import GenerateOutfit from "./pages/GenerateOutfit";
+import Results from "./pages/Results";
+import Favorites from "./pages/Favorites";
+import Admin from "./pages/Admin";
+import Profile from "./pages/Profile";
 
 import Navbar from "./components/Navbar";
 
@@ -39,14 +40,14 @@ function App() {
           }
         />
 
-        {/* Disabled for submission */}
-        {/*
+      
         <Route path="/add-item" element={<AddItem />} />
         <Route path="/generate" element={<GenerateOutfit />} />
         <Route path="/results" element={<Results />} />
         <Route path="/favorites" element={<Favorites />} />
         <Route path="/admin" element={<Admin />} />
-        */}
+        <Route path="/profile" element={<Profile />} />
+
 
       </Routes>
 

@@ -80,15 +80,14 @@ body {
 
 }
 
-/* Login Page Layout */
+/* ---------------- LOGIN PAGE ---------------- */
 
 .login-page {
 
   display: grid;
-
   grid-template-columns: 1fr 1fr;
 
-  min-height: 80vh;
+  min-height: 100vh;
 
   align-items: center;
 
@@ -96,16 +95,24 @@ body {
 
   padding: 40px;
 
+  position: relative;
+
 }
 
-/* Left welcome section */
+/* Left branding section */
 
-.login-welcome {
+.login-left {
 
   padding: 40px;
 
   display: flex;
+  align-items: center;
 
+}
+
+.hero-text {
+
+  display: flex;
   flex-direction: column;
 
 }
@@ -114,19 +121,21 @@ body {
 
 .site-title {
 
-  font-size: 60px;
+  font-size: 75px;
 
   margin-bottom: 10px;
+  color: #a67855; 
 
 }
 
 /* Tagline */
 
-.site-tagline {
+.hero-heading {
 
-  font-size: 22px;
+  font-size: 28px;
 
   margin-bottom: 15px;
+  color: #b48867; 
 
 }
 
@@ -138,68 +147,88 @@ body {
 
   margin-bottom: 30px;
 
-  color: #5c4b3f;
+  color: #b48867; 
 
 }
 
-/* Closet image */
+/* Right login card container */
 
-.login-image{
+.login-right {
 
   display: flex;
 
   justify-content: center;
 
-  width: 100%;        /* fill the grid column */
-
-  max-width: 620px;   /* slightly larger than the login box */
-
-  height: auto;
-
-  border-radius: 14px;
-
-  box-shadow: 0 8px 18px rgba(0,0,0,0.15);
-
-  object-fit: cover;
+  align-items: center;
 
 }
 
-/* Login form */
+/* Login card */
 
-.login-form {
+.login-card {
 
-  background: rgba(255,255,255,0.85);
+  background: rgba(255,255,255,0.92);
 
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(10px);
 
   padding: 60px;
 
   border-radius: 18px;
 
-  width: 520px;
+  width: 420px;
 
   box-shadow:
-    0 10px 30px rgba(0,0,0,0.12);
+    0 14px 40px rgba(0,0,0,0.18);
 
-  border: 1px solid rgba(0,0,0,0.05);
+  border: 1px solid rgba(0,0,0,0.08);
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 14px;
 
 }
 
-/* Form inputs */
+/* Subtext */
 
-.login-form input {
+.login-subtext {
+
+  font-size: 14px;
+
+  color: #6a5a4a;
+
+  margin-bottom: 10px;
+
+}
+
+/* Inputs */
+
+.input-field {
 
   width: 100%;
 
   padding: 14px;
 
-  margin-bottom: 18px;
+  border-radius: 10px;
 
-  border-radius: 8px;
+  border: 1px solid #d6c5b5;
 
-  border: 1px solid #ddd;
+  font-size: 15px;
 
-  font-size: 16px;
+  background: #fffdfb;
+
+  transition: all 0.2s ease;
+
+}
+
+.input-field:focus {
+
+  outline: none;
+
+  border: 1px solid #8b5e3c;
+
+  box-shadow: 0 0 0 3px rgba(139,94,60,0.15);
 
 }
 
@@ -211,9 +240,69 @@ body {
 
   font-size: 14px;
 
+  text-align: center;
+
 }
 
-/* Signup page layout */
+.signup-text a {
+
+  color: #8b5e3c;
+
+  font-weight: 500;
+
+  text-decoration: none;
+
+}
+
+.signup-text a:hover {
+
+  text-decoration: underline;
+
+}
+
+/* Background image */
+
+.login-background {
+
+  position: absolute;
+
+  inset: 0;
+
+  z-index: -1;
+
+}
+
+.login-background img {
+
+  width: 100%;
+
+  height: 100%;
+
+  object-fit: cover;
+
+  filter: brightness(0.45);
+
+}
+
+/* Footer */
+
+.login-footer {
+
+  position: absolute;
+
+  bottom: 12px;
+
+  left: 50%;
+
+  transform: translateX(-50%);
+
+  font-size: 13px;
+
+  color: #f3ede6;
+
+}
+
+/* ---------------- SIGNUP PAGE ---------------- */
 
 .signup-page {
 
@@ -273,6 +362,9 @@ body {
 
 }
 
+/* Dashboard */
+/* Dashboard */
+
 .dashboard-header {
   margin-bottom: 30px;
 }
@@ -280,11 +372,16 @@ body {
 .dashboard-header h1 {
   font-size: 40px;
   margin-bottom: 6px;
+  color: #5c4334; /* warm brown */
 }
 
 .dashboard-subtext {
-  color: #6a5a4a;
+  color: #7b5e49;
+  font-size: 15px;
 }
+
+/* Controls row */
+
 .dashboard-controls {
 
   display: flex;
@@ -297,9 +394,12 @@ body {
 
   flex-wrap: wrap;
 
-  gap: 15px;
+  gap: 20px;
 
 }
+
+/* Button group */
+
 .dashboard-buttons {
 
   display: flex;
@@ -308,28 +408,368 @@ body {
 
 }
 
+/* Search bar */
+
 .search-bar {
 
   width: 340px;
 
-  padding: 12px;
+  padding: 12px 14px;
 
-  border-radius: 8px;
+  border-radius: 10px;
 
-  border: 1px solid #ddd;
+  border: 1px solid #d6c5b5;
 
   font-size: 14px;
 
+  background: #fffdfb;
+
+  transition: all 0.2s ease;
+
 }
+
+/* Search focus effect */
+
+.search-bar:focus {
+
+  outline: none;
+
+  border: 1px solid #8b5e3c;
+
+  box-shadow: 0 0 0 3px rgba(139,94,60,0.15);
+
+}
+
+/* Clothing grid */
 
 .clothing-grid {
 
-  margin-top: 30px;
+  margin-top: 35px;
 
   display: grid;
 
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
 
   gap: 25px;
+
+}
+
+/* hover effect for clothing cards */
+
+.clothing-grid .card {
+
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+}
+
+.clothing-grid .card:hover {
+
+  transform: translateY(-4px);
+
+  box-shadow: 0 10px 22px rgba(0,0,0,0.12);
+
+}
+
+
+/*---------------- OUTFIT GENERATOR PAGE ---------------- */
+.generate-page {
+
+  display: flex;
+
+  justify-content: center;
+
+  align-items: center;
+
+  min-height: 80vh;
+
+}
+
+/* Card */
+
+.generate-card {
+
+  background: rgba(255,255,255,0.92);
+
+  backdrop-filter: blur(8px);
+
+  padding: 50px;
+
+  border-radius: 18px;
+
+  width: 440px;
+
+  box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 14px;
+
+}
+
+/* Subtext */
+
+.generate-subtext {
+
+  font-size: 14px;
+
+  color: #6a5a4a;
+
+  margin-bottom: 10px;
+
+}
+
+/* Inputs */
+
+.generate-input {
+
+  padding: 12px;
+
+  border-radius: 8px;
+
+  border: 1px solid #d6c5b5;
+
+  font-size: 14px;
+
+  background: #fffdfb;
+
+}
+
+.generate-input:focus {
+
+  outline: none;
+
+  border: 1px solid #8b5e3c;
+
+  box-shadow: 0 0 0 3px rgba(139,94,60,0.15);
+
+}
+
+/* Section title */
+
+.generate-section-title {
+
+  margin-top: 10px;
+
+  font-size: 16px;
+
+}
+
+/* Style toggle group */
+
+.style-options {
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 6px;
+
+}
+
+/* Checkbox row */
+
+.checkbox-row {
+
+  font-size: 14px;
+
+  margin-top: 5px;
+
+}
+
+/* Generate button */
+
+.generate-button {
+
+  margin-top: 18px;
+
+}
+
+/*Add Item Page*/
+.additem-page {
+
+  display: flex;
+
+  justify-content: center;
+
+  align-items: center;
+
+  min-height: 80vh;
+
+}
+
+/* Card */
+
+.additem-card {
+
+  background: rgba(255,255,255,0.92);
+
+  backdrop-filter: blur(8px);
+
+  padding: 50px;
+
+  border-radius: 18px;
+
+  width: 450px;
+
+  box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 12px;
+
+}
+
+/* Description */
+
+.additem-subtext {
+
+  font-size: 14px;
+
+  color: #6a5a4a;
+
+  margin-bottom: 10px;
+
+}
+
+/* Inputs */
+
+.additem-input {
+
+  padding: 12px;
+
+  border-radius: 8px;
+
+  border: 1px solid #d6c5b5;
+
+  font-size: 14px;
+
+  background: #fffdfb;
+
+}
+
+.additem-input:focus {
+
+  outline: none;
+
+  border: 1px solid #8b5e3c;
+
+  box-shadow: 0 0 0 3px rgba(139,94,60,0.15);
+
+}
+
+/* Notes box */
+
+.additem-textarea {
+
+  padding: 12px;
+
+  border-radius: 8px;
+
+  border: 1px solid #d6c5b5;
+
+  font-size: 14px;
+
+  resize: vertical;
+
+  min-height: 80px;
+
+}
+
+/* Button spacing */
+
+.additem-button {
+
+  margin-top: 18px;
+
+}
+
+/*Profile Page*/
+/* Profile Page */
+
+.profile-page {
+
+  display: flex;
+
+  justify-content: center;
+
+  align-items: center;
+
+  min-height: 80vh;
+
+}
+
+/* Card */
+
+.profile-card {
+
+  background: rgba(255,255,255,0.92);
+
+  backdrop-filter: blur(8px);
+
+  padding: 50px;
+
+  border-radius: 18px;
+
+  width: 420px;
+
+  box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+
+}
+
+/* Subtext */
+
+.profile-subtext {
+
+  font-size: 14px;
+
+  color: #6a5a4a;
+
+  margin-bottom: 20px;
+
+}
+
+/* Info rows */
+
+.profile-info {
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 14px;
+
+}
+
+.profile-row {
+
+  display: flex;
+
+  justify-content: space-between;
+
+  padding: 10px 0;
+
+  border-bottom: 1px solid #eee;
+
+}
+
+/* Labels */
+
+.profile-label {
+
+  font-weight: 500;
+
+  color: #5c4334;
+
+}
+
+/* Values */
+
+.profile-value {
+
+  color: #7b5e49;
 
 }
