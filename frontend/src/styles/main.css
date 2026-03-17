@@ -602,17 +602,22 @@ body {
   color: #b34a4a;
 }
 .dashboard-empty {
-  margin-top: 40px;
+  margin-top: 32px;
   text-align: center;
-  padding: 32px 24px;
-  background: rgba(255,255,255,0.6);
-  border-radius: 12px;
-  border: 1px dashed #d6c5b5;
+  padding: 40px 28px;
+  background: var(--auth-bg-card, rgba(255,255,255,0.96));
+  border-radius: 14px;
+  border: 1px solid var(--auth-border, #e8e0d8);
+  box-shadow: 0 2px 12px rgba(26,26,26,0.04);
 }
 .dashboard-empty-text {
-  color: #6a5a4a;
-  margin-bottom: 16px;
-  font-size: 15px;
+  color: var(--auth-text-muted, #6a5a4a);
+  margin: 0 0 20px;
+  font-size: 1rem;
+  line-height: 1.5;
+  max-width: 320px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .clothing-card-image-wrap {

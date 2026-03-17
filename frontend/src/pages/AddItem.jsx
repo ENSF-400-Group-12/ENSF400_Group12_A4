@@ -111,7 +111,14 @@ function AddItem() {
     if (!season.trim()) err.season = "Season is required.";
     if (!style.trim()) err.style = "Style is required.";
     setFieldErrors(err);
-    return Object.keys(err).length === 0;
+    if (Object.keys(err).length > 0) {
+      setTimeout(() => {
+        const first = document.getElementById("additem-type") || document.getElementById("additem-color") || document.getElementById("additem-season") || document.getElementById("additem-style");
+        first?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 100);
+      return false;
+    }
+    return true;
   };
 
   const handleFileChange = (e) => {
