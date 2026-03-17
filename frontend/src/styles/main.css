@@ -941,6 +941,20 @@ body {
   margin: 0;
 }
 
+.additem-fallback-msg {
+  font-size: 0.875rem;
+  color: var(--auth-text-muted, #6a5a4a);
+  margin: 0;
+  padding: 8px 0;
+}
+
+.additem-all-set-hint {
+  font-size: 0.8125rem;
+  color: var(--auth-text-muted, #6a5a4a);
+  margin-left: 8px;
+  align-self: center;
+}
+
 .additem-metadata {
   display: flex;
   flex-direction: column;

@@ -45,6 +45,7 @@ function AddItem() {
   const [previewUrl, setPreviewUrl] = useState(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisDone, setAnalysisDone] = useState(false);
+  const [analysisFailed, setAnalysisFailed] = useState(false);
   const [prefilledByAi, setPrefilledByAi] = useState({ type: false, color: false, season: false, style: false });
   const [loadError, setLoadError] = useState(null);
   const [loading, setLoading] = useState(isEdit);
@@ -85,6 +86,7 @@ function AddItem() {
       setPreviewUrl(null);
       setAnalyzing(false);
       setAnalysisDone(false);
+      setAnalysisFailed(false);
       setPrefilledByAi({ type: false, color: false, season: false, style: false });
       return;
     }
@@ -103,6 +105,7 @@ function AddItem() {
         form.append("image", imageFile);
         const res = await authFetch("/api/items/analyze", { method: "POST", body: form });
         if (cancelled) return;
+        if (!res.ok && !cancelled) setAnalysisFailed(true);
         if (res.ok) {
           const data = await res.json();
           const t = mapToOption(data.type, clothingTypes);
@@ -117,7 +120,7 @@ function AddItem() {
           if (!cancelled) setPrefilledByAi(nextPrefilled);
         }
       } catch (_) {
-        /* ignore; user can fill manually */
+        if (!cancelled) setAnalysisFailed(true);
       } finally {
         if (!cancelled) {
           setAnalyzing(false);
@@ -262,6 +265,11 @@ function AddItem() {
                 {analyzing && (
                   <p className="additem-analyzing" aria-live="polite">Analyzing item…</p>
                 )}
+                {analysisFailed && !analyzing && (
+                  <p className="additem-fallback-msg" role="status">
+                    We couldn’t analyze this photo. Add the details below and save.
+                  </p>
+                )}
                 <button
                   type="button"
                   className="additem-change-photo"
@@ -351,6 +359,9 @@ function AddItem() {
             <button type="submit" className="button-primary additem-button" disabled={submitLoading}>
               {submitLoading ? "Saving…" : isEdit ? "Update Item" : "Save Item"}
             </button>
+            {!isEdit && allFilled && !submitLoading && (
+              <span className="additem-all-set-hint">All set? Save to add this item to your wardrobe.</span>
+            )}
           </div>
         </form>
       </div>
