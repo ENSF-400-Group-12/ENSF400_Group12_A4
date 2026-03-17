@@ -3,7 +3,9 @@ const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const session = require('express-session');
+const path = require('path');
 const authRouter = require('./routes/auth');
+const itemsRouter = require('./routes/items');
 const { initDb } = require('./db/connection');
 
 const app = express();
@@ -41,6 +43,8 @@ app.get('/', (req, res) => {
 });
 
 app.use('/api/auth', authRouter);
+app.use('/api/items', itemsRouter);
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 async function start() {
   try {
