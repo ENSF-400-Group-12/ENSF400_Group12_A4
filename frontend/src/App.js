@@ -30,6 +30,7 @@ function App() {
           >
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="add-item" element={<AddItem />} />
+            <Route path="edit-item/:id" element={<AddItem />} />
             <Route path="generate" element={<GenerateOutfit />} />
             <Route path="results" element={<Results />} />
             <Route path="favorites" element={<Favorites />} />

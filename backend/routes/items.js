@@ -52,6 +52,37 @@ router.get('/', (req, res) => {
   }
 });
 
+router.get('/:id', (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (Number.isNaN(id)) {
+    return res.status(400).json({ error: 'Invalid item id.' });
+  }
+  try {
+    const db = getDb();
+    const row = getSelectResult(db, 'SELECT id, user_id, type, color, season, style, notes, image_path, created_at FROM wardrobe_items WHERE id = $id', { $id: id });
+    if (!row) {
+      return res.status(404).json({ error: 'Item not found.' });
+    }
+    if (row.user_id !== req.session.userId) {
+      return res.status(403).json({ error: 'You can only view your own items.' });
+    }
+    res.json({
+      item: {
+        id: row.id,
+        type: row.type,
+        color: row.color,
+        season: row.season,
+        style: row.style,
+        notes: row.notes ?? '',
+        image_path: row.image_path,
+        created_at: row.created_at,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load item.' });
+  }
+});
+
 router.post('/', (req, res, next) => {
   upload.single('image')(req, res, (err) => {
     if (err) {

@@ -776,6 +776,19 @@ body {
 
 }
 
+.additem-inline-error,
+.additem-error {
+
+  font-size: 13px;
+
+  color: #b34a4a;
+
+  margin-top: 4px;
+
+}
+
+.additem-error { margin-bottom: 12px; }
+
 /* Inputs */
 
 .additem-input {
