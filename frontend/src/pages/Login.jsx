@@ -1,12 +1,34 @@
-import { Link } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { authFetch } from "../config/api";
 
 function Login() {
-
   const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  function handleLogin() {
-    navigate("/dashboard");
+  async function handleLogin(e) {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await authFetch("/api/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Login failed.");
+        setLoading(false);
+        return;
+      }
+      navigate("/dashboard");
+    } catch (err) {
+      setError("Could not reach the server.");
+      setLoading(false);
+    }
   }
 
   return (
@@ -47,24 +69,32 @@ function Login() {
             Log in to access your digital wardrobe
           </p>
 
-          <input
-            type="email"
-            placeholder="Email"
-            className="input-field"
-          />
-
-          <input
-            type="password"
-            placeholder="Password"
-            className="input-field"
-          />
-
-          <button
-            className="button-primary"
-            onClick={handleLogin}
-          >
-            Login
-          </button>
+          <form onSubmit={handleLogin}>
+            <input
+              type="email"
+              placeholder="Email"
+              className="input-field"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+            <input
+              type="password"
+              placeholder="Password"
+              className="input-field"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+            {error && <p className="login-error" role="alert">{error}</p>}
+            <button
+              type="submit"
+              className="button-primary"
+              disabled={loading}
+            >
+              {loading ? "Logging in…" : "Login"}
+            </button>
+          </form>
 
           <p className="signup-text">
             Don't have an account?
