@@ -140,7 +140,7 @@ function Dashboard() {
 
       {loading && <p className="dashboard-message">Loading...</p>}
       {error && <p className="dashboard-message dashboard-error">{error}</p>}
-      {!loading && !error && (
+      {!loading && !error && filtered.length > 0 && (
         <div className="clothing-grid">
           {filtered.map((item) => (
             <ClothingCard
@@ -150,6 +150,35 @@ function Dashboard() {
               onDelete={handleDelete}
             />
           ))}
+        </div>
+      )}
+      {!loading && !error && filtered.length === 0 && (
+        <div className="dashboard-empty">
+          {search.trim() || filterType || filterColor || filterSeason || filterStyle ? (
+            <>
+              <p className="dashboard-empty-text">No items match your search or filters.</p>
+              <button
+                type="button"
+                className="button-secondary"
+                onClick={() => {
+                  setSearch("");
+                  setFilterType("");
+                  setFilterColor("");
+                  setFilterSeason("");
+                  setFilterStyle("");
+                }}
+              >
+                Clear filters
+              </button>
+            </>
+          ) : (
+            <>
+              <p className="dashboard-empty-text">Your wardrobe is empty. Add your first item to get started.</p>
+              <Link to="/add-item">
+                <button type="button" className="button-primary">Add Item</button>
+              </Link>
+            </>
+          )}
         </div>
       )}
     </div>

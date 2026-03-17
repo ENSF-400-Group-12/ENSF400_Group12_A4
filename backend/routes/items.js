@@ -28,6 +28,19 @@ function getSelectResult(db, sql, params) {
   return obj;
 }
 
+const MAX_LEN = { type: 80, color: 80, season: 80, style: 80, notes: 500 };
+function validateItemFields(type, color, season, style, notes) {
+  if (!type || !color || !season || !style) {
+    return 'Type, color, season, and style are required.';
+  }
+  if (type.length > MAX_LEN.type) return 'Type is too long.';
+  if (color.length > MAX_LEN.color) return 'Color is too long.';
+  if (season.length > MAX_LEN.season) return 'Season is too long.';
+  if (style.length > MAX_LEN.style) return 'Style is too long.';
+  if (notes.length > MAX_LEN.notes) return 'Notes are too long.';
+  return null;
+}
+
 router.get('/', (req, res) => {
   try {
     const db = getDb();
@@ -94,14 +107,15 @@ router.post('/', (req, res, next) => {
     next();
   });
 }, (req, res) => {
-  const type = req.body.type && req.body.type.trim();
-  const color = req.body.color && req.body.color.trim();
-  const season = req.body.season && req.body.season.trim();
-  const style = req.body.style && req.body.style.trim();
+  const type = (req.body.type && req.body.type.trim()) || '';
+  const color = (req.body.color && req.body.color.trim()) || '';
+  const season = (req.body.season && req.body.season.trim()) || '';
+  const style = (req.body.style && req.body.style.trim()) || '';
   const notes = req.body.notes != null ? String(req.body.notes).trim() : '';
 
-  if (!type || !color || !season || !style) {
-    return res.status(400).json({ error: 'Type, color, season, and style are required.' });
+  const validationError = validateItemFields(type, color, season, style, notes);
+  if (validationError) {
+    return res.status(400).json({ error: validationError });
   }
 
   try {
@@ -146,14 +160,15 @@ router.put('/:id', (req, res) => {
     return res.status(400).json({ error: 'Invalid item id.' });
   }
 
-  const type = req.body.type && req.body.type.trim();
-  const color = req.body.color && req.body.color.trim();
-  const season = req.body.season && req.body.season.trim();
-  const style = req.body.style && req.body.style.trim();
+  const type = (req.body.type && req.body.type.trim()) || '';
+  const color = (req.body.color && req.body.color.trim()) || '';
+  const season = (req.body.season && req.body.season.trim()) || '';
+  const style = (req.body.style && req.body.style.trim()) || '';
   const notes = req.body.notes != null ? String(req.body.notes).trim() : '';
 
-  if (!type || !color || !season || !style) {
-    return res.status(400).json({ error: 'Type, color, season, and style are required.' });
+  const validationError = validateItemFields(type, color, season, style, notes);
+  if (validationError) {
+    return res.status(400).json({ error: validationError });
   }
 
   try {
