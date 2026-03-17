@@ -13,7 +13,10 @@ function Navbar() {
   return (
     <div className="navbar">
       <div className="nav-logo">
-        <Link to="/dashboard">ClosetAI</Link>
+        <Link to="/dashboard">
+          <img src="/closetai-icon.png" alt="" aria-hidden="true" />
+          <span>ClosetAI</span>
+        </Link>
       </div>
 
       <div className="nav-links">

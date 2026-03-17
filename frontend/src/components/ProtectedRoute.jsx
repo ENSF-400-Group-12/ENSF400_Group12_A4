@@ -7,7 +7,7 @@ export default function ProtectedRoute({ children }) {
 
   if (loading) {
     return (
-      <div className="auth-loading">
+      <div className="auth-theme auth-loading">
         <div className="auth-loading-spinner" aria-hidden="true" />
         <p>Loading…</p>
       </div>

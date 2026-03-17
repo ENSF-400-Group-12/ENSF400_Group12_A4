@@ -3,6 +3,22 @@ import { authFetch } from '../config/api';
 
 const AuthContext = createContext(null);
 
+const NETWORK_ERROR_MESSAGE =
+  'Unable to reach the server. Make sure the backend is running and CORS is configured for this frontend origin.';
+
+function wrapAuthFetch(fn) {
+  return async (...args) => {
+    try {
+      return await fn(...args);
+    } catch (err) {
+      if (err.name === 'TypeError' && (err.message === 'Failed to fetch' || err.message.includes('fetch'))) {
+        throw new Error(NETWORK_ERROR_MESSAGE);
+      }
+      throw err;
+    }
+  };
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -12,7 +28,7 @@ export function AuthProvider({ children }) {
     setLoading(true);
     setError(null);
     try {
-      const res = await authFetch('/api/auth/me');
+      const res = await wrapAuthFetch(authFetch)('/api/auth/me');
       if (res.ok) {
         const data = await res.json();
         setUser(data.user);
@@ -21,7 +37,7 @@ export function AuthProvider({ children }) {
       }
     } catch (err) {
       setUser(null);
-      setError('Could not check login status.');
+      setError(err.message || 'Could not check login status.');
     } finally {
       setLoading(false);
     }
@@ -33,7 +49,7 @@ export function AuthProvider({ children }) {
 
   const login = useCallback(async (email, password) => {
     setError(null);
-    const res = await authFetch('/api/auth/login', {
+    const res = await wrapAuthFetch(authFetch)('/api/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
@@ -47,7 +63,7 @@ export function AuthProvider({ children }) {
 
   const signup = useCallback(async (email, password) => {
     setError(null);
-    const res = await authFetch('/api/auth/signup', {
+    const res = await wrapAuthFetch(authFetch)('/api/auth/signup', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });

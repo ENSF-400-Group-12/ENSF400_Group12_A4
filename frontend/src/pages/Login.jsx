@@ -43,7 +43,7 @@ function Login() {
 
   if (authLoading) {
     return (
-      <div className="auth-loading">
+      <div className="auth-theme auth-loading">
         <div className="auth-loading-spinner" aria-hidden="true" />
         <p>Loading…</p>
       </div>
@@ -51,10 +51,14 @@ function Login() {
   }
 
   return (
-    <div className="login-page">
+    <div className="auth-theme login-page">
       <div className="login-left">
         <div className="hero-text">
-          <h1 className="site-title">ClosetAI</h1>
+          <img
+            src="/closetai-horizontal.png"
+            alt="ClosetAI"
+            className="auth-logo"
+          />
           <h2 className="hero-heading">Style Smarter.</h2>
           <p className="site-description">
             Upload your wardrobe, generate AI-powered outfits,
@@ -104,10 +108,6 @@ function Login() {
             <Link to="/signup"> Create one</Link>
           </p>
         </div>
-      </div>
-
-      <div className="login-background">
-        <img src="/closetpic.jpg" alt="" />
       </div>
 
       <div className="login-footer">ENSF 400 — Group 12 Project</div>

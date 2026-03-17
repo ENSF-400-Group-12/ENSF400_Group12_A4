@@ -48,7 +48,7 @@ function Signup() {
 
   if (authLoading) {
     return (
-      <div className="auth-loading">
+      <div className="auth-theme auth-loading">
         <div className="auth-loading-spinner" aria-hidden="true" />
         <p>Loading…</p>
       </div>
@@ -56,8 +56,13 @@ function Signup() {
   }
 
   return (
-    <div className="signup-page">
+    <div className="auth-theme signup-page">
       <div className="signup-card">
+        <img
+          src="/closetai-horizontal.png"
+          alt="ClosetAI"
+          className="auth-logo auth-logo-inline"
+        />
         <h1>Create Your ClosetAI Account</h1>
         <p className="signup-subtext">
           Start building your digital wardrobe and get AI outfit recommendations.
