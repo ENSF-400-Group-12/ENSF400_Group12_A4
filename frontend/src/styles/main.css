@@ -56,6 +56,10 @@ body {
   color: white;
 }
 
+.nav-link--primary {
+  font-weight: 600;
+}
+
 @media (max-width: 640px) {
   .navbar {
     padding: 10px 16px;
