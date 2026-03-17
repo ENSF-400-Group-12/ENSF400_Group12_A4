@@ -1272,3 +1272,63 @@ body {
   font-style: italic;
 
 }
+
+/* Favorites (coming soon) */
+
+.favorites-page {
+
+  display: flex;
+
+  justify-content: center;
+
+  align-items: center;
+
+  min-height: 70vh;
+
+  padding: 24px;
+
+}
+
+.favorites-card {
+
+  background: var(--auth-bg-card, rgba(255,255,255,0.96));
+
+  padding: 32px 28px;
+
+  border-radius: 14px;
+
+  max-width: 400px;
+
+  width: 100%;
+
+  box-shadow: 0 4px 24px rgba(26,26,26,0.06);
+
+  border: 1px solid var(--auth-border, rgba(0,0,0,0.06));
+
+  text-align: center;
+
+}
+
+.favorites-card h1 {
+
+  font-size: 1.375rem;
+
+  font-weight: 600;
+
+  margin: 0 0 12px;
+
+  color: var(--auth-text, #2a2a2a);
+
+}
+
+.favorites-subtext {
+
+  font-size: 0.9375rem;
+
+  color: var(--auth-text-muted, #6a5a4a);
+
+  margin: 0 0 24px;
+
+  line-height: 1.5;
+
+}
