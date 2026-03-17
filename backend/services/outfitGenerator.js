@@ -6,10 +6,17 @@
 
 const { getDb } = require('../db/connection');
 
-const TOP_TYPES = ['Shirt', 'T-Shirt', 'Hoodie', 'Sweater', 'Blazer', 'Dress'];
-const BOTTOM_TYPES = ['Pants', 'Jeans', 'Shorts', 'Skirt'];
-const SHOES_TYPES = ['Shoes', 'Boots', 'Sneakers', 'Sandals'];
-const OUTERWEAR_TYPES = ['Jacket', 'Coat'];
+// Item types grouped by outfit slot for selection
+const SLOT_TYPES = {
+  top: ['Shirt', 'T-Shirt', 'Hoodie', 'Sweater', 'Blazer', 'Dress'],
+  bottom: ['Pants', 'Jeans', 'Shorts', 'Skirt'],
+  shoes: ['Shoes', 'Boots', 'Sneakers', 'Sandals'],
+  outerwear: ['Jacket', 'Coat'],
+};
+
+const REQUIRED_SLOTS = ['top', 'bottom', 'shoes'];
+const INSUFFICIENT_MESSAGE =
+  'Not enough items in your wardrobe to build an outfit. Add at least one top, one bottom, and one pair of shoes.';
 
 function rowsToObjects(execResult) {
   if (!execResult.length || !execResult[0].values.length) return [];
@@ -23,24 +30,28 @@ function rowsToObjects(execResult) {
 
 function slotForType(type) {
   const t = (type || '').trim();
-  if (TOP_TYPES.some((x) => t.toLowerCase().includes(x.toLowerCase()))) return 'top';
-  if (BOTTOM_TYPES.some((x) => t.toLowerCase().includes(x.toLowerCase()))) return 'bottom';
-  if (SHOES_TYPES.some((x) => t.toLowerCase().includes(x.toLowerCase()))) return 'shoes';
-  if (OUTERWEAR_TYPES.some((x) => t.toLowerCase().includes(x.toLowerCase()))) return 'outerwear';
-  if (t) return 'top';
-  return null;
+  for (const [slot, types] of Object.entries(SLOT_TYPES)) {
+    if (types.some((x) => t.toLowerCase().includes(x.toLowerCase()))) return slot;
+  }
+  return t ? 'top' : null;
 }
 
+/**
+ * Score an item for a given occasion and vibe. Higher = better match.
+ * Uses item.style and item.color; base score 50, bonuses for style/vibe/occasion match.
+ */
 function scoreItem(item, occasion, vibe) {
   let score = 50;
   const style = (item.style || '').toLowerCase();
   const vibeLower = (vibe || '').toLowerCase();
   const occasionLower = (occasion || '').toLowerCase();
+
   if (vibeLower && style.includes(vibeLower)) score += 25;
   if (occasionLower === 'formal' && (style.includes('formal') || style.includes('classy'))) score += 20;
   if (occasionLower === 'casual' && (style.includes('casual') || style.includes('streetwear'))) score += 20;
   if (occasionLower === 'work' && (style.includes('formal') || style.includes('classy') || style.includes('minimalist'))) score += 15;
   if (vibeLower === 'minimalist' && (style.includes('minimal') || item.color?.toLowerCase().match(/black|white|gray|grey|navy|beige/))) score += 10;
+
   return score;
 }
 
@@ -58,14 +69,24 @@ function toApiItem(row) {
   };
 }
 
+function formatItemLabel(item) {
+  return item.type + (item.color ? ` (${item.color})` : '');
+}
+
 function buildExplanation(selected, occasion, vibe) {
-  const parts = [];
-  if (selected.top) parts.push(selected.top.type + (selected.top.color ? ` (${selected.top.color})` : ''));
-  if (selected.bottom) parts.push(selected.bottom.type + (selected.bottom.color ? ` (${selected.bottom.color})` : ''));
-  if (selected.shoes) parts.push(selected.shoes.type + (selected.shoes.color ? ` (${selected.shoes.color})` : ''));
-  if (selected.outerwear) parts.push(selected.outerwear.type);
-  const list = parts.filter(Boolean).join(', ');
+  const parts = ['top', 'bottom', 'shoes', 'outerwear']
+    .map((slot) => selected[slot] && formatItemLabel(selected[slot]))
+    .filter(Boolean);
+  const list = parts.join(', ');
   return `This ${occasion || 'outfit'} fits a ${vibe || 'relaxed'} vibe: ${list}. The pieces work together for the occasion.`;
+}
+
+/** Pick the single best item from a slot array by score. */
+function pickBestForSlot(items, occasion, vibe) {
+  if (!items.length) return null;
+  const scored = items.map((item) => ({ item, score: scoreItem(item, occasion, vibe) }));
+  scored.sort((a, b) => b.score - a.score);
+  return scored[0].item;
 }
 
 /**
@@ -87,24 +108,16 @@ function generateOutfit(userId, occasion, vibe) {
     if (bySlot[item.slot]) bySlot[item.slot].push(item);
   });
 
-  if (bySlot.top.length === 0 || bySlot.bottom.length === 0 || bySlot.shoes.length === 0) {
-    return {
-      error: 'Not enough items in your wardrobe to build an outfit. Add at least one top, one bottom, and one pair of shoes.',
-    };
+  const missingSlot = REQUIRED_SLOTS.find((slot) => bySlot[slot].length === 0);
+  if (missingSlot) {
+    return { error: INSUFFICIENT_MESSAGE };
   }
 
-  const pickBest = (arr) => {
-    if (!arr.length) return null;
-    const scored = arr.map((item) => ({ item, score: scoreItem(item, occasion, vibe) }));
-    scored.sort((a, b) => b.score - a.score);
-    return scored[0].item;
-  };
-
   const selected = {
-    top: pickBest(bySlot.top),
-    bottom: pickBest(bySlot.bottom),
-    shoes: pickBest(bySlot.shoes),
-    outerwear: bySlot.outerwear.length ? pickBest(bySlot.outerwear) : null,
+    top: pickBestForSlot(bySlot.top, occasion, vibe),
+    bottom: pickBestForSlot(bySlot.bottom, occasion, vibe),
+    shoes: pickBestForSlot(bySlot.shoes, occasion, vibe),
+    outerwear: bySlot.outerwear.length ? pickBestForSlot(bySlot.outerwear, occasion, vibe) : null,
   };
 
   const outfitItems = [selected.top, selected.bottom, selected.shoes, selected.outerwear].filter(Boolean);
@@ -127,4 +140,4 @@ function generateOutfit(userId, occasion, vibe) {
   };
 }
 
-module.exports = { generateOutfit, slotForType, scoreItem };
+module.exports = { generateOutfit, slotForType, scoreItem, pickBestForSlot, SLOT_TYPES };
