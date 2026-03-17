@@ -1,7 +1,7 @@
 // Form for generating outfit recommendations — occasion + vibe only, wired to API
 
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { authFetch } from "../config/api";
 
 const OCCASIONS = [
@@ -47,7 +47,12 @@ function GenerateOutfit() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Generation failed. Try again.");
+        const msg = data.error || "Generation failed. Try again.";
+        if (res.status === 401) {
+          setError("Please log in to generate outfits.");
+        } else {
+          setError(msg);
+        }
         setLoading(false);
         return;
       }
@@ -100,9 +105,19 @@ function GenerateOutfit() {
           </div>
 
           {error && (
-            <p className="generate-error" role="alert">
-              {error}
-            </p>
+            <div className="generate-feedback" role="alert">
+              <p className="generate-error">{error}</p>
+              {(error.toLowerCase().includes("wardrobe") || error.toLowerCase().includes("not enough")) && (
+                <p className="generate-cta">
+                  <Link to="/add-item">Add items to your wardrobe</Link> or try again later.
+                </p>
+              )}
+              {error.includes("log in") && (
+                <p className="generate-cta">
+                  <Link to="/">Go to login</Link>
+                </p>
+              )}
+            </div>
           )}
 
           <button
