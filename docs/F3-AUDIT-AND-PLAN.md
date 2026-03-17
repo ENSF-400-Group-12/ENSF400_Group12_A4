@@ -62,15 +62,16 @@
 
 ## Testing instructions (after implementation)
 
-1. Start backend: `cd backend && node server.js` (or npm start). Ensure DB initializes and routes mount.
-2. Start frontend: `cd frontend && npm start`. Ensure proxy or CORS allows `http://localhost:3000` → backend.
-3. Sign up / log in so session cookie is set.
-4. Add a few wardrobe items (e.g. via POST /api/items or minimal Add Item UI if wired).
-5. Go to Generate Outfit; select occasion and vibe; click Generate. Should POST and redirect to Results with outfit and explanation.
-6. Test “Regenerate” and insufficient-wardrobe case (e.g. no items or only one type).
+1. **Backend:** `cd backend && npm start`. DB initializes; server listens on http://localhost:8080.
+2. **Frontend:** `cd frontend && npm start`. Set `REACT_APP_API_URL=http://localhost:8080` if needed (default is already 8080).
+3. **Sign up / Log in:** Use Signup then Login so the session cookie is set (credentials: include).
+4. **Add wardrobe items:** Use POST `/api/items` with JSON body `{ type, color, season, style, notes }` (e.g. type: "T-Shirt", color: "Black", season: "All", style: "Casual"). Add at least one top, one bottom, and one shoes type (e.g. Shirt, Jeans, Sneakers).
+5. **Generate:** Go to Generate Outfit; select occasion and vibe; click Generate. You should be redirected to Results with outfit items and explanation.
+6. **Regenerate:** On Results, click Regenerate to return to Generate and try again.
+7. **Insufficient wardrobe:** With no items or only one slot filled, generate should show the error message and links to add items.
 
 ## Known gaps
 
-- Add Item UI may not be wired to POST /api/items on this branch; use API or seed data to populate wardrobe for tests.
-- OutfitCard currently expects `{ top, bottom, shoes, explanation }`; API will return `{ items[], explanation, occasion, vibe }` – Results page will map items to display.
+- Add Item page may not call POST /api/items on this branch; use API (e.g. curl/Postman) or a minimal form to add items for testing. Dashboard may not load items from API.
 - No F4 favorites or F5 weather; no external APIs or 3D.
+- Generator uses type strings (e.g. "Shirt", "Jeans"); items with different type names may fall into "top" by default.
