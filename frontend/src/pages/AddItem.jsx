@@ -32,6 +32,7 @@ function AddItem() {
   const [notes, setNotes] = useState("");
   const [imageFile, setImageFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
+  const [analyzing, setAnalyzing] = useState(false);
   const [loadError, setLoadError] = useState(null);
   const [loading, setLoading] = useState(isEdit);
   const [submitLoading, setSubmitLoading] = useState(false);
@@ -69,12 +70,39 @@ function AddItem() {
   useEffect(() => {
     if (!imageFile) {
       setPreviewUrl(null);
+      setAnalyzing(false);
       return;
     }
     const url = URL.createObjectURL(imageFile);
     setPreviewUrl(url);
     return () => URL.revokeObjectURL(url);
   }, [imageFile]);
+
+  useEffect(() => {
+    if (!imageFile || isEdit) return;
+    let cancelled = false;
+    (async () => {
+      setAnalyzing(true);
+      try {
+        const form = new FormData();
+        form.append("image", imageFile);
+        const res = await authFetch("/api/items/analyze", { method: "POST", body: form });
+        if (cancelled) return;
+        if (res.ok) {
+          const data = await res.json();
+          if (data.type && clothingTypes.includes(data.type)) setType(data.type);
+          if (data.color && colors.includes(data.color)) setColor(data.color);
+          if (data.season && seasons.includes(data.season)) setSeason(data.season);
+          if (data.style && styles.includes(data.style)) setStyle(data.style);
+        }
+      } catch (_) {
+        /* ignore; user can fill manually */
+      } finally {
+        if (!cancelled) setAnalyzing(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [imageFile, isEdit]);
 
   const validate = () => {
     const err = {};
@@ -197,6 +225,9 @@ function AddItem() {
                     <span className="additem-preview-placeholder">{isEdit ? "Current photo kept" : "No image selected"}</span>
                   )}
                 </div>
+                {analyzing && (
+                  <p className="additem-analyzing" aria-live="polite">Analyzing item…</p>
+                )}
                 <button
                   type="button"
                   className="additem-change-photo"

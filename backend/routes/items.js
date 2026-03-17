@@ -3,7 +3,8 @@ const path = require('path');
 const fs = require('fs');
 const { getDb, persist } = require('../db/connection');
 const requireAuth = require('../middleware/requireAuth');
-const { upload } = require('../config/upload');
+const { upload, memoryUpload } = require('../config/upload');
+const { analyzeItemImage } = require('../services/imageAnalysis');
 
 const router = express.Router();
 router.use(requireAuth);
@@ -62,6 +63,28 @@ router.get('/', (req, res) => {
     res.json({ items });
   } catch (err) {
     res.status(500).json({ error: 'Failed to load wardrobe items.' });
+  }
+});
+
+router.post('/analyze', (req, res, next) => {
+  memoryUpload.single('image')(req, res, (err) => {
+    if (err) {
+      if (err.message && err.message.includes('image')) {
+        return res.status(400).json({ error: err.message });
+      }
+      return res.status(500).json({ error: 'Upload failed.' });
+    }
+    next();
+  });
+}, async (req, res) => {
+  if (!req.file || !req.file.buffer) {
+    return res.status(400).json({ error: 'No image provided.' });
+  }
+  try {
+    const metadata = await analyzeItemImage(req.file.buffer, req.file.mimetype);
+    res.json({ ...metadata });
+  } catch (err) {
+    res.status(500).json({ error: 'Analysis failed. You can still add the item manually.' });
   }
 });
 

@@ -930,6 +930,12 @@ body {
   background: #f5f2ef;
 }
 
+.additem-analyzing {
+  font-size: 0.875rem;
+  color: var(--auth-text-muted, #6a5a4a);
+  margin: 0;
+}
+
 .additem-metadata {
   display: flex;
   flex-direction: column;
