@@ -1,26 +1,63 @@
-// Displays AI generated outfits
+// Displays generated outfit from API: items, explanation, occasion, vibe; supports regenerate
 
+import { useLocation, useNavigate } from "react-router-dom";
 import OutfitCard from "../components/OutfitCard";
 
 function Results() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const outfit = location.state?.outfit;
 
-  const outfit = {
-    top: "White Shirt",
-    bottom: "Black Jeans",
-    shoes: "Sneakers",
-    explanation: "Neutral colors create a balanced casual outfit."
-  };
+  if (!outfit) {
+    return (
+      <div className="results-page">
+        <h1>Outfit Recommendations</h1>
+        <p className="results-empty">
+          Generate an outfit first by choosing an occasion and vibe on the Generate page.
+        </p>
+        <button
+          type="button"
+          className="button-primary"
+          onClick={() => navigate("/generate")}
+        >
+          Generate Outfit
+        </button>
+      </div>
+    );
+  }
+
+  if (outfit.error) {
+    return (
+      <div className="results-page">
+        <h1>Outfit Recommendations</h1>
+        <p className="results-error" role="alert">
+          {outfit.error}
+        </p>
+        <button
+          type="button"
+          className="button-primary"
+          onClick={() => navigate("/generate")}
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
 
   return (
-
-    <div>
-
+    <div className="results-page">
       <h1>Outfit Recommendations</h1>
-
       <OutfitCard outfit={outfit} />
-
+      <div className="results-actions">
+        <button
+          type="button"
+          className="button-primary"
+          onClick={() => navigate("/generate")}
+        >
+          Regenerate
+        </button>
+      </div>
     </div>
-
   );
 }
 
