@@ -1,25 +1,60 @@
-import logo from './logo.svg';
-import './App.css';
+// React Router imports
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+
+// Page imports
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
+import Dashboard from "./pages/Dashboard";
+
+import AddItem from "./pages/AddItem";
+import GenerateOutfit from "./pages/GenerateOutfit";
+import Results from "./pages/Results";
+import Favorites from "./pages/Favorites";
+import Admin from "./pages/Admin";
+import Profile from "./pages/Profile";
+
+import Navbar from "./components/Navbar";
 
 function App() {
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+
+    <Router>
+
+      <Routes>
+
+        {/* Pages WITHOUT navbar */}
+        <Route path="/" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+
+        {/* Dashboard */}
+        <Route
+          path="/dashboard"
+          element={
+            <>
+              <Navbar />
+              <div className="container">
+                <Dashboard />
+              </div>
+            </>
+          }
+        />
+
+      
+        <Route path="/add-item" element={<AddItem />} />
+        <Route path="/generate" element={<GenerateOutfit />} />
+        <Route path="/results" element={<Results />} />
+        <Route path="/favorites" element={<Favorites />} />
+        <Route path="/admin" element={<Admin />} />
+        <Route path="/profile" element={<Profile />} />
+
+
+      </Routes>
+
+    </Router>
+
   );
+
 }
 
 export default App;
