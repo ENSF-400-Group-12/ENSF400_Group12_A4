@@ -1200,3 +1200,11 @@ body {
   color: #7b5e49;
 
 }
+
+.profile-value--muted {
+
+  color: var(--auth-text-muted, #8a7a6a);
+
+  font-style: italic;
+
+}

@@ -10,7 +10,6 @@ import AddItem from "./pages/AddItem";
 import GenerateOutfit from "./pages/GenerateOutfit";
 import Results from "./pages/Results";
 import Favorites from "./pages/Favorites";
-import Admin from "./pages/Admin";
 import Profile from "./pages/Profile";
 
 function App() {
@@ -34,7 +33,7 @@ function App() {
             <Route path="generate" element={<GenerateOutfit />} />
             <Route path="results" element={<Results />} />
             <Route path="favorites" element={<Favorites />} />
-            <Route path="admin" element={<Admin />} />
+            <Route path="admin" element={<Navigate to="/dashboard" replace />} />
             <Route path="profile" element={<Profile />} />
           </Route>
 

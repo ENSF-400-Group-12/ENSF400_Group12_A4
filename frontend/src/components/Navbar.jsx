@@ -24,7 +24,6 @@ function Navbar() {
         <Link to="/add-item">Add Item</Link>
         <Link to="/generate">Generate Outfit</Link>
         <Link to="/favorites">Favorites</Link>
-        <Link to="/admin">Admin</Link>
         <Link to="/profile">Profile</Link>
         {user?.email && (
           <span className="nav-user-email" title={user.email}>
