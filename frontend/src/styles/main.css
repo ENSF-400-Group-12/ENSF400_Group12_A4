@@ -436,112 +436,131 @@ body {
 
 }
 
-/* Dashboard */
-/* Dashboard */
-
-.dashboard-header {
-  margin-bottom: 30px;
+/* Dashboard — aligned with auth branding */
+.dashboard-page {
+  padding: 24px 16px 40px;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
-.dashboard-header h1 {
-  font-size: 40px;
-  margin-bottom: 6px;
-  color: #5c4334; /* warm brown */
+.dashboard-header {
+  margin-bottom: 24px;
+}
+
+.dashboard-title {
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin: 0 0 6px;
+  color: var(--auth-text, #2a2a2a);
+  letter-spacing: -0.02em;
 }
 
 .dashboard-subtext {
-  color: #7b5e49;
-  font-size: 15px;
+  color: var(--auth-text-muted, #6a5a4a);
+  font-size: 0.9375rem;
+  margin: 0;
 }
-
-/* Controls row */
 
 .dashboard-controls {
-
   display: flex;
-
   justify-content: space-between;
-
   align-items: center;
-
-  margin-top: 25px;
-
   flex-wrap: wrap;
-
-  gap: 20px;
-
+  gap: 16px;
+  margin-bottom: 16px;
 }
 
-/* Button group */
+.dashboard-search {
+  flex: 1;
+  min-width: 200px;
+  max-width: 360px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--auth-border, #d6c5b5);
+  font-size: 0.9375rem;
+  background: var(--auth-bg-card, #fffdfb);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.dashboard-search:focus {
+  outline: none;
+  border-color: #8b5e3c;
+  box-shadow: 0 0 0 3px rgba(139,94,60,0.12);
+}
+
+.dashboard-search::placeholder {
+  color: var(--auth-text-muted, #6a5a4a);
+}
 
 .dashboard-buttons {
-
   display: flex;
-
-  gap: 12px;
-
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
-/* Search bar */
-
-.search-bar {
-
-  width: 340px;
-
-  padding: 12px 14px;
-
-  border-radius: 10px;
-
-  border: 1px solid #d6c5b5;
-
-  font-size: 14px;
-
-  background: #fffdfb;
-
-  transition: all 0.2s ease;
-
+.dashboard-add-btn {
+  font-weight: 500;
 }
 
-/* Search focus effect */
+.dashboard-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 24px;
+}
 
-.search-bar:focus {
+.dashboard-filter-select {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--auth-border, #d6c5b5);
+  font-size: 0.875rem;
+  background: var(--auth-bg-card, #fffdfb);
+  color: var(--auth-text, #2a2a2a);
+  min-width: 0;
+}
 
+.dashboard-filter-select:focus {
   outline: none;
-
-  border: 1px solid #8b5e3c;
-
-  box-shadow: 0 0 0 3px rgba(139,94,60,0.15);
-
+  border-color: #8b5e3c;
 }
-
-/* Clothing grid */
 
 .clothing-grid {
-
-  margin-top: 35px;
-
+  margin-top: 0;
   display: grid;
-
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-
-  gap: 25px;
-
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
 }
 
-/* hover effect for clothing cards */
-
-.clothing-grid .card {
-
+.clothing-card {
+  background: var(--auth-bg-card, rgba(255,255,255,0.96));
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--auth-border, rgba(0,0,0,0.06));
+  box-shadow: 0 2px 12px rgba(26,26,26,0.04);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-
+  display: flex;
+  flex-direction: column;
 }
 
-.clothing-grid .card:hover {
+.clothing-grid .clothing-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(26,26,26,0.08);
+}
 
-  transform: translateY(-4px);
+.clothing-card-body {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
 
-  box-shadow: 0 10px 22px rgba(0,0,0,0.12);
-
+.clothing-card-type {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--auth-text, #2a2a2a);
+  letter-spacing: -0.01em;
 }
 
 .dashboard-message {
@@ -571,7 +590,7 @@ body {
   width: 100%;
   aspect-ratio: 1;
   background: #f2ebe5;
-  border-radius: 10px 10px 0 0;
+  border-radius: 12px 12px 0 0;
   overflow: hidden;
 }
 .clothing-card-image-wrap img {
@@ -593,14 +612,14 @@ body {
   display: flex;
 }
 .clothing-card-meta {
-  font-size: 13px;
-  color: #6a5a4a;
-  margin-top: 4px;
+  font-size: 0.8125rem;
+  color: var(--auth-text-muted, #6a5a4a);
+  margin: 0;
 }
 .clothing-card-actions {
   display: flex;
   gap: 8px;
-  margin-top: 12px;
+  margin-top: auto;
   flex-wrap: wrap;
 }
 .button-small {

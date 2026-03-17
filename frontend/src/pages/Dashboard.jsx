@@ -87,59 +87,61 @@ function Dashboard() {
 
   return (
     <div className="dashboard-page">
-      <div className="dashboard-header">
-        <h1>Your Wardrobe</h1>
+      <header className="dashboard-header">
+        <h1 className="dashboard-title">Your Wardrobe</h1>
         <p className="dashboard-subtext">
-          Search, filter, and manage your clothing items.
+          Search, filter, and manage your items.
         </p>
-      </div>
+      </header>
 
       <div className="dashboard-controls">
         <input
-          className="search-bar"
-          placeholder="Search clothing items..."
+          type="search"
+          className="dashboard-search"
+          placeholder="Search items…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+          aria-label="Search wardrobe"
         />
         <div className="dashboard-buttons">
           <Link to="/add-item">
-            <button className="button-primary">Add Item</button>
+            <button type="button" className="button-primary dashboard-add-btn">Add Item</button>
           </Link>
           <Link to="/generate">
-            <button className="button-primary">Generate Outfit</button>
+            <button type="button" className="button-secondary">Generate Outfit</button>
           </Link>
         </div>
       </div>
 
-      <div className="filters">
-        <select value={filterType} onChange={(e) => setFilterType(e.target.value)}>
+      <div className="dashboard-filters" role="group" aria-label="Filter by">
+        <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="dashboard-filter-select" aria-label="Type">
           <option value="">Type</option>
-          {clothingTypes.map((type) => (
-            <option key={type} value={type}>{type}</option>
+          {clothingTypes.map((t) => (
+            <option key={t} value={t}>{t}</option>
           ))}
         </select>
-        <select value={filterColor} onChange={(e) => setFilterColor(e.target.value)}>
+        <select value={filterColor} onChange={(e) => setFilterColor(e.target.value)} className="dashboard-filter-select" aria-label="Color">
           <option value="">Color</option>
-          {colors.map((color) => (
-            <option key={color} value={color}>{color}</option>
+          {colors.map((c) => (
+            <option key={c} value={c}>{c}</option>
           ))}
         </select>
-        <select value={filterSeason} onChange={(e) => setFilterSeason(e.target.value)}>
+        <select value={filterSeason} onChange={(e) => setFilterSeason(e.target.value)} className="dashboard-filter-select" aria-label="Season">
           <option value="">Season</option>
-          {seasons.map((season) => (
-            <option key={season} value={season}>{season}</option>
+          {seasons.map((s) => (
+            <option key={s} value={s}>{s}</option>
           ))}
         </select>
-        <select value={filterStyle} onChange={(e) => setFilterStyle(e.target.value)}>
+        <select value={filterStyle} onChange={(e) => setFilterStyle(e.target.value)} className="dashboard-filter-select" aria-label="Style">
           <option value="">Style</option>
-          {styles.map((style) => (
-            <option key={style} value={style}>{style}</option>
+          {styles.map((s) => (
+            <option key={s} value={s}>{s}</option>
           ))}
         </select>
       </div>
 
-      {loading && <p className="dashboard-message">Loading...</p>}
-      {error && <p className="dashboard-message dashboard-error">{error}</p>}
+      {loading && <p className="dashboard-message" aria-live="polite">Loading…</p>}
+      {error && <p className="dashboard-message dashboard-error" role="alert">{error}</p>}
       {!loading && !error && filtered.length > 0 && (
         <div className="clothing-grid">
           {filtered.map((item) => (
