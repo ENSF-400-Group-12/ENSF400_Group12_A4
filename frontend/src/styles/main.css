@@ -954,6 +954,34 @@ body {
   color: var(--auth-text, #2a2a2a);
 }
 
+.additem-detected-summary {
+  font-size: 0.875rem;
+  color: var(--auth-text-muted, #6a5a4a);
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  background: rgba(139, 94, 60, 0.06);
+  border-radius: 8px;
+  border-left: 3px solid rgba(139, 94, 60, 0.4);
+}
+
+.additem-badge {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #7b6b4a;
+  margin-left: 6px;
+}
+
+.additem-field--needs-value .additem-input {
+  border-color: rgba(139, 94, 60, 0.35);
+  background: rgba(255, 248, 240, 0.6);
+}
+
+.additem-field--needs-value label {
+  color: #8b5e3c;
+}
+
 .additem-metadata-hint {
   font-size: 0.8125rem;
   color: var(--auth-text-muted, #6a5a4a);

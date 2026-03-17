@@ -44,6 +44,8 @@ function AddItem() {
   const [imageFile, setImageFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [analyzing, setAnalyzing] = useState(false);
+  const [analysisDone, setAnalysisDone] = useState(false);
+  const [prefilledByAi, setPrefilledByAi] = useState({ type: false, color: false, season: false, style: false });
   const [loadError, setLoadError] = useState(null);
   const [loading, setLoading] = useState(isEdit);
   const [submitLoading, setSubmitLoading] = useState(false);
@@ -82,6 +84,8 @@ function AddItem() {
     if (!imageFile) {
       setPreviewUrl(null);
       setAnalyzing(false);
+      setAnalysisDone(false);
+      setPrefilledByAi({ type: false, color: false, season: false, style: false });
       return;
     }
     const url = URL.createObjectURL(imageFile);
@@ -105,15 +109,20 @@ function AddItem() {
           const c = mapToOption(data.color, colors);
           const s = mapToOption(data.season, seasons);
           const st = mapToOption(data.style, styles);
-          if (t) setType(t);
-          if (c) setColor(c);
-          if (s) setSeason(s);
-          if (st) setStyle(st);
+          const nextPrefilled = { type: false, color: false, season: false, style: false };
+          if (t) { setType(t); nextPrefilled.type = true; }
+          if (c) { setColor(c); nextPrefilled.color = true; }
+          if (s) { setSeason(s); nextPrefilled.season = true; }
+          if (st) { setStyle(st); nextPrefilled.style = true; }
+          if (!cancelled) setPrefilledByAi(nextPrefilled);
         }
       } catch (_) {
         /* ignore; user can fill manually */
       } finally {
-        if (!cancelled) setAnalyzing(false);
+        if (!cancelled) {
+          setAnalyzing(false);
+          setAnalysisDone(true);
+        }
       }
     })();
     return () => { cancelled = true; };
@@ -224,7 +233,7 @@ function AddItem() {
       <div className="additem-card additem-card--wide">
         <h1 className="additem-title">{isEdit ? "Edit Item" : "Add Item"}</h1>
         <p className="additem-subtext">
-          {isEdit ? "Update the photo or details below." : "Add a photo first. You can adjust details before saving."}
+          {isEdit ? "Update the photo or details below." : "Add a photo — we'll suggest the details. Confirm or edit, then save."}
         </p>
 
         <form onSubmit={handleSubmit} className="additem-form">
@@ -271,38 +280,43 @@ function AddItem() {
             )}
           </div>
 
-          {/* Metadata — compact grid, manual overrides */}
+          {/* Confirm or edit — AI-first */}
           <div className="additem-metadata">
-            <h2 className="additem-metadata-heading">Details</h2>
-            <p className="additem-metadata-hint">Confirm or edit — used for search and recommendations.</p>
+            {analysisDone && (prefilledByAi.type || prefilledByAi.color || prefilledByAi.season || prefilledByAi.style) && (
+              <p className="additem-detected-summary" role="status">
+                We detected: {[prefilledByAi.type && type, prefilledByAi.color && color, prefilledByAi.season && season, prefilledByAi.style && style].filter(Boolean).join(" · ") || "—"}
+              </p>
+            )}
+            <h2 className="additem-metadata-heading">Confirm or edit</h2>
+            <p className="additem-metadata-hint">Change any field if we got it wrong. Fill only what’s missing.</p>
             <div className="additem-metadata-grid">
-              <div className="additem-field">
-                <label htmlFor="additem-type">Type</label>
-                <select id="additem-type" className="additem-input" value={type} onChange={(e) => setType(e.target.value)}>
+              <div className={`additem-field ${!type.trim() && analysisDone ? "additem-field--needs-value" : ""}`}>
+                <label htmlFor="additem-type">Type {prefilledByAi.type && type && <span className="additem-badge">detected</span>}</label>
+                <select id="additem-type" className="additem-input" value={type} onChange={(e) => { setType(e.target.value); setPrefilledByAi((p) => ({ ...p, type: false })); }}>
                   <option value="">Select type</option>
                   {clothingTypes.map((t) => <option key={t} value={t}>{t}</option>)}
                 </select>
                 {fieldErrors.type && <span className="additem-inline-error">{fieldErrors.type}</span>}
               </div>
-              <div className="additem-field">
-                <label htmlFor="additem-color">Color</label>
-                <select id="additem-color" className="additem-input" value={color} onChange={(e) => setColor(e.target.value)}>
+              <div className={`additem-field ${!color.trim() && analysisDone ? "additem-field--needs-value" : ""}`}>
+                <label htmlFor="additem-color">Color {prefilledByAi.color && color && <span className="additem-badge">detected</span>}</label>
+                <select id="additem-color" className="additem-input" value={color} onChange={(e) => { setColor(e.target.value); setPrefilledByAi((p) => ({ ...p, color: false })); }}>
                   <option value="">Select color</option>
                   {colors.map((c) => <option key={c} value={c}>{c}</option>)}
                 </select>
                 {fieldErrors.color && <span className="additem-inline-error">{fieldErrors.color}</span>}
               </div>
-              <div className="additem-field">
-                <label htmlFor="additem-season">Season</label>
-                <select id="additem-season" className="additem-input" value={season} onChange={(e) => setSeason(e.target.value)}>
+              <div className={`additem-field ${!season.trim() && analysisDone ? "additem-field--needs-value" : ""}`}>
+                <label htmlFor="additem-season">Season {prefilledByAi.season && season && <span className="additem-badge">detected</span>}</label>
+                <select id="additem-season" className="additem-input" value={season} onChange={(e) => { setSeason(e.target.value); setPrefilledByAi((p) => ({ ...p, season: false })); }}>
                   <option value="">Select season</option>
                   {seasons.map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
                 {fieldErrors.season && <span className="additem-inline-error">{fieldErrors.season}</span>}
               </div>
-              <div className="additem-field">
-                <label htmlFor="additem-style">Style</label>
-                <select id="additem-style" className="additem-input" value={style} onChange={(e) => setStyle(e.target.value)}>
+              <div className={`additem-field ${!style.trim() && analysisDone ? "additem-field--needs-value" : ""}`}>
+                <label htmlFor="additem-style">Style {prefilledByAi.style && style && <span className="additem-badge">detected</span>}</label>
+                <select id="additem-style" className="additem-input" value={style} onChange={(e) => { setStyle(e.target.value); setPrefilledByAi((p) => ({ ...p, style: false })); }}>
                   <option value="">Select style</option>
                   {styles.map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
