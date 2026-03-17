@@ -88,11 +88,29 @@ function Dashboard() {
   return (
     <div className="dashboard-page">
       <header className="dashboard-header">
-        <h1 className="dashboard-title">Your Wardrobe</h1>
+        <div className="dashboard-header-top">
+          <h1 className="dashboard-title">Your Wardrobe</h1>
+          {!loading && !error && (
+            <span className="dashboard-count" aria-live="polite">
+              {filtered.length === items.length ? `${items.length} item${items.length !== 1 ? "s" : ""}` : `${filtered.length} of ${items.length}`}
+            </span>
+          )}
+        </div>
         <p className="dashboard-subtext">
-          Search, filter, and manage your items.
+          Add items, search, and filter. Your main hub for your closet.
         </p>
       </header>
+
+      <section className="dashboard-actions" aria-label="Quick actions">
+        <Link to="/add-item" className="dashboard-action-card dashboard-action-card--primary">
+          <span className="dashboard-action-label">Add Item</span>
+          <span className="dashboard-action-desc">Upload a photo and add to your wardrobe</span>
+        </Link>
+        <Link to="/generate" className="dashboard-action-card">
+          <span className="dashboard-action-label">Generate Outfit</span>
+          <span className="dashboard-action-desc">Get outfit suggestions</span>
+        </Link>
+      </section>
 
       <div className="dashboard-controls">
         <input
@@ -103,14 +121,6 @@ function Dashboard() {
           onChange={(e) => setSearch(e.target.value)}
           aria-label="Search wardrobe"
         />
-        <div className="dashboard-buttons">
-          <Link to="/add-item">
-            <button type="button" className="button-primary dashboard-add-btn">Add Item</button>
-          </Link>
-          <Link to="/generate">
-            <button type="button" className="button-secondary">Generate Outfit</button>
-          </Link>
-        </div>
       </div>
 
       <div className="dashboard-filters" role="group" aria-label="Filter by">
