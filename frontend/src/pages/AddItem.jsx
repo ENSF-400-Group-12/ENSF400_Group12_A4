@@ -130,10 +130,10 @@ function AddItem() {
 
   const validate = () => {
     const err = {};
-    if (!type.trim()) err.type = "Type is required.";
-    if (!color.trim()) err.color = "Color is required.";
-    if (!season.trim()) err.season = "Season is required.";
-    if (!style.trim()) err.style = "Style is required.";
+    if (!type.trim()) err.type = "Please choose a type.";
+    if (!color.trim()) err.color = "Please choose a color.";
+    if (!season.trim()) err.season = "Please choose a season.";
+    if (!style.trim()) err.style = "Please choose a style.";
     setFieldErrors(err);
     if (Object.keys(err).length > 0) {
       setTimeout(() => {
@@ -144,6 +144,9 @@ function AddItem() {
     }
     return true;
   };
+
+  const missingCount = [type, color, season, style].filter((v) => !v || !String(v).trim()).length;
+  const allFilled = missingCount === 0;
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0] || null;
@@ -335,6 +338,11 @@ function AddItem() {
             </div>
           </div>
 
+          {Object.keys(fieldErrors).length > 0 && (
+            <p className="additem-validation-summary" role="alert">
+              Please fill in the missing fields below — then you can save.
+            </p>
+          )}
           {error && <p className="additem-inline-error additem-error-block" role="alert">{error}</p>}
           <div className="additem-actions">
             <button type="button" className="button-secondary" onClick={() => navigate("/dashboard")}>

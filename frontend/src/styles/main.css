@@ -1018,6 +1018,13 @@ body {
   margin-top: 8px;
 }
 
+.additem-validation-summary {
+  font-size: 0.875rem;
+  color: #8b5e3c;
+  margin: 0 0 8px;
+  padding: 8px 0;
+}
+
 .additem-error-block {
   margin: 0;
 }
