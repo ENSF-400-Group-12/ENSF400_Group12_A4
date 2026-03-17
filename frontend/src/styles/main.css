@@ -353,15 +353,45 @@ body {
   color: var(--auth-text-muted);
 }
 
-/* ---------------- SIGNUP PAGE ---------------- */
+/* ---------------- SIGNUP PAGE (same layout as login) ---------------- */
 
 .auth-theme.signup-page {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 100vh;
+  align-items: center;
+  justify-items: center;
+  gap: 32px;
+  padding: 24px 20px 40px;
+  position: relative;
+  background: var(--auth-bg);
+  max-width: 880px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+@media (max-width: 900px) {
+  .auth-theme.signup-page {
+    grid-template-columns: 1fr;
+    justify-items: stretch;
+    padding: 24px 16px 36px;
+    gap: 28px;
+  }
+}
+
+.signup-left {
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 0;
+}
+
+.signup-right {
   display: flex;
   justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  padding: 24px 20px 40px;
-  background: var(--auth-bg);
+  width: 100%;
 }
 
 .auth-theme .signup-card {
@@ -377,8 +407,8 @@ body {
   gap: 20px;
 }
 
-.auth-theme .signup-card h1 {
-  font-size: 1.5rem;
+.auth-theme .signup-card h2 {
+  font-size: 1.375rem;
   font-weight: 600;
   margin: 0 0 4px;
   color: var(--auth-text);
