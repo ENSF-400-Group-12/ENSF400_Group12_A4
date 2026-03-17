@@ -1,6 +1,6 @@
-// Add or edit a clothing item
+// Add or edit a clothing item — photo-first, low-friction
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { authFetch } from "../config/api";
 
@@ -22,6 +22,7 @@ const styles = [
 function AddItem() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const fileInputRef = useRef(null);
   const isEdit = Boolean(id);
 
   const [type, setType] = useState("");
@@ -30,6 +31,7 @@ function AddItem() {
   const [style, setStyle] = useState("");
   const [notes, setNotes] = useState("");
   const [imageFile, setImageFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
   const [loadError, setLoadError] = useState(null);
   const [loading, setLoading] = useState(isEdit);
   const [submitLoading, setSubmitLoading] = useState(false);
@@ -64,6 +66,16 @@ function AddItem() {
     return () => { cancelled = true; };
   }, [id, isEdit]);
 
+  useEffect(() => {
+    if (!imageFile) {
+      setPreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(imageFile);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [imageFile]);
+
   const validate = () => {
     const err = {};
     if (!type.trim()) err.type = "Type is required.";
@@ -72,6 +84,11 @@ function AddItem() {
     if (!style.trim()) err.style = "Style is required.";
     setFieldErrors(err);
     return Object.keys(err).length === 0;
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0] || null;
+    setImageFile(file);
   };
 
   const handleSubmit = async (e) => {
@@ -154,69 +171,112 @@ function AddItem() {
 
   return (
     <div className="additem-page">
-      <div className="additem-card">
-        <h1>{isEdit ? "Edit Clothing Item" : "Add Clothing Item"}</h1>
+      <div className="additem-card additem-card--wide">
+        <h1 className="additem-title">{isEdit ? "Edit Item" : "Add Item"}</h1>
         <p className="additem-subtext">
-          {isEdit ? "Update the details below." : "Upload a clothing item and add details so ClosetAI can use it for outfit recommendations."}
+          {isEdit ? "Update the photo or details below." : "Add a photo first. You can adjust details before saving."}
         </p>
 
-        <form onSubmit={handleSubmit}>
-          <label>Item Photo {isEdit && "(leave empty to keep current)"}</label>
-          <input
-            type="file"
-            accept="image/*"
-            className="additem-input"
-            onChange={(e) => setImageFile(e.target.files?.[0] || null)}
-          />
+        <form onSubmit={handleSubmit} className="additem-form">
+          {/* Photo-first upload zone */}
+          <div className="additem-upload-section">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="additem-file-input"
+              onChange={handleFileChange}
+              aria-label="Choose item photo"
+            />
+            {previewUrl || (isEdit && !imageFile) ? (
+              <div className="additem-preview-wrap">
+                <div className="additem-preview-box">
+                  {previewUrl ? (
+                    <img src={previewUrl} alt="Preview" className="additem-preview-img" />
+                  ) : (
+                    <span className="additem-preview-placeholder">{isEdit ? "Current photo kept" : "No image selected"}</span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  className="additem-change-photo"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {previewUrl ? "Change photo" : "Choose photo"}
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="additem-upload-zone"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <span className="additem-upload-icon" aria-hidden>📷</span>
+                <span className="additem-upload-text">Tap to add a photo</span>
+                <span className="additem-upload-hint">JPEG, PNG, GIF or WebP · max 5MB</span>
+              </button>
+            )}
+          </div>
 
-          <label>Type</label>
-          <select className="additem-input" value={type} onChange={(e) => setType(e.target.value)}>
-            <option value="">Select type</option>
-            {clothingTypes.map((t) => (
-              <option key={t} value={t}>{t}</option>
-            ))}
-          </select>
-          {fieldErrors.type && <p className="additem-inline-error">{fieldErrors.type}</p>}
+          {/* Metadata — compact grid, manual overrides */}
+          <div className="additem-metadata">
+            <h2 className="additem-metadata-heading">Details</h2>
+            <p className="additem-metadata-hint">Confirm or edit — used for search and recommendations.</p>
+            <div className="additem-metadata-grid">
+              <div className="additem-field">
+                <label htmlFor="additem-type">Type</label>
+                <select id="additem-type" className="additem-input" value={type} onChange={(e) => setType(e.target.value)}>
+                  <option value="">Select type</option>
+                  {clothingTypes.map((t) => <option key={t} value={t}>{t}</option>)}
+                </select>
+                {fieldErrors.type && <span className="additem-inline-error">{fieldErrors.type}</span>}
+              </div>
+              <div className="additem-field">
+                <label htmlFor="additem-color">Color</label>
+                <select id="additem-color" className="additem-input" value={color} onChange={(e) => setColor(e.target.value)}>
+                  <option value="">Select color</option>
+                  {colors.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+                {fieldErrors.color && <span className="additem-inline-error">{fieldErrors.color}</span>}
+              </div>
+              <div className="additem-field">
+                <label htmlFor="additem-season">Season</label>
+                <select id="additem-season" className="additem-input" value={season} onChange={(e) => setSeason(e.target.value)}>
+                  <option value="">Select season</option>
+                  {seasons.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+                {fieldErrors.season && <span className="additem-inline-error">{fieldErrors.season}</span>}
+              </div>
+              <div className="additem-field">
+                <label htmlFor="additem-style">Style</label>
+                <select id="additem-style" className="additem-input" value={style} onChange={(e) => setStyle(e.target.value)}>
+                  <option value="">Select style</option>
+                  {styles.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+                {fieldErrors.style && <span className="additem-inline-error">{fieldErrors.style}</span>}
+              </div>
+            </div>
+            <div className="additem-field additem-field--full">
+              <label htmlFor="additem-notes">Notes (optional)</label>
+              <textarea
+                id="additem-notes"
+                placeholder="Brand, fit, warmth…"
+                className="additem-textarea"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+              />
+            </div>
+          </div>
 
-          <label>Color</label>
-          <select className="additem-input" value={color} onChange={(e) => setColor(e.target.value)}>
-            <option value="">Select color</option>
-            {colors.map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
-          {fieldErrors.color && <p className="additem-inline-error">{fieldErrors.color}</p>}
-
-          <label>Season</label>
-          <select className="additem-input" value={season} onChange={(e) => setSeason(e.target.value)}>
-            <option value="">Select season</option>
-            {seasons.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
-          {fieldErrors.season && <p className="additem-inline-error">{fieldErrors.season}</p>}
-
-          <label>Style</label>
-          <select className="additem-input" value={style} onChange={(e) => setStyle(e.target.value)}>
-            <option value="">Select style</option>
-            {styles.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
-          {fieldErrors.style && <p className="additem-inline-error">{fieldErrors.style}</p>}
-
-          <label>Notes (optional)</label>
-          <textarea
-            placeholder="Brand, fit, warmth level..."
-            className="additem-textarea"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-          />
-
-          {error && <p className="additem-inline-error">{error}</p>}
-          <button type="submit" className="button-primary additem-button" disabled={submitLoading}>
-            {submitLoading ? "Saving..." : isEdit ? "Update Item" : "Save Item"}
-          </button>
+          {error && <p className="additem-inline-error additem-error-block" role="alert">{error}</p>}
+          <div className="additem-actions">
+            <button type="button" className="button-secondary" onClick={() => navigate("/dashboard")}>
+              Cancel
+            </button>
+            <button type="submit" className="button-primary additem-button" disabled={submitLoading}>
+              {submitLoading ? "Saving…" : isEdit ? "Update Item" : "Save Item"}
+            </button>
+          </div>
         </form>
       </div>
     </div>
