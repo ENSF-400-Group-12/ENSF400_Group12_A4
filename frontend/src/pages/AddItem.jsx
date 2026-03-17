@@ -119,13 +119,14 @@ function AddItem() {
       const res = await authFetch("/api/items", { method: "POST", body: form });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError(data.error || "Save failed.");
+        const msg = res.status === 401 ? "Session expired. Please log in again." : (data.error || "Save failed.");
+        setError(msg);
         setSubmitLoading(false);
         return;
       }
       navigate("/dashboard");
     } catch (err) {
-      setError("Something went wrong. Please try again.");
+      setError(err.message || "Something went wrong. Please try again.");
       setSubmitLoading(false);
     }
   };

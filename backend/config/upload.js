@@ -14,7 +14,8 @@ const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, uploadsDir),
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname) || '.jpg';
-    const safe = `${req.session.userId}-${Date.now()}${ext}`;
+    const uid = (req.session && req.session.userId) != null ? req.session.userId : '0';
+    const safe = `${uid}-${Date.now()}${ext}`;
     cb(null, safe);
   },
 });

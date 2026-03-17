@@ -25,7 +25,11 @@ app.use(cors({
   },
   credentials: true,
 }));
-app.use(express.json());
+// Do not parse body as JSON for multipart (leave stream for multer)
+app.use((req, res, next) => {
+  if (req.is('multipart/form-data')) return next();
+  express.json()(req, res, next);
+});
 app.use(cookieParser());
 app.use(session({
   secret: process.env.SESSION_SECRET || 'closetai-dev-secret-change-in-production',

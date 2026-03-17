@@ -135,7 +135,10 @@ router.post('/', (req, res, next) => {
       }
     );
     const idResult = db.exec('SELECT last_insert_rowid() as id');
-    const id = idResult[0].values[0][0];
+    const id = (idResult && idResult[0] && idResult[0].values && idResult[0].values[0]) ? idResult[0].values[0][0] : null;
+    if (id == null) {
+      return res.status(500).json({ error: 'Item was not created. Please try again.' });
+    }
     persist();
     res.status(201).json({
       item: {
