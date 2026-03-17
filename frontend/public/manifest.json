@@ -3,12 +3,12 @@
   "name": "ClosetAI",
   "icons": [
     {
-      "src": "closetai-icon.png",
+      "src": "ClosetAI-logo-transparent.png",
       "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "closetai-icon.png",
+      "src": "ClosetAI-logo-transparent.png",
       "type": "image/png",
       "sizes": "512x512"
     }

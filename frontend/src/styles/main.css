@@ -44,7 +44,7 @@ body {
 }
 
 .nav-logo img {
-  height: 32px;
+  height: 44px;
   width: auto;
   display: block;
   object-fit: contain;
@@ -61,7 +61,7 @@ body {
     padding: 10px 16px;
   }
   .nav-logo img {
-    height: 28px;
+    height: 38px;
   }
   .nav-logo a {
     font-size: 1rem;

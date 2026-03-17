@@ -14,7 +14,7 @@ function Navbar() {
     <div className="navbar">
       <div className="nav-logo">
         <Link to="/dashboard">
-          <img src="/closetai-icon.png" alt="" aria-hidden="true" />
+          <img src="/ClosetAI-logo-transparent.png" alt="" aria-hidden="true" />
           <span>ClosetAI</span>
         </Link>
       </div>
