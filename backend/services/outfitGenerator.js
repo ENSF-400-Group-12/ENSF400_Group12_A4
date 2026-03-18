@@ -6,7 +6,7 @@
 
 const { getDb } = require('../db/connection');
 
-// Item types grouped by outfit slot for selection
+/** Item types grouped by outfit slot for selection. */
 const SLOT_TYPES = {
   top: ['Shirt', 'T-Shirt', 'Hoodie', 'Sweater', 'Blazer', 'Dress'],
   bottom: ['Pants', 'Jeans', 'Shorts', 'Skirt'],
@@ -14,7 +14,9 @@ const SLOT_TYPES = {
   outerwear: ['Jacket', 'Coat'],
 };
 
+/** Slots that must be filled for a valid outfit. */
 const REQUIRED_SLOTS = ['top', 'bottom', 'shoes'];
+
 const INSUFFICIENT_MESSAGE =
   'Not enough items in your wardrobe to build an outfit. Add at least one top, one bottom, and one pair of shoes.';
 
@@ -38,7 +40,7 @@ function slotForType(type) {
 
 /**
  * Score an item for a given occasion and vibe. Higher = better match.
- * Uses item.style and item.color; base score 50, bonuses for style/vibe/occasion match.
+ * Base score 50; bonuses for style/vibe match and occasion-appropriate style/color.
  */
 function scoreItem(item, occasion, vibe) {
   let score = 50;
@@ -73,6 +75,7 @@ function formatItemLabel(item) {
   return item.type + (item.color ? ` (${item.color})` : '');
 }
 
+/** Build a short explanation string for the selected outfit. */
 function buildExplanation(selected, occasion, vibe) {
   const parts = ['top', 'bottom', 'shoes', 'outerwear']
     .map((slot) => selected[slot] && formatItemLabel(selected[slot]))
@@ -81,7 +84,7 @@ function buildExplanation(selected, occasion, vibe) {
   return `This ${occasion || 'outfit'} fits a ${vibe || 'relaxed'} vibe: ${list}. The pieces work together for the occasion.`;
 }
 
-/** Pick the single best item from a slot array by score. */
+/** Pick the single best item from a slot array by occasion/vibe score. */
 function pickBestForSlot(items, occasion, vibe) {
   if (!items.length) return null;
   const scored = items.map((item) => ({ item, score: scoreItem(item, occasion, vibe) }));
