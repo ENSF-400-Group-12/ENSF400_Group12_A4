@@ -208,7 +208,10 @@ function AddItem() {
       }
       navigate("/dashboard");
     } catch (err) {
-      setError(err.message || "Something went wrong. Please try again.");
+      const msg = err.name === "TypeError" && (err.message === "Failed to fetch" || err.message?.includes("fetch"))
+        ? "Could not reach the server. Start the backend and try again."
+        : (err.message || "Something went wrong. Please try again.");
+      setError(msg);
       setSubmitLoading(false);
     }
   };
