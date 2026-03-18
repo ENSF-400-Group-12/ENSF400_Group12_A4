@@ -859,9 +859,11 @@ body.signup-page-open {
 }
 
 .dashboard-message {
-  margin-top: 24px;
+  margin-top: 28px;
+  margin-bottom: 8px;
   text-align: center;
   color: #6a5a4a;
+  line-height: 1.5;
 }
 .dashboard-error {
   color: #b34a4a;
@@ -877,7 +879,7 @@ body.signup-page-open {
 }
 .dashboard-empty-text {
   color: var(--auth-text-muted, #6a5a4a);
-  margin: 0 0 20px;
+  margin: 0 0 24px;
   font-size: 1rem;
   line-height: 1.5;
   max-width: 320px;
@@ -969,7 +971,7 @@ body.signup-page-open {
   box-shadow: 0 4px 24px rgba(26,26,26,0.06);
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
 }
 
 @media (max-width: 640px) {
@@ -998,13 +1000,14 @@ body.signup-page-open {
 .generate-subtext {
   font-size: 0.875rem;
   color: var(--auth-text-muted, #6a5a4a);
-  margin: 0 0 8px;
+  margin: 0 0 4px;
+  line-height: 1.45;
 }
 
 .generate-field {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .generate-field label,
@@ -1070,7 +1073,138 @@ body.signup-page-open {
 }
 
 .generate-button {
-  margin-top: 8px;
+  margin-top: 12px;
+  align-self: flex-start;
+}
+
+.generate-feedback {
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: rgba(180, 60, 50, 0.08);
+  border: 1px solid rgba(180, 60, 50, 0.2);
+}
+
+.generate-error {
+  margin: 0 0 8px;
+  font-size: 0.875rem;
+  color: #a03028;
+}
+
+.generate-cta {
+  margin: 0;
+  font-size: 0.8125rem;
+}
+
+.generate-cta a {
+  color: #8b5e3c;
+  font-weight: 500;
+}
+
+/* Results page — outfit recommendation display */
+.results-page {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 24px 16px 40px;
+}
+
+.results-page h1 {
+  font-size: 1.375rem;
+  font-weight: 600;
+  margin: 0 0 20px;
+  color: var(--auth-text, #2a2a2a);
+}
+
+.results-empty,
+.results-error {
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--auth-text-muted, #6a5a4a);
+  margin: 0 0 20px;
+}
+
+.results-error {
+  color: #a03028;
+}
+
+.results-cta {
+  margin: 0 0 20px;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.results-cta a {
+  color: #8b5e3c;
+  font-weight: 500;
+}
+
+.results-actions {
+  margin-top: 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.results-actions--stacked {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.results-actions--stacked .button-primary,
+.results-actions--stacked .button-secondary {
+  display: inline-block;
+  text-align: center;
+  text-decoration: none;
+}
+
+.outfit-card {
+  padding: 24px;
+  margin: 0 0 16px;
+}
+
+.outfit-card h2 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0 0 8px;
+  color: var(--auth-text, #2a2a2a);
+}
+
+.outfit-meta {
+  font-size: 0.8125rem;
+  color: var(--auth-text-muted, #6a5a4a);
+  margin: 0 0 16px;
+}
+
+.outfit-items {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.outfit-item {
+  font-size: 0.9375rem;
+  color: var(--auth-text, #2a2a2a);
+}
+
+.outfit-item-type {
+  font-weight: 500;
+}
+
+.outfit-item-detail {
+  color: var(--auth-text-muted, #6a5a4a);
+  font-weight: 400;
+}
+
+.explanation {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--auth-text-muted, #6a5a4a);
+  margin: 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--auth-border, rgba(0,0,0,0.06));
 }
 
 /* Add Item Page — photo-first, premium */
@@ -1327,7 +1461,7 @@ body.signup-page-open {
   gap: 12px;
   justify-content: flex-end;
   flex-wrap: wrap;
-  margin-top: 8px;
+  margin-top: 24px;
   align-items: center;
 }
 
