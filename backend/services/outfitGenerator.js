@@ -82,6 +82,8 @@ function scoreItem(item, occasion, vibe) {
   if (occasionLower === 'formal' && (style.includes('formal') || style.includes('classy') || style.includes('business'))) score += 20;
   if (occasionLower === 'casual' && (style.includes('casual') || style.includes('streetwear'))) score += 20;
   if (occasionLower === 'work' && (style.includes('formal') || style.includes('classy') || style.includes('minimalist') || style.includes('business'))) score += 15;
+  if (occasionLower === 'date night' && (style.includes('formal') || style.includes('classy') || style.includes('smart casual'))) score += 15;
+  if (occasionLower === 'outdoor' && (style.includes('sport') || style.includes('athletic') || style.includes('casual'))) score += 12;
 
   return score;
 }
@@ -151,6 +153,11 @@ function generateOutfit(userId, occasion, vibe) {
     shoes: pickBestForSlot(bySlot.shoes, occasion, vibe),
     outerwear: bySlot.outerwear.length ? pickBestForSlot(bySlot.outerwear, occasion, vibe) : null,
   };
+
+  const isDressAsTop = selected.top && (selected.top.type || '').toLowerCase().includes('dress');
+  if (isDressAsTop) {
+    selected.bottom = null;
+  }
 
   const outfitItems = [selected.top, selected.bottom, selected.shoes, selected.outerwear].filter(Boolean);
   const explanation = buildExplanation(selected, occasion, vibe);
