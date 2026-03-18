@@ -80,7 +80,7 @@ function Login() {
       <div className="login-background">
 
         <img
-          src="/closetpic.jpg"
+          src="/closetpic.png"
           alt="Closet wardrobe"
         />
 
