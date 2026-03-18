@@ -41,12 +41,18 @@ function Dashboard() {
       const res = await authFetch("/api/items");
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Failed to load wardrobe.");
+        const msg = res.status === 401
+          ? "Please log in to view your wardrobe."
+          : (data.error || "Failed to load wardrobe.");
+        throw new Error(msg);
       }
       const data = await res.json();
       setItems(data.items || []);
     } catch (err) {
-      setError(err.message || "Failed to load wardrobe.");
+      const message = err.message || "Failed to load wardrobe.";
+      setError(err.name === "TypeError" && err.message?.includes("fetch")
+        ? "Could not reach the server. Start the backend (e.g. npm start in backend) and try again."
+        : message);
       setItems([]);
     } finally {
       setLoading(false);
