@@ -45,7 +45,7 @@ function GenerateOutfit() {
         method: "POST",
         body: JSON.stringify({ occasion, vibe }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         const msg = data.error || "Generation failed. Try again.";
         if (res.status === 401) {
@@ -58,7 +58,10 @@ function GenerateOutfit() {
       }
       navigate("/results", { state: { outfit: data } });
     } catch (err) {
-      setError("Could not reach the server. Check that the backend is running.");
+      const msg = err.name === "TypeError" && (err.message === "Failed to fetch" || err.message?.includes("fetch"))
+        ? "Could not reach the server. Start the backend and try again."
+        : "Could not reach the server. Check that the backend is running.";
+      setError(msg);
       setLoading(false);
     }
   }

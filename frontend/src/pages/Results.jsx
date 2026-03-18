@@ -15,13 +15,15 @@ function Results() {
         <p className="results-empty">
           Generate an outfit first by choosing an occasion and vibe on the Generate page.
         </p>
-        <button
-          type="button"
-          className="button-primary"
-          onClick={() => navigate("/generate")}
-        >
-          Generate Outfit
-        </button>
+        <div className="results-actions">
+          <button
+            type="button"
+            className="button-primary"
+            onClick={() => navigate("/generate")}
+          >
+            Generate Outfit
+          </button>
+        </div>
       </div>
     );
   }
