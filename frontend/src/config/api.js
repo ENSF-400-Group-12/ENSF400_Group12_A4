@@ -1,9 +1,12 @@
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8080';
+const API_BASE =
+  process.env.REACT_APP_API_URL !== undefined && process.env.REACT_APP_API_URL !== ''
+    ? process.env.REACT_APP_API_URL
+    : '';
 
 export function apiUrl(path) {
-  const base = API_BASE.replace(/\/$/, '');
+  const base = (API_BASE || '').replace(/\/$/, '');
   const p = path.startsWith('/') ? path : `/${path}`;
-  return `${base}${p}`;
+  return base ? `${base}${p}` : p;
 }
 
 export async function authFetch(path, options = {}) {
