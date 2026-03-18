@@ -16,7 +16,7 @@ function initSchema(database) {
       created_at TEXT DEFAULT (datetime('now'))
     )
   `);
-  database.run('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email)');
+  database.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email)`);
 }
 
 function ensureWardrobeSchema(database) {
@@ -34,7 +34,7 @@ function ensureWardrobeSchema(database) {
       FOREIGN KEY (user_id) REFERENCES users(id)
     )
   `);
-  database.run('CREATE INDEX IF NOT EXISTS idx_wardrobe_items_user_id ON wardrobe_items(user_id)');
+  database.run(`CREATE INDEX IF NOT EXISTS idx_wardrobe_items_user_id ON wardrobe_items(user_id)`);
 }
 
 function persist() {
