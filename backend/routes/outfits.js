@@ -1,3 +1,7 @@
+/**
+ * Protected outfit generation API.
+ * POST /api/outfits/generate — body: { occasion, vibe }; returns { items, explanation, occasion, vibe } or { error }.
+ */
 const express = require('express');
 const requireAuth = require('../middleware/requireAuth');
 const { generateOutfit } = require('../services/outfitGenerator');
