@@ -1,54 +1,42 @@
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 function Navbar() {
-
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
 
-  function handleLogout() {
-    navigate("/");
+  async function handleLogout() {
+    await logout();
+    navigate("/", { replace: true });
   }
 
-  const userRole = "user"; // change to "admin" to test
-
   return (
-
     <div className="navbar">
-
-      {/* Left side logo */}
       <div className="nav-logo">
-        ClosetAI
+        <Link to="/dashboard">
+          <img src="/ClosetAI-logo-transparent.png" alt="" aria-hidden="true" />
+          <span>ClosetAI</span>
+        </Link>
       </div>
 
-      {/* Right side navigation */}
       <div className="nav-links">
-
         <Link to="/dashboard">Dashboard</Link>
-
         <Link to="/add-item">Add Item</Link>
-
         <Link to="/generate">Generate Outfit</Link>
-
         <Link to="/favorites">Favorites</Link>
-
-        {userRole === "admin" && (
-          <Link to="/admin">Admin</Link>
-        )}
-
+        <Link to="/admin">Admin</Link>
         <Link to="/profile">Profile</Link>
-
-        <button
-          className="logout-button"
-          onClick={handleLogout}
-        >
+        {user?.email && (
+          <span className="nav-user-email" title={user.email}>
+            {user.email}
+          </span>
+        )}
+        <button type="button" className="logout-button" onClick={handleLogout}>
           Logout
         </button>
-
       </div>
-
     </div>
-
   );
-
 }
 
 export default Navbar;

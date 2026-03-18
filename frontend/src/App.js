@@ -1,11 +1,11 @@
-// React Router imports
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
+import AppLayout from "./components/AppLayout";
 
-// Page imports
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
-
 import AddItem from "./pages/AddItem";
 import GenerateOutfit from "./pages/GenerateOutfit";
 import Results from "./pages/Results";
@@ -13,48 +13,35 @@ import Favorites from "./pages/Favorites";
 import Admin from "./pages/Admin";
 import Profile from "./pages/Profile";
 
-import Navbar from "./components/Navbar";
-
 function App() {
-
   return (
-
     <Router>
+      <AuthProvider>
+        <Routes>
+          <Route path="/" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
 
-      <Routes>
+          <Route
+            element={
+              <ProtectedRoute>
+                <AppLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="add-item" element={<AddItem />} />
+            <Route path="generate" element={<GenerateOutfit />} />
+            <Route path="results" element={<Results />} />
+            <Route path="favorites" element={<Favorites />} />
+            <Route path="admin" element={<Admin />} />
+            <Route path="profile" element={<Profile />} />
+          </Route>
 
-        {/* Pages WITHOUT navbar */}
-        <Route path="/" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-
-        {/* Dashboard */}
-        <Route
-          path="/dashboard"
-          element={
-            <>
-              <Navbar />
-              <div className="container">
-                <Dashboard />
-              </div>
-            </>
-          }
-        />
-
-      
-        <Route path="/add-item" element={<AddItem />} />
-        <Route path="/generate" element={<GenerateOutfit />} />
-        <Route path="/results" element={<Results />} />
-        <Route path="/favorites" element={<Favorites />} />
-        <Route path="/admin" element={<Admin />} />
-        <Route path="/profile" element={<Profile />} />
-
-
-      </Routes>
-
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </AuthProvider>
     </Router>
-
   );
-
 }
 
 export default App;
