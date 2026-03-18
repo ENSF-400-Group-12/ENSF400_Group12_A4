@@ -856,6 +856,116 @@ body {
   margin-top: 8px;
 }
 
+.generate-feedback {
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: rgba(180, 60, 50, 0.08);
+  border: 1px solid rgba(180, 60, 50, 0.2);
+}
+
+.generate-error {
+  margin: 0 0 8px;
+  font-size: 0.875rem;
+  color: #a03028;
+}
+
+.generate-cta {
+  margin: 0;
+  font-size: 0.8125rem;
+}
+
+.generate-cta a {
+  color: #8b5e3c;
+  font-weight: 500;
+}
+
+/* Results page — outfit recommendation display */
+.results-page {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 24px 16px 40px;
+}
+
+.results-page h1 {
+  font-size: 1.375rem;
+  font-weight: 600;
+  margin: 0 0 20px;
+  color: var(--auth-text, #2a2a2a);
+}
+
+.results-empty,
+.results-error {
+  font-size: 0.9375rem;
+  color: var(--auth-text-muted, #6a5a4a);
+  margin: 0 0 16px;
+}
+
+.results-error {
+  color: #a03028;
+}
+
+.results-cta {
+  margin: 0 0 20px;
+  font-size: 0.875rem;
+}
+
+.results-cta a {
+  color: #8b5e3c;
+  font-weight: 500;
+}
+
+.results-actions {
+  margin-top: 24px;
+}
+
+.outfit-card {
+  padding: 24px;
+  margin: 0 0 16px;
+}
+
+.outfit-card h2 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0 0 8px;
+  color: var(--auth-text, #2a2a2a);
+}
+
+.outfit-meta {
+  font-size: 0.8125rem;
+  color: var(--auth-text-muted, #6a5a4a);
+  margin: 0 0 16px;
+}
+
+.outfit-items {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.outfit-item {
+  font-size: 0.9375rem;
+  color: var(--auth-text, #2a2a2a);
+}
+
+.outfit-item-type {
+  font-weight: 500;
+}
+
+.outfit-item-detail {
+  color: var(--auth-text-muted, #6a5a4a);
+  font-weight: 400;
+}
+
+.explanation {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--auth-text-muted, #6a5a4a);
+  margin: 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--auth-border, rgba(0,0,0,0.06));
+}
+
 /* Add Item Page — photo-first, premium */
 .additem-page {
   display: flex;
