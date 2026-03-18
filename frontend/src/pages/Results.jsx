@@ -35,17 +35,31 @@ function Results() {
           {outfit.error}
         </p>
         {isWardrobe && (
-          <p className="results-cta">
-            <Link to="/add-item">Add items</Link> or <Link to="/dashboard">view your wardrobe</Link>, then try again.
-          </p>
+          <>
+            <p className="results-cta">
+              Add at least one top, one bottom, and one pair of shoes to generate an outfit.
+            </p>
+            <div className="results-actions results-actions--stacked">
+              <Link to="/add-item" className="button-primary">
+                Add items to wardrobe
+              </Link>
+              <Link to="/dashboard" className="button-secondary">
+                View wardrobe
+              </Link>
+            </div>
+          </>
         )}
-        <button
-          type="button"
-          className="button-primary"
-          onClick={() => navigate("/generate")}
-        >
-          Try Again
-        </button>
+        {!isWardrobe && (
+          <div className="results-actions">
+            <button
+              type="button"
+              className="button-primary"
+              onClick={() => navigate("/generate")}
+            >
+              Try Again
+            </button>
+          </div>
+        )}
       </div>
     );
   }

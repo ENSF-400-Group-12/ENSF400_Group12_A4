@@ -918,6 +918,20 @@ body {
   margin-top: 24px;
 }
 
+.results-actions--stacked {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.results-actions--stacked .button-primary,
+.results-actions--stacked .button-secondary {
+  display: inline-block;
+  text-align: center;
+  text-decoration: none;
+}
+
 .outfit-card {
   padding: 24px;
   margin: 0 0 16px;
