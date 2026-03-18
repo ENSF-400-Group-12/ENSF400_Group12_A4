@@ -20,6 +20,27 @@ const REQUIRED_SLOTS = ['top', 'bottom', 'shoes'];
 const INSUFFICIENT_MESSAGE =
   'Not enough items in your wardrobe to build an outfit. Add at least one top, one bottom, and one pair of shoes.';
 
+/**
+ * Frontend vibes → backend style keywords for scoring.
+ * Item style is stored from STYLES (Casual, Formal, Sport, etc.); vibes like "Sporty" / "Classy" map here.
+ */
+const VIBE_STYLE_KEYWORDS = {
+  casual: ['casual', 'smart casual'],
+  formal: ['formal', 'business', 'classy'],
+  minimalist: ['minimalist', 'minimal'],
+  sporty: ['sport', 'athletic', 'sporty'],
+  classy: ['formal', 'classy', 'business', 'smart casual'],
+  streetwear: ['streetwear'],
+  vintage: ['vintage'],
+  emo: ['vintage'], // no canonical "emo" style; vintage/alt overlap; also use color hint below
+};
+
+/** Vibes that get a bonus when item color matches (e.g. dark for emo, neutral for minimalist). */
+const VIBE_COLOR_HINTS = {
+  emo: /black|gray|grey|navy|burgundy|dark/i,
+  minimalist: /black|white|gray|grey|navy|beige|cream/i,
+};
+
 function rowsToObjects(execResult) {
   if (!execResult.length || !execResult[0].values.length) return [];
   const { columns, values } = execResult[0];
@@ -40,19 +61,27 @@ function slotForType(type) {
 
 /**
  * Score an item for a given occasion and vibe. Higher = better match.
- * Base score 50; bonuses for style/vibe match and occasion-appropriate style/color.
+ * Uses VIBE_STYLE_KEYWORDS so frontend vibes (Sporty, Classy, Emo, etc.) map to backend style values.
  */
 function scoreItem(item, occasion, vibe) {
   let score = 50;
   const style = (item.style || '').toLowerCase();
-  const vibeLower = (vibe || '').toLowerCase();
+  const vibeLower = (vibe || '').trim().toLowerCase();
   const occasionLower = (occasion || '').toLowerCase();
+  const color = (item.color || '').toLowerCase();
 
-  if (vibeLower && style.includes(vibeLower)) score += 25;
-  if (occasionLower === 'formal' && (style.includes('formal') || style.includes('classy'))) score += 20;
+  const styleKeywords = VIBE_STYLE_KEYWORDS[vibeLower];
+  if (styleKeywords?.length && styleKeywords.some((kw) => style.includes(kw))) {
+    score += 25;
+  }
+  const colorHint = VIBE_COLOR_HINTS[vibeLower];
+  if (colorHint && color.match(colorHint)) {
+    score += 12;
+  }
+
+  if (occasionLower === 'formal' && (style.includes('formal') || style.includes('classy') || style.includes('business'))) score += 20;
   if (occasionLower === 'casual' && (style.includes('casual') || style.includes('streetwear'))) score += 20;
-  if (occasionLower === 'work' && (style.includes('formal') || style.includes('classy') || style.includes('minimalist'))) score += 15;
-  if (vibeLower === 'minimalist' && (style.includes('minimal') || item.color?.toLowerCase().match(/black|white|gray|grey|navy|beige/))) score += 10;
+  if (occasionLower === 'work' && (style.includes('formal') || style.includes('classy') || style.includes('minimalist') || style.includes('business'))) score += 15;
 
   return score;
 }
