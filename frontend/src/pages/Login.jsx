@@ -108,6 +108,24 @@ function Login() {
             <Link to="/signup"> Create one</Link>
           </p>
         </div>
+
+      </div>
+
+
+      {/* Background image */}
+      <div className="login-background">
+
+        <img
+          src="/closetpic.png"
+          alt="Closet wardrobe"
+        />
+
+      </div>
+
+
+      {/* Footer */}
+      <div className="login-footer">
+        ENSF 400 — Group 12 Project
       </div>
 
       <div className="login-footer">ENSF 400 — Group 12 Project</div>
