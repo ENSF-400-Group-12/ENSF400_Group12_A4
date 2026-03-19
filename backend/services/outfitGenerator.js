@@ -23,12 +23,12 @@ const INSUFFICIENT_MESSAGE =
  * Item style is stored from STYLES (Casual, Formal, Sport, etc.); vibes like "Sporty" / "Classy" map here.
  */
 const VIBE_STYLE_KEYWORDS = {
-  casual: ['casual', 'smart casual'],
+  casual: ['casual', 'smart casual', 'streetwear'],
   formal: ['formal', 'business', 'classy'],
   minimalist: ['minimalist', 'minimal'],
   sporty: ['sport', 'athletic', 'sporty'],
   classy: ['formal', 'classy', 'business', 'smart casual'],
-  streetwear: ['streetwear'],
+  streetwear: ['streetwear', 'casual'],
   vintage: ['vintage'],
   emo: ['vintage'], // no canonical "emo" style; vintage/alt overlap; also use color hint below
 };
@@ -82,6 +82,8 @@ function scoreItem(item, occasion, vibe) {
   if (occasionLower === 'work' && (style.includes('formal') || style.includes('classy') || style.includes('minimalist') || style.includes('business'))) score += 15;
   if (occasionLower === 'date night' && (style.includes('formal') || style.includes('classy') || style.includes('smart casual'))) score += 15;
   if (occasionLower === 'outdoor' && (style.includes('sport') || style.includes('athletic') || style.includes('casual'))) score += 12;
+  if (occasionLower === 'weekend' && (style.includes('casual') || style.includes('streetwear') || style.includes('sport'))) score += 15;
+  if (occasionLower === 'school' && (style.includes('casual') || style.includes('minimalist') || style.includes('smart casual') || style.includes('sport'))) score += 15;
 
   return score;
 }
