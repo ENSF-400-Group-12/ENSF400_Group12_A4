@@ -1184,9 +1184,56 @@ body.signup-page-open {
   margin-bottom: 16px;
 }
 
+.outfit-items--grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
 .outfit-item {
   font-size: 0.9375rem;
   color: var(--auth-text, #2a2a2a);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.outfit-items--grid .outfit-item {
+  text-align: center;
+}
+
+.outfit-item-image-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  background: #f2ebe5;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.outfit-item-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.outfit-item-no-image {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  color: #9a8a7a;
+  font-size: 12px;
+}
+
+.outfit-item-no-image.visible {
+  display: flex;
+}
+
+.outfit-item-info {
+  font-size: 0.875rem;
 }
 
 .outfit-item-type {
