@@ -19,6 +19,12 @@ function Signup() {
     }
   }, [authLoading, user, navigate]);
 
+  // Lock body scroll so the signup page never shows a scrollbar
+  useEffect(() => {
+    document.body.classList.add("signup-page-open");
+    return () => document.body.classList.remove("signup-page-open");
+  }, []);
+
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
@@ -57,12 +63,22 @@ function Signup() {
 
   return (
     <div className="auth-theme signup-page">
+      <div className="auth-page-background" aria-hidden="true">
+        <img src="/closetpic.png" alt="" />
+      </div>
       <div className="signup-card">
-        <img
-          src="/closetai-horizontal.png"
-          alt="ClosetAI"
-          className="auth-logo auth-logo-inline"
-        />
+        <div className="auth-logo-lockup">
+          <img
+            src="/ClosetAI-logo-transparent.png"
+            alt=""
+            className="auth-logo-icon"
+          />
+          <img
+            src="/ClosetAI-transparent.png"
+            alt="ClosetAI"
+            className="auth-logo-wordmark"
+          />
+        </div>
         <h1>Create Your ClosetAI Account</h1>
         <p className="signup-subtext">
           Start building your digital wardrobe and get AI outfit recommendations.

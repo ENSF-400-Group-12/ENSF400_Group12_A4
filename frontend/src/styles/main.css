@@ -207,10 +207,9 @@ body {
   box-sizing: border-box;
 }
 
-/* Full-bleed background: closetpic.png.
-   For sharp look on big screens: use a high-res image (e.g. 2560px or 3840px wide)
-   so the browser scales down instead of up. Replace public/closetpic.png with that file. */
-.login-background {
+/* Full-bleed background image (login + signup). Uses closetpic.png.
+   For sharp look on big screens: use a high-res image (e.g. 2560px or 3840px wide). */
+.auth-page-background {
   position: fixed;
   inset: 0;
   z-index: 0;
@@ -218,7 +217,7 @@ body {
   pointer-events: none;
 }
 
-.login-background img {
+.auth-page-background img {
   display: block;
   width: 100%;
   height: 100%;
@@ -229,6 +228,11 @@ body {
 
 .auth-theme.login-page .login-left,
 .auth-theme.login-page .login-right {
+  position: relative;
+  z-index: 1;
+}
+
+.auth-theme.signup-page .signup-card {
   position: relative;
   z-index: 1;
 }
@@ -519,14 +523,24 @@ body {
 }
 
 /* ---------------- SIGNUP PAGE ---------------- */
+/* Lock body scroll when signup is mounted (class added in Signup.jsx) */
+body.signup-page-open {
+  overflow: hidden;
+  height: 100vh;
+  height: 100dvh;
+}
 
 .auth-theme.signup-page {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
   padding: 24px 20px 40px;
-  background: var(--auth-bg);
+  position: relative;
+  background: transparent;
+  overflow: hidden;
 }
 
 .auth-theme .signup-card {
@@ -540,6 +554,10 @@ body {
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+
+.auth-theme .signup-card .auth-logo-lockup {
+  align-self: center;
 }
 
 .auth-theme .signup-card h1 {
@@ -558,10 +576,8 @@ body {
 
 @media (max-width: 600px) {
   .auth-theme.signup-page {
-    padding: 16px 12px 24px;
+    padding: 16px 12px;
     align-items: flex-start;
-    min-height: 100vh;
-    min-height: 100dvh;
   }
   .auth-theme .signup-card {
     max-width: 100%;

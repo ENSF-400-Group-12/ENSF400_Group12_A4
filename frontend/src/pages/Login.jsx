@@ -56,7 +56,7 @@ function Login() {
 
   return (
     <div className="auth-theme login-page">
-      <div className="login-background" aria-hidden="true">
+      <div className="auth-page-background" aria-hidden="true">
         <img src="/closetpic.png" alt="" />
       </div>
       <div className="login-left">
