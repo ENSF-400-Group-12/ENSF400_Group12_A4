@@ -3,7 +3,9 @@ const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const session = require('express-session');
+const path = require('path');
 const authRouter = require('./routes/auth');
+const itemsRouter = require('./routes/items');
 const { initDb } = require('./db/connection');
 
 const app = express();
@@ -23,7 +25,11 @@ app.use(cors({
   },
   credentials: true,
 }));
-app.use(express.json());
+// Do not parse body as JSON for multipart (leave stream for multer)
+app.use((req, res, next) => {
+  if (req.is('multipart/form-data')) return next();
+  express.json()(req, res, next);
+});
 app.use(cookieParser());
 app.use(session({
   secret: process.env.SESSION_SECRET || 'closetai-dev-secret-change-in-production',
@@ -41,6 +47,8 @@ app.get('/', (req, res) => {
 });
 
 app.use('/api/auth', authRouter);
+app.use('/api/items', itemsRouter);
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 async function start() {
   try {

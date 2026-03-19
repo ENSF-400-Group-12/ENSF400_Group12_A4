@@ -1,78 +1,77 @@
-// Form for generating AI outfit recommendations
+// Form for generating outfit recommendations — UI only, no backend logic yet
+
+import { useState } from "react";
+
+const OCCASIONS = [
+  "Casual",
+  "Work",
+  "School",
+  "Date Night",
+  "Formal",
+  "Weekend",
+  "Outdoor",
+];
+
+const VIBES = [
+  "Casual",
+  "Formal",
+  "Minimalist",
+  "Sporty",
+  "Classy",
+  "Streetwear",
+  "Vintage",
+  "Emo",
+];
 
 function GenerateOutfit() {
+  const [occasion, setOccasion] = useState("");
+  const [vibe, setVibe] = useState(null);
 
   return (
-
     <div className="generate-page">
-
       <div className="generate-card">
-
-        <h1>Generate Outfit</h1>
-
+        <h1 className="generate-title">Generate Outfit</h1>
         <p className="generate-subtext">
-          Choose the occasion and preferences for your outfit.
+          Pick an occasion and the vibe you want.
         </p>
 
-        {/* Occasion */}
-
-        <label>Occasion</label>
-
-        <select className="generate-input">
-          <option>Casual</option>
-          <option>School</option>
-          <option>Work</option>
-          <option>Formal</option>
-        </select>
-
-        {/* Weather */}
-
-        <label>Weather Context (optional)</label>
-
-        <input
-          type="text"
-          placeholder="Cold, rainy, warm..."
-          className="generate-input"
-        />
-
-        <label className="checkbox-row">
-          <input type="checkbox" />
-          Use current weather
-        </label>
-
-        {/* Style Preferences */}
-
-        <h3 className="generate-section-title">
-          Style Preferences
-        </h3>
-
-        <div className="style-options">
-
-          <label>
-            <input type="checkbox" />
-            More Formal
-          </label>
-
-          <label>
-            <input type="checkbox" />
-            Layering
-          </label>
-
-          <label>
-            <input type="checkbox" />
-            Neutral Colors
-          </label>
-
+        <div className="generate-field">
+          <label htmlFor="generate-occasion">Occasion</label>
+          <select
+            id="generate-occasion"
+            className="generate-input"
+            value={occasion}
+            onChange={(e) => setOccasion(e.target.value)}
+          >
+            <option value="">Select occasion</option>
+            {OCCASIONS.map((opt) => (
+              <option key={opt} value={opt}>{opt}</option>
+            ))}
+          </select>
         </div>
 
-        <button className="button-primary generate-button">
+        <div className="generate-field">
+          <span className="generate-label">Style / Vibe</span>
+          <p className="generate-hint">Choose one</p>
+          <div className="generate-chips" role="group" aria-label="Style or vibe">
+            {VIBES.map((opt) => (
+              <button
+                key={opt}
+                type="button"
+                className={`generate-chip ${vibe === opt ? "generate-chip--selected" : ""}`}
+                onClick={() => setVibe(vibe === opt ? null : opt)}
+              >
+                {opt}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <button type="button" className="button-primary generate-button">
           Generate Outfit
         </button>
-
       </div>
-
     </div>
-
   );
 }
 
