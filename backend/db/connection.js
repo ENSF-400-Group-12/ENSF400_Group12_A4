@@ -19,6 +19,24 @@ function initSchema(database) {
   database.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email)`);
 }
 
+function ensureWardrobeSchema(database) {
+  database.run(`
+    CREATE TABLE IF NOT EXISTS wardrobe_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      type TEXT NOT NULL,
+      color TEXT NOT NULL,
+      season TEXT NOT NULL,
+      style TEXT NOT NULL,
+      notes TEXT,
+      image_path TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    )
+  `);
+  database.run(`CREATE INDEX IF NOT EXISTS idx_wardrobe_items_user_id ON wardrobe_items(user_id)`);
+}
+
 function persist() {
   if (!db) return;
   if (!fs.existsSync(dataDir)) {
@@ -44,6 +62,7 @@ async function initDb() {
     initSchema(db);
     persist();
   }
+  ensureWardrobeSchema(db);
   return db;
 }
 
@@ -54,4 +73,4 @@ function getDb() {
   return db;
 }
 
-module.exports = { getDb, initSchema, initDb, persist };
+module.exports = { getDb, initSchema, ensureWardrobeSchema, initDb, persist };

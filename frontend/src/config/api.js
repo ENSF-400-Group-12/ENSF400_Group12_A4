@@ -8,13 +8,16 @@ export function apiUrl(path) {
 
 export async function authFetch(path, options = {}) {
   const url = apiUrl(path);
+  const headers = { ...options.headers };
+  if (options.body instanceof FormData) {
+    // Let browser set Content-Type with boundary for multipart
+  } else if (headers['Content-Type'] === undefined) {
+    headers['Content-Type'] = 'application/json';
+  }
   const res = await fetch(url, {
     ...options,
     credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
+    headers,
   });
   return res;
 }
