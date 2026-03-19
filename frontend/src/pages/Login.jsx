@@ -1,3 +1,7 @@
+/**
+ * Login page: branded background image, ClosetAI logo lockup (icon + wordmark),
+ * and redirect-after-login support.
+ */
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -52,13 +56,23 @@ function Login() {
 
   return (
     <div className="auth-theme login-page">
+      <div className="login-background" aria-hidden="true">
+        <img src="/closetpic.png" alt="" />
+      </div>
       <div className="login-left">
         <div className="hero-text">
-          <img
-            src="/closetai-horizontal.png"
-            alt="ClosetAI"
-            className="auth-logo"
-          />
+          <div className="auth-logo-lockup">
+            <img
+              src="/ClosetAI-logo-transparent.png"
+              alt=""
+              className="auth-logo-icon"
+            />
+            <img
+              src="/ClosetAI-transparent.png"
+              alt="ClosetAI"
+              className="auth-logo-wordmark"
+            />
+          </div>
           <h2 className="hero-heading">Style Smarter.</h2>
           <p className="site-description">
             Upload your wardrobe, generate AI-powered outfits,

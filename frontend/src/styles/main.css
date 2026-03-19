@@ -1,19 +1,36 @@
+/**
+ * Global and auth styles. Auth theme (login/signup) uses --auth-* variables.
+ * Login has full-bleed background; dashboard, generate, add-item, profile have
+ * responsive layouts and touch-friendly targets on mobile.
+ */
+
 /* Global styling */
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
 
 body {
   margin: 0;
   font-family: "Inter", sans-serif;
   background: #FBF9F6;
   color: #1A1A1A;
+  overflow-x: hidden;
 }
 
 /* Main container */
 
 .container {
-    max-width: 1400px;
-    margin: auto;
-    padding: 30px 40px;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 30px 40px;
+  box-sizing: border-box;
+}
 
+@media (max-width: 640px) {
+  .container {
+    padding: 16px 20px;
+  }
 }
 
 /* Navbar (branded app shell) */
@@ -50,33 +67,67 @@ body {
   object-fit: contain;
 }
 
+.nav-links {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  justify-content: flex-end;
+}
+
 .nav-links a {
-  margin-left: 20px;
+  margin-left: 0;
+  padding: 8px 6px;
   text-decoration: none;
   color: white;
+  font-size: 0.9375rem;
+  white-space: nowrap;
 }
 
 @media (max-width: 640px) {
   .navbar {
-    padding: 10px 16px;
+    padding: 10px 12px;
+    flex-wrap: wrap;
+    gap: 8px;
   }
   .nav-logo img {
-    height: 38px;
+    height: 36px;
   }
   .nav-logo a {
-    font-size: 1rem;
+    font-size: 0.9375rem;
+  }
+  .nav-links {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 4px;
+  }
+  .nav-links a {
+    padding: 8px 10px;
+    font-size: 0.875rem;
+  }
+  .nav-user-email {
+    max-width: 100px;
   }
 }
 
 .logout-button {
   margin-left: 16px;
   padding: 8px 16px;
+  min-height: 36px;
   background: transparent;
   color: white;
   border: 1px solid rgba(255,255,255,0.5);
   border-radius: 8px;
   cursor: pointer;
   font-size: 14px;
+}
+
+@media (max-width: 640px) {
+  .logout-button {
+    margin-left: 0;
+    min-height: 44px;
+    padding: 10px 14px;
+  }
 }
 
 .logout-button:hover {
@@ -150,10 +201,36 @@ body {
   gap: 32px;
   padding: 24px 20px 40px;
   position: relative;
-  background: var(--auth-bg);
+  background: transparent;
   max-width: 880px;
   margin: 0 auto;
   box-sizing: border-box;
+}
+
+/* Full-bleed background: closetpic.png.
+   For sharp look on big screens: use a high-res image (e.g. 2560px or 3840px wide)
+   so the browser scales down instead of up. Replace public/closetpic.png with that file. */
+.login-background {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.login-background img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  opacity: 0.28;
+}
+
+.auth-theme.login-page .login-left,
+.auth-theme.login-page .login-right {
+  position: relative;
+  z-index: 1;
 }
 
 @media (max-width: 900px) {
@@ -162,6 +239,60 @@ body {
     justify-items: stretch;
     padding: 24px 16px 36px;
     gap: 28px;
+  }
+}
+
+@media (max-width: 600px) {
+  .auth-theme.login-page {
+    padding: 16px 12px 80px;
+    gap: 20px;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+  .login-left {
+    padding: 8px 0;
+  }
+  .auth-theme.login-page .hero-text {
+    max-width: 100%;
+  }
+  .auth-logo-lockup {
+    margin-bottom: 16px;
+  }
+  .auth-logo-icon {
+    height: 48px;
+  }
+  .auth-logo-wordmark {
+    height: 34px;
+  }
+  .auth-theme .hero-heading {
+    font-size: 1.2rem;
+  }
+  .auth-theme .site-description {
+    font-size: 0.875rem;
+  }
+  .auth-theme .login-card {
+    max-width: 100%;
+    padding: 24px 20px;
+  }
+  .auth-theme .login-card h2 {
+    font-size: 1.35rem;
+  }
+  .auth-theme .input-field {
+    min-height: 44px;
+    padding: 12px 14px;
+    font-size: 16px;
+  }
+  .auth-theme .button-primary {
+    min-height: 48px;
+    padding: 14px 20px;
+  }
+  .auth-theme .signup-text a,
+  .auth-theme .signup-text {
+    padding: 4px 0;
+  }
+  .login-footer {
+    bottom: 12px;
+    font-size: 0.75rem;
   }
 }
 
@@ -180,6 +311,38 @@ body {
   gap: 0;
   max-width: 320px;
   width: 100%;
+}
+
+/* Icon + ClosetAI text image side by side (both transparent, no white box) */
+.auth-logo-lockup {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.auth-logo-icon {
+  display: block;
+  height: 56px;
+  width: auto;
+  object-fit: contain;
+}
+
+.auth-logo-wordmark {
+  display: block;
+  height: 40px;
+  width: auto;
+  object-fit: contain;
+}
+
+@media (min-width: 901px) {
+  .auth-theme.login-page .auth-logo-icon {
+    height: 72px;
+  }
+  .auth-theme.login-page .auth-logo-wordmark {
+    height: 52px;
+  }
 }
 
 .auth-logo {
@@ -214,6 +377,7 @@ body {
   margin: 0 0 8px;
   color: var(--auth-text);
   letter-spacing: -0.02em;
+  text-shadow: 0 1px 2px rgba(251, 249, 246, 0.8);
 }
 
 .auth-theme .site-description {
@@ -222,6 +386,7 @@ body {
   font-size: 0.9375rem;
   line-height: 1.5;
   color: var(--auth-text-muted);
+  text-shadow: 0 1px 2px rgba(251, 249, 246, 0.6);
 }
 
 .login-right {
@@ -391,6 +556,26 @@ body {
   margin: 0 0 8px;
 }
 
+@media (max-width: 600px) {
+  .auth-theme.signup-page {
+    padding: 16px 12px 24px;
+    align-items: flex-start;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+  .auth-theme .signup-card {
+    max-width: 100%;
+    padding: 24px 20px;
+  }
+  .auth-theme .signup-card .input-field {
+    min-height: 44px;
+    font-size: 16px;
+  }
+  .auth-theme .signup-card .button-primary {
+    min-height: 48px;
+  }
+}
+
 /* Auth loading (protected route) */
 .auth-theme.auth-loading {
   min-height: 100vh;
@@ -454,52 +639,59 @@ body {
   font-size: 15px;
 }
 
+@media (max-width: 640px) {
+  .dashboard-header h1 {
+    font-size: 28px;
+  }
+  .dashboard-subtext {
+    font-size: 14px;
+  }
+}
+
 /* Controls row */
 
 .dashboard-controls {
-
   display: flex;
-
   justify-content: space-between;
-
   align-items: center;
-
   margin-top: 25px;
-
   flex-wrap: wrap;
-
   gap: 20px;
-
 }
 
 /* Button group */
 
 .dashboard-buttons {
-
   display: flex;
-
   gap: 12px;
-
+  flex-wrap: wrap;
 }
 
 /* Search bar */
 
 .search-bar {
-
   width: 340px;
-
+  min-width: 0;
   padding: 12px 14px;
-
   border-radius: 10px;
-
   border: 1px solid #d6c5b5;
-
   font-size: 14px;
-
   background: #fffdfb;
-
   transition: all 0.2s ease;
+  box-sizing: border-box;
+}
 
+@media (max-width: 640px) {
+  .dashboard-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+  .search-bar {
+    width: 100%;
+    min-height: 44px;
+    font-size: 16px;
+  }
 }
 
 /* Search focus effect */
@@ -517,15 +709,18 @@ body {
 /* Clothing grid */
 
 .clothing-grid {
-
   margin-top: 35px;
-
   display: grid;
-
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-
   gap: 25px;
+}
 
+@media (max-width: 640px) {
+  .clothing-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 16px;
+    margin-top: 24px;
+  }
 }
 
 /* hover effect for clothing cards */
@@ -547,39 +742,42 @@ body {
 
 /*---------------- OUTFIT GENERATOR PAGE ---------------- */
 .generate-page {
-
   display: flex;
-
   justify-content: center;
-
   align-items: center;
-
   min-height: 80vh;
-
+  padding: 24px 16px;
+  box-sizing: border-box;
 }
 
 /* Card */
 
 .generate-card {
-
   background: rgba(255,255,255,0.92);
-
   backdrop-filter: blur(8px);
-
   padding: 50px;
-
   border-radius: 18px;
-
   width: 440px;
-
+  max-width: 100%;
   box-shadow: 0 12px 30px rgba(0,0,0,0.12);
-
   display: flex;
-
   flex-direction: column;
-
   gap: 14px;
+}
 
+@media (max-width: 640px) {
+  .generate-page {
+    padding: 16px 12px;
+    align-items: flex-start;
+  }
+  .generate-card {
+    padding: 24px 20px;
+    width: 100%;
+  }
+  .generate-input {
+    min-height: 44px;
+    font-size: 16px;
+  }
 }
 
 /* Subtext */
@@ -662,39 +860,46 @@ body {
 
 /*Add Item Page*/
 .additem-page {
-
   display: flex;
-
   justify-content: center;
-
   align-items: center;
-
   min-height: 80vh;
-
+  padding: 24px 16px;
+  box-sizing: border-box;
 }
 
 /* Card */
 
 .additem-card {
-
   background: rgba(255,255,255,0.92);
-
   backdrop-filter: blur(8px);
-
   padding: 50px;
-
   border-radius: 18px;
-
   width: 450px;
-
+  max-width: 100%;
   box-shadow: 0 12px 30px rgba(0,0,0,0.12);
-
   display: flex;
-
   flex-direction: column;
-
   gap: 12px;
+}
 
+@media (max-width: 640px) {
+  .additem-page {
+    padding: 16px 12px;
+    align-items: flex-start;
+  }
+  .additem-card {
+    padding: 24px 20px;
+    width: 100%;
+  }
+  .additem-input,
+  .additem-textarea {
+    min-height: 44px;
+    font-size: 16px;
+  }
+  .additem-textarea {
+    min-height: 80px;
+  }
 }
 
 /* Description */
@@ -765,33 +970,35 @@ body {
 /* Profile Page */
 
 .profile-page {
-
   display: flex;
-
   justify-content: center;
-
   align-items: center;
-
   min-height: 80vh;
-
+  padding: 24px 16px;
+  box-sizing: border-box;
 }
 
 /* Card */
 
 .profile-card {
-
   background: rgba(255,255,255,0.92);
-
   backdrop-filter: blur(8px);
-
   padding: 50px;
-
   border-radius: 18px;
-
   width: 420px;
-
+  max-width: 100%;
   box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+}
 
+@media (max-width: 640px) {
+  .profile-page {
+    padding: 16px 12px;
+    align-items: flex-start;
+  }
+  .profile-card {
+    padding: 24px 20px;
+    width: 100%;
+  }
 }
 
 /* Subtext */
