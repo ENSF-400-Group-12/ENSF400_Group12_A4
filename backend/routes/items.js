@@ -2,7 +2,7 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const { getDb, persist } = require('../db/connection');
-const requireAuth = require('../middleware/requireAuth');
+const { requireAuth } = require('../middleware/requireAuth');
 const { upload, memoryUpload } = require('../config/upload');
 const { analyzeItemImage } = require('../services/imageAnalysis');
 
