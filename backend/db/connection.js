@@ -54,15 +54,18 @@ async function initDb() {
   if (fs.existsSync(dbPath)) {
     const buffer = fs.readFileSync(dbPath);
     db = new SQL.Database(buffer);
+    initSchema(db);
+    ensureWardrobeSchema(db);
+    persist();
   } else {
     if (!fs.existsSync(dataDir)) {
       fs.mkdirSync(dataDir, { recursive: true });
     }
     db = new SQL.Database();
     initSchema(db);
+    ensureWardrobeSchema(db);
     persist();
   }
-  ensureWardrobeSchema(db);
   return db;
 }
 
