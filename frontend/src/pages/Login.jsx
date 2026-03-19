@@ -52,6 +52,9 @@ function Login() {
 
   return (
     <div className="auth-theme login-page">
+      <div className="login-background" aria-hidden="true">
+        <img src="/closetpic.png" alt="" />
+      </div>
       <div className="login-left">
         <div className="hero-text">
           <img
@@ -109,23 +112,6 @@ function Login() {
           </p>
         </div>
 
-      </div>
-
-
-      {/* Background image */}
-      <div className="login-background">
-
-        <img
-          src="/closetpic.png"
-          alt="Closet wardrobe"
-        />
-
-      </div>
-
-
-      {/* Footer */}
-      <div className="login-footer">
-        ENSF 400 — Group 12 Project
       </div>
 
       <div className="login-footer">ENSF 400 — Group 12 Project</div>
