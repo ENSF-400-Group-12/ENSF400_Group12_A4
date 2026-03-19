@@ -78,6 +78,20 @@ function Dashboard() {
     }
   };
 
+  const handleLoadDemo = async () => {
+    try {
+      const res = await authFetch("/api/demo/seed", { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        await fetchItems();
+      } else {
+        alert(data.error || "Failed to load demo wardrobe.");
+      }
+    } catch (err) {
+      alert("Could not reach server. Start the backend and try again.");
+    }
+  };
+
   const searchLower = search.trim().toLowerCase();
   const filtered = items.filter((item) => {
     if (searchLower) {
@@ -192,9 +206,18 @@ function Dashboard() {
           ) : (
             <>
               <p className="dashboard-empty-text">Your wardrobe is empty. Add your first item to get started.</p>
-              <Link to="/add-item">
-                <button type="button" className="button-primary">Add Item</button>
-              </Link>
+              <div className="dashboard-empty-actions">
+                <Link to="/add-item">
+                  <button type="button" className="button-primary">Add Item</button>
+                </Link>
+                <button
+                  type="button"
+                  className="button-secondary"
+                  onClick={handleLoadDemo}
+                >
+                  Load demo wardrobe
+                </button>
+              </div>
             </>
           )}
         </div>

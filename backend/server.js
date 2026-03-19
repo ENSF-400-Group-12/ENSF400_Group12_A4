@@ -3,11 +3,11 @@ const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const session = require('express-session');
-<<<<<<< HEAD
 const path = require('path');
 const authRouter = require('./routes/auth');
 const itemsRouter = require('./routes/items');
 const outfitsRouter = require('./routes/outfits');
+const demoRouter = require('./routes/demo');
 const { initDb } = require('./db/connection');
 
 const app = express();
@@ -51,6 +51,7 @@ app.get('/', (req, res) => {
 app.use('/api/auth', authRouter);
 app.use('/api/items', itemsRouter);
 app.use('/api/outfits', outfitsRouter);
+app.use('/api/demo', demoRouter);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 async function start() {
