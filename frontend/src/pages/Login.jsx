@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"; 
+import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
@@ -22,7 +22,6 @@ function Login() {
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
-
     if (!email.trim()) {
       setError("Email is required.");
       return;
@@ -31,7 +30,6 @@ function Login() {
       setError("Password is required.");
       return;
     }
-
     setLoading(true);
     try {
       await login(email.trim(), password);
@@ -46,7 +44,7 @@ function Login() {
   if (authLoading) {
     return (
       <div className="auth-theme auth-loading">
-        <div className="auth-loading-spinner" />
+        <div className="auth-loading-spinner" aria-hidden="true" />
         <p>Loading…</p>
       </div>
     );
@@ -54,13 +52,6 @@ function Login() {
 
   return (
     <div className="auth-theme login-page">
-
-      {/* Background */}
-      <div className="login-background">
-        <img src="/closetpic.png" alt="Closet wardrobe" />
-      </div>
-
-      {/* Left Side */}
       <div className="login-left">
         <div className="hero-text">
           <img
@@ -76,37 +67,33 @@ function Login() {
         </div>
       </div>
 
-      {/* Right Side */}
       <div className="login-right">
         <div className="login-card">
           <h2>Welcome Back</h2>
-          <p className="login-subtext">
-            Log in to access your digital wardrobe
-          </p>
+          <p className="login-subtext">Log in to access your digital wardrobe</p>
 
           <form onSubmit={handleSubmit} className="login-form" noValidate>
-            {error && (
-              <div className="form-error" role="alert">{error}</div>
-            )}
-
+            {error && <div className="form-error" role="alert">{error}</div>}
             <input
               type="email"
               placeholder="Email"
               className="input-field"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
               disabled={loading}
+              aria-invalid={!!error}
             />
-
             <input
               type="password"
               placeholder="Password"
               className="input-field"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
               disabled={loading}
+              aria-invalid={!!error}
             />
-
             <button
               type="submit"
               className="button-primary button-full"
@@ -123,11 +110,7 @@ function Login() {
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="login-footer">
-        ENSF 400 — Group 12 Project
-      </div>
-
+      <div className="login-footer">ENSF 400 — Group 12 Project</div>
     </div>
   );
 }
