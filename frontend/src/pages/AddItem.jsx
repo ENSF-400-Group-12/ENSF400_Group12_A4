@@ -362,12 +362,14 @@ function AddItem() {
           )}
           {error && <p className="additem-inline-error additem-error-block" role="alert">{error}</p>}
           <div className="additem-actions">
-            <button type="button" className="button-secondary" onClick={() => navigate("/dashboard")}>
-              Cancel
-            </button>
-            <button type="submit" className="button-primary additem-button" disabled={submitLoading}>
-              {submitLoading ? "Saving…" : isEdit ? "Update Item" : "Save Item"}
-            </button>
+            <div className="additem-actions-buttons">
+              <button type="button" className="button-secondary" onClick={() => navigate("/dashboard")}>
+                Cancel
+              </button>
+              <button type="submit" className="button-primary" disabled={submitLoading}>
+                {submitLoading ? "Saving…" : isEdit ? "Update Item" : "Save Item"}
+              </button>
+            </div>
             {!isEdit && allFilled && !submitLoading && (
               <span className="additem-all-set-hint">All set? Save to add this item to your wardrobe.</span>
             )}
