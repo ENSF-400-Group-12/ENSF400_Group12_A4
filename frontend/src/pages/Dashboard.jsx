@@ -85,7 +85,10 @@ function Dashboard() {
       if (res.ok) {
         await fetchItems();
       } else {
-        alert(data.error || "Failed to load demo wardrobe.");
+        const msg = res.status === 401
+          ? "Please log in first to load the demo wardrobe."
+          : (data.error || "Failed to load demo wardrobe.");
+        alert(msg);
       }
     } catch (err) {
       alert("Could not reach server. Start the backend and try again.");
@@ -121,54 +124,60 @@ function Dashboard() {
         </p>
       </header>
 
-      <section className="dashboard-actions" aria-label="Quick actions">
-        <Link to="/add-item" className="dashboard-action-card dashboard-action-card--primary">
-          <span className="dashboard-action-label">Add Item</span>
-          <span className="dashboard-action-desc">Upload a photo and add to your wardrobe</span>
-        </Link>
-        <Link to="/generate" className="dashboard-action-card">
-          <span className="dashboard-action-label">Generate Outfit</span>
-          <span className="dashboard-action-desc">Get outfit suggestions</span>
-        </Link>
-      </section>
+      {items.length > 0 && (
+        <section className="dashboard-actions" aria-label="Quick actions">
+          <Link to="/add-item" className="dashboard-action-card dashboard-action-card--primary">
+            <span className="dashboard-action-label">Add Item</span>
+            <span className="dashboard-action-desc">Upload a photo and add to your wardrobe</span>
+          </Link>
+          <Link to="/generate" className="dashboard-action-card">
+            <span className="dashboard-action-label">Generate Outfit</span>
+            <span className="dashboard-action-desc">Get outfit suggestions</span>
+          </Link>
+        </section>
+      )}
 
-      <div className="dashboard-controls">
-        <input
-          type="search"
-          className="dashboard-search"
-          placeholder="Search items…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          aria-label="Search wardrobe"
-        />
-      </div>
+      {items.length > 0 && (
+        <>
+          <div className="dashboard-controls">
+            <input
+              type="search"
+              className="dashboard-search"
+              placeholder="Search items…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              aria-label="Search wardrobe"
+            />
+          </div>
 
-      <div className="dashboard-filters" role="group" aria-label="Filter by">
-        <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="dashboard-filter-select" aria-label="Type">
-          <option value="">Type</option>
-          {clothingTypes.map((t) => (
-            <option key={t} value={t}>{t}</option>
-          ))}
-        </select>
-        <select value={filterColor} onChange={(e) => setFilterColor(e.target.value)} className="dashboard-filter-select" aria-label="Color">
-          <option value="">Color</option>
-          {colors.map((c) => (
-            <option key={c} value={c}>{c}</option>
-          ))}
-        </select>
-        <select value={filterSeason} onChange={(e) => setFilterSeason(e.target.value)} className="dashboard-filter-select" aria-label="Season">
-          <option value="">Season</option>
-          {seasons.map((s) => (
-            <option key={s} value={s}>{s}</option>
-          ))}
-        </select>
-        <select value={filterStyle} onChange={(e) => setFilterStyle(e.target.value)} className="dashboard-filter-select" aria-label="Style">
-          <option value="">Style</option>
-          {styles.map((s) => (
-            <option key={s} value={s}>{s}</option>
-          ))}
-        </select>
-      </div>
+          <div className="dashboard-filters" role="group" aria-label="Filter by">
+            <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="dashboard-filter-select" aria-label="Type">
+              <option value="">Type</option>
+              {clothingTypes.map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+            <select value={filterColor} onChange={(e) => setFilterColor(e.target.value)} className="dashboard-filter-select" aria-label="Color">
+              <option value="">Color</option>
+              {colors.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+            <select value={filterSeason} onChange={(e) => setFilterSeason(e.target.value)} className="dashboard-filter-select" aria-label="Season">
+              <option value="">Season</option>
+              {seasons.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+            <select value={filterStyle} onChange={(e) => setFilterStyle(e.target.value)} className="dashboard-filter-select" aria-label="Style">
+              <option value="">Style</option>
+              {styles.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          </div>
+        </>
+      )}
 
       {loading && <p className="dashboard-message" aria-live="polite">Loading…</p>}
       {error && <p className="dashboard-message dashboard-error" role="alert">{error}</p>}
@@ -186,7 +195,7 @@ function Dashboard() {
       )}
       {!loading && !error && filtered.length === 0 && (
         <div className="dashboard-empty">
-          {search.trim() || filterType || filterColor || filterSeason || filterStyle ? (
+          {items.length > 0 && (search.trim() || filterType || filterColor || filterSeason || filterStyle) ? (
             <>
               <p className="dashboard-empty-text">No items match your search or filters.</p>
               <button

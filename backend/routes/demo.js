@@ -9,12 +9,14 @@ const { getDb, persist } = require('../db/connection');
 const { requireAuth } = require('../middleware/requireAuth');
 
 const router = express.Router();
-const MANIFEST_PATH = path.join(__dirname, '../../frontend/public/clothes-demo-manifest.json');
+const MANIFEST_PATH = path.resolve(__dirname, '..', '..', 'frontend', 'public', 'clothes-demo-manifest.json');
 
 router.post('/seed', requireAuth, (req, res) => {
   try {
     if (!fs.existsSync(MANIFEST_PATH)) {
-      return res.status(404).json({ error: 'Demo manifest not found. Run npm run normalize-clothes first.' });
+      return res.status(404).json({
+        error: 'Demo manifest not found. Run: cd backend && npm run normalize-clothes',
+      });
     }
     const manifest = JSON.parse(fs.readFileSync(MANIFEST_PATH, 'utf8'));
     const db = getDb();
@@ -41,7 +43,8 @@ router.post('/seed', requireAuth, (req, res) => {
     res.json({ ok: true, count: manifest.length });
   } catch (err) {
     console.error('Demo seed error:', err);
-    res.status(500).json({ error: 'Failed to seed demo wardrobe.' });
+    const msg = process.env.NODE_ENV === 'development' ? err.message : 'Failed to seed demo wardrobe.';
+    res.status(500).json({ error: msg });
   }
 });
 
