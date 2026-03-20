@@ -1,39 +1,38 @@
 /**
  * Image analysis service for clothing metadata extraction.
  *
- * This module provides a single entry point for analyzing item images.
- * Raw results are normalized to canonical metadata options so the API
- * always returns values that match frontend dropdowns.
+ * Uses filename-based inference when no real vision API is available.
+ * Returns {} when inference is not possible, so the UI can show "Add details below"
+ * instead of fake confident wrong answers.
  *
- * To plug in a real AI/vision API: replace the stub in analyzeItemImage(),
+ * To plug in a real AI/vision API: replace the filename fallback in analyzeItemImage(),
  * then pass the raw response through normalizeMetadata() before returning.
  */
 
-const { normalizeMetadata } = require('../lib/metadataOptions');
+const { inferFromFilename } = require('../lib/filenameInference');
 
 /**
  * Analyze an item image and return suggested metadata (canonical values only).
  * @param {Buffer} imageBuffer - Raw image bytes
  * @param {string} [mimeType] - e.g. 'image/jpeg'
- * @returns {Promise<{ type?: string, color?: string, season?: string, style?: string }>}
+ * @param {string} [filename] - Original filename for inference (e.g. black_jays.jpg)
+ * @returns {Promise<{ type?: string, color?: string, season?: string, style?: string, fromFilename?: boolean }>}
  */
-async function analyzeItemImage(imageBuffer, mimeType) {
+async function analyzeItemImage(imageBuffer, mimeType, filename) {
   if (!imageBuffer || imageBuffer.length === 0) {
     return {};
   }
-  // Stub: return mocked suggestions. Replace with real API call when ready.
-  const raw = await new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        type: 'Shirt',
-        color: 'Blue',
-        season: 'All Season',
-        style: 'Casual',
-      });
-    }, 600);
-  });
-  const normalized = normalizeMetadata(raw);
-  return Object.fromEntries(Object.entries(normalized).filter(([, v]) => v != null));
+
+  // Filename-based inference: use when filename suggests type/color
+  if (filename) {
+    const inferred = inferFromFilename(filename);
+    if (inferred && Object.keys(inferred).length > 0) {
+      return { ...inferred, fromFilename: true };
+    }
+  }
+
+  // No inference possible: return empty so UI shows "Add details below"
+  return {};
 }
 
 module.exports = { analyzeItemImage };

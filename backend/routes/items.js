@@ -81,7 +81,7 @@ router.post('/analyze', (req, res, next) => {
     return res.status(400).json({ error: 'No image provided.' });
   }
   try {
-    const metadata = await analyzeItemImage(req.file.buffer, req.file.mimetype);
+    const metadata = await analyzeItemImage(req.file.buffer, req.file.mimetype, req.file.originalname);
     res.json({ ...metadata });
   } catch (err) {
     res.status(500).json({ error: 'Analysis failed. You can still add the item manually.' });
