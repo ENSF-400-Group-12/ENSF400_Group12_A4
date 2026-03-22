@@ -1,6 +1,7 @@
 const path = require('path');
-require('dotenv').config({ path: path.resolve(__dirname, '.env') });
-require('dotenv').config({ path: path.resolve(__dirname, '..', '.env') });
+const { loadAllEnv, logEnvBootstrap } = require('./lib/loadEnv');
+loadAllEnv();
+
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
@@ -13,6 +14,7 @@ const { initDb } = require('./db/connection');
 
 const app = express();
 const port = process.env.PORT || 8080;
+logEnvBootstrap(port);
 
 const defaultOrigins = [
   'http://localhost:3000',
