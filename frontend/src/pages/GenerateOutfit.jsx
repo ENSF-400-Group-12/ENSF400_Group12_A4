@@ -71,7 +71,7 @@ function GenerateOutfit() {
       <div className="generate-card">
         <h1 className="generate-title">Generate Outfit</h1>
         <p className="generate-subtext">
-          Pick an occasion and the vibe you want.
+          Choose where you’re going, then one style vibe — we’ll match pieces from your wardrobe.
         </p>
 
         <form onSubmit={handleSubmit} noValidate className="generate-form-inner">
@@ -93,8 +93,7 @@ function GenerateOutfit() {
 
           <div className="generate-field generate-field--vibe">
             <span className="generate-label" id="generate-vibe-label">Style / vibe</span>
-            <p className="generate-hint" id="generate-vibe-hint">Pick one chip that matches the look you want.</p>
-            <div className="generate-chips" role="group" aria-labelledby="generate-vibe-label" aria-describedby="generate-vibe-hint">
+            <div className="generate-chips" role="group" aria-labelledby="generate-vibe-label">
               {VIBES.map((opt) => (
                 <button
                   key={opt}

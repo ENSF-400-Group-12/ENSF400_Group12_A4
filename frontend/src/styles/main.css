@@ -963,22 +963,22 @@ body.signup-page-open {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 80vh;
-  padding: 24px 16px;
+  min-height: 82vh;
+  padding: 28px 18px 40px;
   box-sizing: border-box;
 }
 
 .generate-card {
   background: var(--auth-bg-card, rgba(255,255,255,0.96));
   border: 1px solid var(--auth-border, rgba(0,0,0,0.06));
-  padding: 36px 32px 40px;
+  padding: 40px 36px 44px;
   border-radius: 14px;
   width: 100%;
-  max-width: 440px;
+  max-width: 480px;
   box-shadow: 0 4px 24px rgba(26,26,26,0.06);
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 32px;
 }
 
 @media (max-width: 640px) {
@@ -999,7 +999,7 @@ body.signup-page-open {
 .generate-title {
   font-size: 1.5rem;
   font-weight: 600;
-  margin: 0 0 10px;
+  margin: 0 0 12px;
   color: var(--auth-text, #2a2a2a);
   letter-spacing: -0.02em;
 }
@@ -1008,17 +1008,20 @@ body.signup-page-open {
   font-size: 0.9375rem;
   color: var(--auth-text-muted, #6a5a4a);
   margin: 0;
-  line-height: 1.5;
+  line-height: 1.55;
+  max-width: 36rem;
 }
 
 .generate-field {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .generate-field--vibe {
-  margin-top: 4px;
+  margin-top: 8px;
+  padding-top: 20px;
+  border-top: 1px solid var(--auth-border, rgba(0,0,0,0.06));
 }
 
 .generate-field label,
@@ -1054,8 +1057,8 @@ body.signup-page-open {
 .generate-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 4px;
+  gap: 10px 12px;
+  margin-top: 2px;
 }
 
 .generate-chip {
@@ -1087,14 +1090,17 @@ body.signup-page-open {
 }
 
 .generate-button {
-  margin-top: 8px;
+  margin-top: 12px;
   align-self: flex-start;
+  min-height: 44px;
+  padding-left: 22px;
+  padding-right: 22px;
 }
 
 .generate-form-inner {
   display: flex;
   flex-direction: column;
-  gap: 26px;
+  gap: 32px;
 }
 
 .generate-feedback {
