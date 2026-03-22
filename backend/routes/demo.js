@@ -44,7 +44,7 @@ router.post('/seed', requireAuth, (req, res) => {
   try {
     const manifestPath = resolveManifestPath();
     if (!manifestPath) {
-      return res.status(404).json({
+      return res.status(422).json({
         error:
           'Demo manifest not found. From repo root run: cd backend && npm run normalize-clothes',
       });

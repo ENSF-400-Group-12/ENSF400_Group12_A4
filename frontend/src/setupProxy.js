@@ -7,6 +7,8 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 
 module.exports = function (app) {
   const target = process.env.REACT_APP_PROXY_TARGET || 'http://localhost:8080';
+  // eslint-disable-next-line no-console
+  console.log('[setupProxy] /api + /uploads →', target, '(set REACT_APP_PROXY_TARGET to change)');
   app.use(
     ['/api', '/uploads'],
     createProxyMiddleware({
