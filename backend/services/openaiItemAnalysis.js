@@ -31,7 +31,11 @@ confidence:
 
 When confidence is "low", still output valid enum fields using placeholders: type "T-Shirt", color "Black", season "All Season", style "Casual" — the server discards them when confidence is not high.
 
-When confidence is "high", pick the most specific accurate type (e.g. Sneakers vs Shoes for clear athletic shoes; Hoodie vs Sweater when clearly a hooded sweatshirt).`;
+When confidence is "high":
+- Never default to generic "Shirt" + "Blue" + "All Season" + "Casual" unless the photo is clearly a blue casual shirt.
+- Footwear must use Sneakers, Shoes, Boots, or Sandals — never Shirt/T-Shirt for shoes or sneakers.
+- Hooded sweatshirts → Hoodie; crewneck knit → Sweater.
+- Pick the most specific accurate type (Sneakers vs Shoes for athletic soles; Hoodie vs Sweater when a hood is visible).`;
 
 /**
  * @param {Buffer} imageBuffer
@@ -73,7 +77,7 @@ async function analyzeItemImageOpenAI(imageBuffer, mimeType) {
                 type: 'text',
                 text: 'Classify this garment. Return JSON matching the schema including confidence.',
               },
-              { type: 'image_url', image_url: { url: dataUrl, detail: 'low' } },
+              { type: 'image_url', image_url: { url: dataUrl, detail: 'high' } },
             ],
           },
         ],
