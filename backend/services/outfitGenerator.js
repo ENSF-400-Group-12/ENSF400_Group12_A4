@@ -39,8 +39,10 @@ const VIBE_COLOR_HINTS = {
   minimalist: /black|white|gray|grey|navy|beige|cream/i,
 };
 
-const TOP_K_SLOT = 5;
-const MAX_CANDIDATES = 8;
+const TOP_K_SLOT = 6;
+const MAX_CANDIDATES = 10;
+const PICK_QUALITY_BAND = 26;
+const TOP_REPEAT_SOFT_PENALTY = 2.5;
 
 function rowsToObjects(execResult) {
   if (!execResult.length || !execResult[0].values.length) return [];
@@ -103,6 +105,66 @@ function casualishContext(occasion, vibe) {
     || vib === 'vintage'
     || vib === 'emo'
   );
+}
+
+/** Small targeted bonuses so occasion+vibe pairs do not collapse onto one “safe default” look */
+function occasionVibeSpecificityNudge(item, occasion, vibe) {
+  let n = 0;
+  const o = (occasion || '').trim().toLowerCase();
+  const v = (vibe || '').trim().toLowerCase();
+  const st = (item.style || '').toLowerCase();
+  const sub = item.profile?.subtype || '';
+  const type = (item.type || '').toLowerCase();
+  const slot = item.slot;
+
+  if (o === 'work' && v === 'casual') {
+    if (['chinos', 'dress_pants'].includes(sub)) n += 8;
+    if (slot === 'top' && (st.includes('business') || st.includes('smart') || st.includes('minimalist'))) n += 7;
+    if (slot === 'shoes' && (['loafers', 'dress_shoes', 'chelsea_boots'].includes(sub) || type === 'shoes')) n += 6;
+    if (st.includes('sport') && (slot === 'shoes' || slot === 'top')) n -= 5;
+  }
+
+  if (o === 'date night' && v === 'formal') {
+    if (['dress_shoes', 'loafers', 'chelsea_boots'].includes(sub)) n += 9;
+    if (slot === 'top' && (st.includes('formal') || st.includes('classy'))) n += 6;
+    if (slot === 'bottom' && ['dress_pants', 'chinos'].includes(sub)) n += 6;
+  }
+
+  if (o === 'date night' && v === 'classy') {
+    if (st.includes('classy') || st.includes('formal') || st.includes('business')) n += 7;
+    if (['dress_pants', 'chinos'].includes(sub)) n += 6;
+    if (slot === 'shoes' && type !== 'sneakers') n += 4;
+  }
+
+  if (o === 'school' && v === 'streetwear') {
+    if (st.includes('streetwear') || st.includes('casual')) n += 9;
+    if (slot === 'shoes' && (type === 'sneakers' || sub === 'sneakers')) n += 7;
+    if (slot === 'top' && (type === 'hoodie' || type === 't-shirt')) n += 4;
+  }
+
+  if (o === 'weekend' && v === 'sporty') {
+    if (st.includes('sport') || sub === 'sneakers') n += 8;
+    if (slot === 'bottom' && (sub === 'joggers' || st.includes('sport'))) n += 6;
+    if (slot === 'shoes' && type === 'sneakers') n += 5;
+  }
+
+  if (o === 'outdoor' && v === 'casual') {
+    if (st.includes('casual') || st.includes('sport')) n += 6;
+    if (slot === 'shoes' && (type === 'boots' || sub === 'hiking_boots' || sub === 'sneakers')) n += 7;
+    if (slot === 'outerwear' || type === 'jacket' || type === 'coat') n += 5;
+  }
+
+  if (o === 'outdoor' && v === 'vintage') {
+    if (st.includes('vintage')) n += 11;
+    if (slot === 'outerwear' && (st.includes('vintage') || st.includes('casual'))) n += 6;
+  }
+
+  if (o === 'work' && v === 'formal') {
+    if (slot === 'mid' && (sub === 'blazer' || type === 'blazer')) n += 5;
+    if (['dress_pants', 'chinos'].includes(sub)) n += 5;
+  }
+
+  return n;
 }
 
 function scoreItem(item, occasion, vibe) {
@@ -184,27 +246,44 @@ function scoreItemRich(item, occasion, vibe) {
     if (fr <= 2) s -= 12;
   }
 
-  return s;
+  return s + occasionVibeSpecificityNudge(item, occasion, vibe);
 }
 
 function formatItemLabel(item) {
   return item.type + (item.color ? ` (${item.color})` : '');
 }
 
-function buildExplanation(selected, occasion, vibe, outerwearAdded) {
+function formatOutfitFingerprint(selected) {
+  return ['top', 'mid', 'bottom', 'shoes']
+    .map((slot) => {
+      const it = selected[slot];
+      if (!it) return null;
+      return `${it.type}${it.color ? ` (${it.color})` : ''}`;
+    })
+    .filter(Boolean)
+    .join(' · ');
+}
+
+/**
+ * @param {{ altShort?: string, gap?: number } | null} compare - close runner-up for transparency (no fluff)
+ */
+function buildExplanation(selected, occasion, vibe, outerwearAdded, compare) {
   const parts = ['top', 'mid', 'bottom', 'shoes', 'outerwear']
     .map((slot) => selected[slot] && formatItemLabel(selected[slot]))
     .filter(Boolean);
   const list = parts.join(' · ');
   const occ = (occasion || '').trim() || 'this look';
   const vb = (vibe || '').trim() || 'versatile';
-  let msg = `${list}. Balanced for ${occ} with a ${vb.toLowerCase()} aesthetic — formality and color kept in sync.`;
+  let msg = `${list}. Picked for ${occ} with a ${vb.toLowerCase()} read — cohesion and formality line up without over-styling.`;
   if (selected.mid && isMidBlazer(selected.mid) && selected.top) {
     const base = formatItemLabel(selected.top);
     msg += ` The blazer is layered over ${base.replace(/\s*\([^)]*\)\s*$/, '')} as the visible base — not worn as a stand-alone shirt.`;
   }
   if (outerwearAdded && selected.outerwear) {
     msg += ` Added ${formatItemLabel(selected.outerwear)} only because it sharpens the outfit.`;
+  }
+  if (compare?.altShort != null && compare.gap != null && compare.gap <= 6) {
+    msg += ` Narrowly beat a similar mix (${compare.altShort}) for this occasion + aesthetic.`;
   }
   return msg;
 }
@@ -227,6 +306,50 @@ function selectedKey(selected) {
   return ['top', 'mid', 'bottom', 'shoes']
     .map((s) => (selected[s] ? selected[s].id : 'x'))
     .join('-');
+}
+
+function topShoeKey(selected) {
+  const t = selected.top?.id ?? 'n';
+  const sh = selected.shoes?.id ?? 'n';
+  return `${t}-${sh}`;
+}
+
+/**
+ * Prefer structurally different strong outfits (vary top×shoes, then top, then shoes) before near-duplicate fills.
+ */
+function selectDiverseCandidates(sortedRaw, max) {
+  const result = [];
+  const usedOutfitKey = new Set();
+  const usedTopShoe = new Set();
+  const usedTop = new Set();
+  const usedShoe = new Set();
+
+  function take(passFn) {
+    for (const c of sortedRaw) {
+      if (result.length >= max) break;
+      const k = selectedKey(c.selected);
+      if (usedOutfitKey.has(k)) continue;
+      if (!passFn(c)) continue;
+      usedOutfitKey.add(k);
+      usedTopShoe.add(topShoeKey(c.selected));
+      if (c.selected.top?.id != null) usedTop.add(c.selected.top.id);
+      if (c.selected.shoes?.id != null) usedShoe.add(c.selected.shoes.id);
+      result.push(c);
+    }
+  }
+
+  take((c) => !usedTopShoe.has(topShoeKey(c.selected)));
+  take((c) => {
+    const tid = c.selected.top?.id;
+    return tid != null && !usedTop.has(tid);
+  });
+  take((c) => {
+    const sid = c.selected.shoes?.id;
+    return sid != null && !usedShoe.has(sid);
+  });
+  take(() => true);
+
+  return result;
 }
 
 function shoeAllowedForLook(shoe, occasion, vibe) {
@@ -340,16 +463,15 @@ function buildLocalCandidates(bySlot, occasion, vibe) {
   }
 
   raw.sort((a, b) => b.localScore - a.localScore);
+  const deduped = [];
   const seen = new Set();
-  const unique = [];
   for (const c of raw) {
     const key = selectedKey(c.selected);
     if (seen.has(key)) continue;
     seen.add(key);
-    unique.push(c);
-    if (unique.length >= MAX_CANDIDATES) break;
+    deduped.push(c);
   }
-  return unique;
+  return selectDiverseCandidates(deduped, MAX_CANDIDATES);
 }
 
 function occasionVibeClash(occasion, vibe) {
@@ -378,14 +500,31 @@ function minAcceptableScore(occasion, vibe) {
 function pickWithVariety(candidates, userId, occasion, vibe) {
   if (!candidates.length) return null;
   const topScore = candidates[0].localScore;
-  const band = candidates.filter((c) => c.localScore >= topScore - 16);
+  const band = candidates.filter((c) => c.localScore >= topScore - PICK_QUALITY_BAND);
   if (band.length <= 1) return band[0];
+
+  const topFreq = {};
+  for (const c of band) {
+    const id = c.selected.top?.id ?? 'x';
+    topFreq[id] = (topFreq[id] || 0) + 1;
+  }
+
+  const scored = band.map((c) => {
+    const id = c.selected.top?.id ?? 'x';
+    const freq = topFreq[id] || 1;
+    const softPen = TOP_REPEAT_SOFT_PENALTY * Math.max(0, freq - 1);
+    return { c, adj: c.localScore - softPen };
+  });
+  scored.sort((a, b) => b.adj - a.adj);
+
+  const bestAdj = scored[0].adj;
+  const nearTie = scored.filter((x) => x.adj >= bestAdj - 3);
   let h = Number(userId) || 0;
-  const seed = `${occasion}|${vibe}`;
+  const seed = `${occasion}|${vibe}|pick`;
   for (let i = 0; i < seed.length; i++) {
     h = (h * 31 + seed.charCodeAt(i)) >>> 0;
   }
-  return band[h % band.length];
+  return nearTie[h % nearTie.length].c;
 }
 
 function isCasualDenimOuterwear(item) {
@@ -533,7 +672,7 @@ async function generateOutfit(userId, occasion, vibe) {
     };
   }
 
-  let explanation = buildExplanation(chosen.selected, occasion, vibe, false);
+  let explanation = '';
   let reranked = false;
   let stylistConfidence = null;
 
@@ -548,10 +687,21 @@ async function generateOutfit(userId, occasion, vibe) {
     const alt = candidates[rerank.chosenIndex];
     if (alt.localScore >= minScore) {
       chosen = alt;
-      explanation = rerank.stylistReason || buildExplanation(alt.selected, occasion, vibe, false);
+      explanation = rerank.stylistReason || buildExplanation(alt.selected, occasion, vibe, false, null);
       reranked = true;
       stylistConfidence = rerank.confidence;
     }
+  }
+
+  const sortedForCompare = [...candidates].sort((a, b) => b.localScore - a.localScore);
+  const chosenKeyCmp = selectedKey(chosen.selected);
+  const runnerUp = sortedForCompare.find((c) => selectedKey(c.selected) !== chosenKeyCmp);
+  let compare = null;
+  if (!reranked && runnerUp && chosen.localScore - runnerUp.localScore <= 6) {
+    compare = {
+      altShort: formatOutfitFingerprint(runnerUp.selected),
+      gap: chosen.localScore - runnerUp.localScore,
+    };
   }
 
   let selected = { ...chosen.selected };
@@ -563,7 +713,9 @@ async function generateOutfit(userId, occasion, vibe) {
   const owResult = maybeAddOuterwear(selected, bySlot, occasion, vibe, chosen.localScore);
   selected = owResult.selected;
   if (!reranked) {
-    explanation = buildExplanation(selected, occasion, vibe, owResult.added);
+    explanation = buildExplanation(selected, occasion, vibe, owResult.added, compare);
+  } else if (!explanation.trim()) {
+    explanation = buildExplanation(selected, occasion, vibe, owResult.added, null);
   } else if (owResult.added && selected.outerwear) {
     explanation = `${explanation.trim()} Added ${formatItemLabel(selected.outerwear)} as outerwear — only because it improves the look.`;
   }
