@@ -1,2 +1,2 @@
-// jest-dom adds custom matchers like toBeInTheDocument
+// jest-dom: toBeInTheDocument, etc.
 import '@testing-library/jest-dom';
