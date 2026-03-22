@@ -37,6 +37,7 @@ test.describe('F3 outfit variety (demo wardrobe)', () => {
     const fingerprints = [];
     for (const [occasion, vibe] of pairs) {
       await page.goto('/generate');
+      await expect(page.locator('#generate-weather')).toBeVisible();
       await page.getByLabel('Occasion').selectOption(occasion);
       await page.locator('.generate-field--vibe .generate-chips').getByRole('button', { name: vibe }).click();
       await page.getByRole('button', { name: 'Generate Outfit' }).click();
@@ -60,6 +61,7 @@ test.describe('F3 outfit variety (demo wardrobe)', () => {
     await page.getByRole('button', { name: /create account/i }).click();
     await expect(page).toHaveURL(/\/dashboard$/);
     await page.goto('/generate');
+    await expect(page.locator('#generate-weather')).toBeVisible();
     await page.getByLabel('Occasion').selectOption('Casual');
     await page.locator('.generate-field--vibe .generate-chips').getByRole('button', { name: 'Casual' }).first().click();
     await page.getByRole('button', { name: 'Generate Outfit' }).click();

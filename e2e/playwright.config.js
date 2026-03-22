@@ -18,6 +18,8 @@ module.exports = defineConfig({
     baseURL: process.env.BASE_URL || 'http://localhost:13000',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
+    geolocation: { latitude: 51.5074, longitude: -0.1278 },
+    permissions: ['geolocation'],
   },
   webServer: [
     {
@@ -27,8 +29,8 @@ module.exports = defineConfig({
         ...process.env,
         PORT: '18080',
         FRONTEND_ORIGIN: 'http://localhost:13000,http://localhost:3000,http://localhost:3001',
-        // Deterministic F3 e2e: local candidate pick + grammar; rerank tested manually / without CI
-        ...(process.env.CI === '1' ? { OPENAI_OUTFIT_RERANK: '0' } : {}),
+        // Deterministic e2e: rule-based picks only (OpenAI rerank is non-deterministic)
+        OPENAI_OUTFIT_RERANK: '0',
       },
       url: 'http://localhost:18080/',
       reuseExistingServer: !process.env.CI,

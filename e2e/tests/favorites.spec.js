@@ -28,9 +28,15 @@ test.describe('Favorites feature', () => {
     await expect(page.locator('.clothing-card').first()).toBeVisible({ timeout: 20_000 });
 
     await page.goto('/generate');
+    await expect(page.locator('#generate-weather')).toBeVisible();
     await page.getByLabel('Occasion').selectOption('Weekend');
     await page.locator('.generate-field--vibe .generate-chips').getByRole('button', { name: 'Streetwear' }).click();
+    const gen1Promise = page.waitForResponse(
+      (r) => r.url().includes('/api/outfits/generate') && r.request().method() === 'POST'
+    );
     await page.getByRole('button', { name: 'Generate Outfit' }).click();
+    const gen1Resp = await gen1Promise;
+    expect(JSON.parse(gen1Resp.request().postData() || '{}').weather).toBeTruthy();
     await expect(page).toHaveURL(/\/results$/, { timeout: 20_000 });
     await expect(page.getByRole('heading', { name: 'Recommended Outfit' })).toBeVisible();
 
@@ -81,9 +87,15 @@ test.describe('Favorites feature', () => {
     await expect(page.locator('.clothing-card').first()).toBeVisible({ timeout: 20_000 });
 
     await page.goto('/generate');
+    await expect(page.locator('#generate-weather')).toBeVisible();
     await page.getByLabel('Occasion').selectOption('Weekend');
     await page.locator('.generate-field--vibe .generate-chips').getByRole('button', { name: 'Streetwear' }).click();
+    const gen1Promise = page.waitForResponse(
+      (r) => r.url().includes('/api/outfits/generate') && r.request().method() === 'POST'
+    );
     await page.getByRole('button', { name: 'Generate Outfit' }).click();
+    const gen1Resp = await gen1Promise;
+    expect(JSON.parse(gen1Resp.request().postData() || '{}').weather).toBeTruthy();
     await expect(page).toHaveURL(/\/results$/, { timeout: 20_000 });
 
     const savePromise = page.waitForResponse((r) => {

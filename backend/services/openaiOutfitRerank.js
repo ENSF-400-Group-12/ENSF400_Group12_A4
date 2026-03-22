@@ -42,7 +42,7 @@ function summarizeItem(it) {
  *   confidence?: string
  * } | null>}
  */
-async function rerankOutfitCandidates(candidates, occasion, vibe) {
+async function rerankOutfitCandidates(candidates, occasion, vibe, weather = '') {
   const apiKey = process.env.OPENAI_API_KEY?.trim();
   if (!apiKey) return null;
   if (process.env.OPENAI_OUTFIT_RERANK === '0') return null;
@@ -54,6 +54,7 @@ async function rerankOutfitCandidates(candidates, occasion, vibe) {
   const payload = {
     occasion: occasion || 'Casual',
     aesthetic: vibe || 'Casual',
+    weather: weather && String(weather).trim() ? String(weather).trim() : undefined,
     rubric: RUBRIC_SUMMARY,
     candidates: candidates.map((c, i) => ({
       index: i,
