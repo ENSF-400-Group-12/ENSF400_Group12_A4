@@ -199,6 +199,10 @@ function buildExplanation(selected, occasion, vibe, outerwearAdded) {
   const occ = (occasion || '').trim() || 'this look';
   const vb = (vibe || '').trim() || 'versatile';
   let msg = `${list}. Balanced for ${occ} with a ${vb.toLowerCase()} aesthetic — formality and color kept in sync.`;
+  if (selected.mid && isMidBlazer(selected.mid) && selected.top) {
+    const base = formatItemLabel(selected.top);
+    msg += ` The blazer is layered over ${base.replace(/\s*\([^)]*\)\s*$/, '')} as the visible base — not worn as a stand-alone shirt.`;
+  }
   if (outerwearAdded && selected.outerwear) {
     msg += ` Added ${formatItemLabel(selected.outerwear)} only because it sharpens the outfit.`;
   }
@@ -243,17 +247,56 @@ function bottomAllowedForLook(bottom, occasion, vibe) {
   return true;
 }
 
+/** Hoodie-like base (type or analyzed subtype) — not worn under a blazer in polished looks */
+function topActsAsHoodie(top) {
+  if (!top) return false;
+  if (top.type === 'Hoodie') return true;
+  const sub = top.profile?.subtype;
+  return sub === 'hoodie';
+}
+
+function isMidBlazer(item) {
+  if (!item) return false;
+  if (item.type === 'Blazer') return true;
+  return item.profile?.subtype === 'blazer';
+}
+
+/** Full formal: blazer only over a proper shirt or sweater (no tee, no hoodie). */
+function strictBlazerUnderlayerRequired(occasion, vibe) {
+  const o = (occasion || '').trim().toLowerCase();
+  const v = (vibe || '').trim().toLowerCase();
+  return o === 'formal' && v === 'formal';
+}
+
+/**
+ * When a blazer is the mid layer, the true "shirt" is the base top — never treat the blazer as the only top in polished contexts.
+ * @param {boolean} pol - polishedContext
+ */
+function blazerBaseTopAllowed(top, occasion, vibe, pol) {
+  if (!top) return false;
+  const dress = (top.type || '').toLowerCase().includes('dress');
+  if (dress) return true;
+
+  if (pol) {
+    if (topActsAsHoodie(top)) return false;
+    if (strictBlazerUnderlayerRequired(occasion, vibe)) {
+      return top.type === 'Shirt' || top.type === 'Sweater';
+    }
+    return ['Shirt', 'T-Shirt', 'Sweater'].includes(top.type);
+  }
+
+  const okCasual = ['Shirt', 'T-Shirt', 'Hoodie', 'Sweater'].includes(top.type);
+  return okCasual;
+}
+
 function passesGrammar(selected, occasion, vibe) {
   const pol = polishedContext(occasion, vibe);
   if (!selected.shoes || !shoeAllowedForLook(selected.shoes, occasion, vibe)) return false;
   if (selected.bottom && !bottomAllowedForLook(selected.bottom, occasion, vibe)) return false;
-  if (selected.mid && selected.mid.type === 'Blazer') {
+  if (selected.mid && isMidBlazer(selected.mid)) {
     const top = selected.top;
     if (!top) return false;
-    const dress = (top.type || '').toLowerCase().includes('dress');
-    if (dress) return true;
-    const okBase = ['Shirt', 'T-Shirt', 'Hoodie', 'Sweater'].includes(top.type);
-    if (!okBase) return false;
+    if (!blazerBaseTopAllowed(top, occasion, vibe, pol)) return false;
   }
   if (pol && selected.top && selected.top.type === 'Blazer') return false;
   return true;
@@ -284,6 +327,12 @@ function buildLocalCandidates(bySlot, occasion, vibe) {
           if (selected.mid) s += scoreItemRich(selected.mid, occasion, vibe);
           s += scoreOutfitCoherence(selected, occasion, vibe);
           if (selected.mid && polishedContext(occasion, vibe)) s += 12;
+          if (selected.mid && isMidBlazer(selected.mid) && polishedContext(occasion, vibe) && selected.top) {
+            const t = selected.top.type;
+            if (t === 'Shirt') s += 18;
+            else if (t === 'Sweater') s += 15;
+            else if (t === 'T-Shirt') s += 8;
+          }
           raw.push({ selected, localScore: s });
         }
       }
@@ -424,7 +473,11 @@ function maybeAddOuterwear(selected, bySlot, occasion, vibe, coreScore) {
 function rejectHint(occasion, vibe, candidates) {
   const pol = polishedContext(occasion, vibe);
   if (pol) {
-    return 'Try adding a neutral button-up or Oxford shirt, tailored trousers or chinos, and leather dress shoes or loafers.';
+    const hasBlazer = candidates?.some((c) => c?.selected?.mid && isMidBlazer(c.selected.mid));
+    if (hasBlazer) {
+      return 'If you use a blazer, add a button-up, polo, knit, or clean tee to wear underneath — plus tailored pants and dress shoes or loafers.';
+    }
+    return 'Try adding a neutral button-up or Oxford shirt (to layer under a blazer if you have one), tailored trousers or chinos, and leather dress shoes or loafers.';
   }
   if (casualishContext(occasion, vibe)) {
     return 'Try adding a clean tee or hoodie, one pair of versatile jeans or joggers, and sneakers that match your palette.';
