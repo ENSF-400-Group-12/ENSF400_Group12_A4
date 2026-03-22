@@ -206,16 +206,69 @@ function pickWithVariety(candidates, userId, occasion, vibe) {
   return band[h % band.length];
 }
 
-function maybeAddOuterwear(selected, bySlot, occasion, vibe, coreScore) {
-  if (!bySlot.outerwear?.length) return selected;
+/** Denim / casual jacket — should almost never “complete” formal or polished looks. */
+function isCasualDenimOuterwear(item) {
+  if (!item) return false;
+  const type = (item.type || '').trim().toLowerCase();
+  const style = (item.style || '').toLowerCase();
+  if (style === 'formal' || style === 'business') return false;
+  const notes = (item.notes || '').toLowerCase();
+  if (type === 'coat' && !/denim|jean/i.test(notes)) return false;
+  if (type !== 'jacket' && type !== 'coat') return false;
+  const color = (item.color || '').toLowerCase();
+  const denimCue = color === 'blue' || /denim|jean/i.test(notes);
+  const casualCue = style === 'casual' || style === 'streetwear' || style === 'vintage' || /denim|jean/i.test(notes);
+  return denimCue || casualCue;
+}
+
+/**
+ * Extra scoring for outerwear only — penalize weak or clashing layers so they rarely win.
+ */
+function scoreOuterwearLayer(ow, occasion, vibe, coreSelected) {
+  let s = scoreItem(ow, occasion, vibe);
   const occ = (occasion || '').toLowerCase();
   const vib = (vibe || '').toLowerCase();
-  const wantLayer =
-    occ === 'outdoor' ||
-    occ === 'formal' ||
-    occ === 'work' ||
-    occ === 'date night' ||
-    /classy|formal|minimalist/.test(vib);
+  const polished = occ === 'formal' || occ === 'date night' || occ === 'work'
+    || vib === 'formal' || vib === 'classy' || vib === 'minimalist';
+
+  if (isCasualDenimOuterwear(ow)) {
+    if (polished) s -= 55;
+    if (occ === 'school' && (vib === 'formal' || vib === 'classy')) s -= 40;
+    if (vib === 'streetwear' || vib === 'vintage' || occ === 'weekend' || occ === 'casual') s += 4;
+  }
+
+  if ((ow.type || '').toLowerCase() === 'jacket' && (ow.style || '').toLowerCase() === 'casual') {
+    if (polished) s -= 35;
+  }
+
+  const bottom = coreSelected.bottom;
+  if (bottom && isCasualDenimOuterwear(ow)) {
+    const bt = (bottom.type || '').toLowerCase();
+    const bc = (bottom.color || '').toLowerCase();
+    if (bt === 'jeans' || bc === 'blue' || /jean|denim/i.test((bottom.notes || '').toLowerCase())) {
+      s -= 22;
+    }
+  }
+
+  return s;
+}
+
+/**
+ * True only when an extra layer is contextually plausible (lowers the bar slightly vs pure optional).
+ */
+function occasionWantsOptionalLayer(occasion, vibe) {
+  const occ = (occasion || '').toLowerCase();
+  const vib = (vibe || '').toLowerCase();
+  if (occ === 'outdoor') return true;
+  if (occ === 'formal' && (vib === 'formal' || vib === 'classy' || vib === 'minimalist')) return true;
+  if (occ === 'work' && (vib === 'formal' || vib === 'business' || vib === 'classy' || vib === 'minimalist')) return true;
+  if (occ === 'date night' && (vib === 'classy' || vib === 'formal')) return true;
+  return false;
+}
+
+function maybeAddOuterwear(selected, bySlot, occasion, vibe, coreScore) {
+  if (!bySlot.outerwear?.length) return selected;
+  const wantLayer = occasionWantsOptionalLayer(occasion, vibe);
 
   let bestOw = null;
   let bestTotal = coreScore;
@@ -225,7 +278,7 @@ function maybeAddOuterwear(selected, bySlot, occasion, vibe, coreScore) {
     if (sel.top) s += scoreItem(sel.top, occasion, vibe);
     if (sel.bottom) s += scoreItem(sel.bottom, occasion, vibe);
     if (sel.shoes) s += scoreItem(sel.shoes, occasion, vibe);
-    s += scoreItem(ow, occasion, vibe);
+    s += scoreOuterwearLayer(ow, occasion, vibe, selected);
     s += scoreOutfitCoherence(sel, occasion, vibe);
     if (s > bestTotal) {
       bestTotal = s;
@@ -233,7 +286,8 @@ function maybeAddOuterwear(selected, bySlot, occasion, vibe, coreScore) {
     }
   }
   const gain = bestTotal - coreScore;
-  const threshold = wantLayer ? 12 : 22;
+  /** Default = 3-piece; 4th piece only with a clear, context-appropriate lift. */
+  const threshold = wantLayer ? 26 : 38;
   if (bestOw && gain >= threshold) {
     return { ...selected, outerwear: bestOw };
   }
