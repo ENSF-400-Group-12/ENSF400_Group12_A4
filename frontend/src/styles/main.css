@@ -1187,6 +1187,22 @@ body.signup-page-open {
   align-items: center;
 }
 
+.results-save-error {
+  margin: 12px 0 0;
+  font-size: 0.875rem;
+  color: #a03028;
+}
+
+.results-save-ok {
+  margin: 10px 0 0;
+  font-size: 0.875rem;
+}
+
+.results-save-ok a {
+  color: #8b5e3c;
+  font-weight: 500;
+}
+
 .results-actions--stacked {
   display: flex;
   flex-direction: column;
@@ -1914,4 +1930,89 @@ body.signup-page-open {
 
   line-height: 1.5;
 
+}
+
+/* Favorites — saved outfits list */
+
+.favorites-page--list {
+  display: block;
+  min-height: auto;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 28px 20px 48px;
+  text-align: left;
+}
+
+.favorites-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0 0 12px;
+  color: var(--auth-text, #2a2a2a);
+  letter-spacing: -0.02em;
+}
+
+.favorites-intro {
+  margin: 0 0 24px;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--auth-text-muted, #6a5a4a);
+}
+
+.favorites-intro a {
+  color: #8b5e3c;
+  font-weight: 500;
+}
+
+.favorites-loading,
+.favorites-error,
+.favorites-empty {
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--auth-text-muted, #6a5a4a);
+  margin: 0 0 20px;
+}
+
+.favorites-error {
+  color: #a03028;
+}
+
+.favorites-empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.favorites-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.favorites-list-item {
+  margin: 0 0 32px;
+}
+
+.favorites-list-item:last-child {
+  margin-bottom: 0;
+}
+
+.favorites-item-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.favorites-saved-at {
+  font-size: 0.8125rem;
+  color: var(--auth-text-muted, #6a5a4a);
+}
+
+.favorites-remove {
+  padding: 8px 16px;
+  min-height: 36px;
+  font-size: 0.875rem;
 }

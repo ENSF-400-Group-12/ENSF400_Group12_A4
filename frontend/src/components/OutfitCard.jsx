@@ -2,7 +2,7 @@
 
 import { apiUrl } from '../config/api';
 
-function OutfitCard({ outfit }) {
+function OutfitCard({ outfit, heading = "Recommended Outfit" }) {
   const { items = [], explanation, occasion, vibe } = outfit;
   const occStr = occasion != null ? String(occasion).trim() : '';
   const vibeStr = vibe != null ? String(vibe).trim() : '';
@@ -13,7 +13,7 @@ function OutfitCard({ outfit }) {
 
   return (
     <div className="card outfit-card">
-      <h2>Recommended Outfit</h2>
+      <h2>{heading}</h2>
       {(occStr || vibeStr) && (
         <div className="outfit-context">
           {sameLabel ? (

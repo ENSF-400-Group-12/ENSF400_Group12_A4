@@ -32,6 +32,7 @@ describe("Navbar", () => {
     );
 
     expect(screen.getByText(/wardrobe/i)).toBeInTheDocument();
+    expect(screen.getByText(/^favorites$/i)).toBeInTheDocument();
     expect(screen.getByText(/profile/i)).toBeInTheDocument();
     expect(screen.getByText(/test@test.com/i)).toBeInTheDocument();
     expect(screen.getByText(/logout/i)).toBeInTheDocument();
