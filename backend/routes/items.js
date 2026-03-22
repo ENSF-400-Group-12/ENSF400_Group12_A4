@@ -82,7 +82,10 @@ router.post('/analyze', (req, res, next) => {
   }
   try {
     const metadata = await analyzeItemImage(req.file.buffer, req.file.mimetype, req.file.originalname);
-    res.json({ ...metadata });
+    let suggestionSource = 'none';
+    if (metadata.fromOpenAI) suggestionSource = 'ai';
+    else if (metadata.fromFilename) suggestionSource = 'filename';
+    res.json({ ...metadata, suggestionSource });
   } catch (err) {
     res.status(500).json({ error: 'Analysis failed. You can still add the item manually.' });
   }

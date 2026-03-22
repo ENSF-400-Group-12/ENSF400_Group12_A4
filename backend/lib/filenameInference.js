@@ -39,7 +39,7 @@ const TYPE_PATTERNS = [
   { re: /boot\b|boots|chelsea|combat[\s_-]?boot/i, type: 'Boots' },
   { re: /sandal|slides|flip[\s_-]?flop/i, type: 'Sandals' },
   { re: /loafer|oxford|derby|heel|stiletto|mule|clog/i, type: 'Shoes' },
-  { re: /shoes|footwear/i, type: 'Shoes' },
+  { re: /\bshoe\b|shoes|footwear/i, type: 'Shoes' },
   { re: /button[\s_-]?up|buttonup|oxford[\s_-]?shirt|dress[\s_-]?shirt|polo|flannel|blouse/i, type: 'Shirt' },
   { re: /(^|[_\s-])shirt(?=$|[_\s-])/i, type: 'Shirt' },
   { re: /coat|trench|parka|peacoat/i, type: 'Coat' },
