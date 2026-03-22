@@ -85,7 +85,8 @@ router.post('/analyze', (req, res, next) => {
     let suggestionSource = 'none';
     if (metadata.fromOpenAI) suggestionSource = 'ai';
     else if (metadata.fromFilename) suggestionSource = 'filename';
-    res.json({ ...metadata, suggestionSource });
+    const openaiConfigured = Boolean(process.env.OPENAI_API_KEY?.trim());
+    res.json({ ...metadata, suggestionSource, openaiConfigured });
   } catch (err) {
     res.status(500).json({ error: 'Analysis failed. You can still add the item manually.' });
   }

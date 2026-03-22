@@ -1492,6 +1492,23 @@ body.signup-page-open {
   padding: 8px 0;
 }
 
+.additem-fallback-msg--warn {
+  color: #8a4a20;
+  background: rgba(180, 100, 40, 0.08);
+  border: 1px solid rgba(180, 100, 40, 0.2);
+  border-radius: 8px;
+  padding: 10px 12px;
+  line-height: 1.45;
+}
+
+.additem-code {
+  font-size: 0.8125rem;
+  font-family: ui-monospace, monospace;
+  background: rgba(0, 0, 0, 0.06);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
 .additem-all-set-hint {
   font-size: 0.8125rem;
   color: var(--auth-text-muted, #6a5a4a);

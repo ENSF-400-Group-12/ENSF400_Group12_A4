@@ -50,6 +50,8 @@ function AddItem() {
   const [fromFilename, setFromFilename] = useState(false);
   const [fromOpenAI, setFromOpenAI] = useState(false);
   const [analysisUncertain, setAnalysisUncertain] = useState(false);
+  /** false = server reports no OPENAI_API_KEY (vision off). null = unknown. */
+  const [openaiConfigured, setOpenaiConfigured] = useState(null);
   const [loadError, setLoadError] = useState(null);
   const [loading, setLoading] = useState(isEdit);
   const [submitLoading, setSubmitLoading] = useState(false);
@@ -94,6 +96,7 @@ function AddItem() {
       setFromFilename(false);
       setFromOpenAI(false);
       setAnalysisUncertain(false);
+      setOpenaiConfigured(null);
       return;
     }
     const url = URL.createObjectURL(imageFile);
@@ -131,6 +134,11 @@ function AddItem() {
             setFromOpenAI(src === 'ai');
             setFromFilename(src === 'filename');
             setAnalysisUncertain((src === 'none' || Boolean(data.uncertain)) && !anyFilled);
+            if (typeof data.openaiConfigured === 'boolean') {
+              setOpenaiConfigured(data.openaiConfigured);
+            } else {
+              setOpenaiConfigured(null);
+            }
           }
         }
       } catch (_) {
@@ -292,6 +300,11 @@ function AddItem() {
                 {analysisDone && analysisUncertain && !analyzing && (
                   <p className="additem-fallback-msg" role="status">
                     We couldn’t confidently identify this item. Please confirm the details below.
+                  </p>
+                )}
+                {analysisDone && openaiConfigured === false && !analyzing && (
+                  <p className="additem-fallback-msg additem-fallback-msg--warn" role="status">
+                    Photo analysis is off: the server has no API key loaded. Put <code className="additem-code">OPENAI_API_KEY</code> in a UTF-8 <code className="additem-code">.env</code> at the repo root, restart the backend on the same port as the dev proxy (default 8080), then try again.
                   </p>
                 )}
                 <button
