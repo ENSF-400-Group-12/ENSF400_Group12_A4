@@ -36,6 +36,11 @@ function Results() {
         <p className="results-error" role="alert">
           {outfit.error}
         </p>
+        {outfit.suggestion && (
+          <p className="results-hint" role="note">
+            {outfit.suggestion}
+          </p>
+        )}
         {isWardrobe && (
           <p className="results-cta">
             <Link to="/add-item">Add items</Link> or <Link to="/dashboard">view your wardrobe</Link>, then try again.

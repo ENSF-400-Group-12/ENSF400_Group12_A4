@@ -1,10 +1,23 @@
 /**
- * OpenAI vision + structured JSON for clothing metadata.
- * Model must report confidence; only "high" is used by the app (low → discarded).
+ * OpenAI vision + structured JSON for clothing metadata + optional rich garment profile.
  */
 
 const OpenAI = require('openai');
 const { TYPES, COLORS, SEASONS, STYLES } = require('../lib/metadataOptions');
+const {
+  CATEGORY,
+  SUBTYPE,
+  FORMALITY,
+  SILHOUETTE,
+  MATERIAL_VIBE,
+  PATTERN,
+  LAYER_ROLE,
+  STATEMENT,
+  COLOR_FAMILY,
+  WARMTH,
+  VERSATILITY,
+  UNSPECIFIED,
+} = require('../lib/garmentProfile');
 
 const ITEM_SCHEMA = {
   name: 'clothing_item_metadata',
@@ -17,30 +30,60 @@ const ITEM_SCHEMA = {
       season: { type: 'string', enum: SEASONS },
       style: { type: 'string', enum: STYLES },
       confidence: { type: 'string', enum: ['high', 'low'] },
+      category: { type: 'string', enum: CATEGORY },
+      subtype: { type: 'string', enum: SUBTYPE },
+      formality: { type: 'string', enum: FORMALITY },
+      silhouette: { type: 'string', enum: SILHOUETTE },
+      materialVibe: { type: 'string', enum: MATERIAL_VIBE },
+      patternOrTexture: { type: 'string', enum: PATTERN },
+      layerRole: { type: 'string', enum: LAYER_ROLE },
+      statementLevel: { type: 'string', enum: STATEMENT },
+      colorFamily: { type: 'string', enum: COLOR_FAMILY },
+      warmth: { type: 'string', enum: WARMTH },
+      versatility: { type: 'string', enum: VERSATILITY },
     },
-    required: ['type', 'color', 'season', 'style', 'confidence'],
+    required: [
+      'type',
+      'color',
+      'season',
+      'style',
+      'confidence',
+      'category',
+      'subtype',
+      'formality',
+      'silhouette',
+      'materialVibe',
+      'patternOrTexture',
+      'layerRole',
+      'statementLevel',
+      'colorFamily',
+      'warmth',
+      'versatility',
+    ],
     additionalProperties: false,
   },
 };
 
-const SYSTEM_PROMPT = `You classify ONE clothing item in a photo for a wardrobe app (structured JSON).
+const SYSTEM_PROMPT = `You classify ONE clothing item in a photo for a wardrobe / outfit app (structured JSON).
 
 confidence:
 - "high" ONLY if garment type and main color are clearly visible (single item, reasonably sharp).
 - "low" if: blurry/dark photo, multiple competing items, face-only, not clothing, packaging, or you would be guessing.
 
-When confidence is "low", still output valid enum fields using placeholders: type "T-Shirt", color "Black", season "All Season", style "Casual" — the server discards them when confidence is not high.
+When confidence is "low", still output valid enums for ALL fields. For core fields use placeholders: type "T-Shirt", color "Black", season "All Season", style "Casual". For rich fields use "${UNSPECIFIED}" only — the server discards low-confidence rows.
 
 When confidence is "high":
-- Never default to generic "Shirt" + "Blue" + "All Season" + "Casual" unless the photo is clearly a blue casual shirt.
-- Footwear must use Sneakers, Shoes, Boots, or Sandals — never Shirt/T-Shirt for shoes or sneakers.
-- Hooded sweatshirts → Hoodie; crewneck knit → Sweater.
-- Pick the most specific accurate type (Sneakers vs Shoes for athletic soles; Hoodie vs Sweater when a hood is visible).`;
+- Distinguish: blazer vs denim jacket vs hoodie vs button-up vs tee; dress shoes vs sneakers vs boots; dress pants vs jeans vs joggers.
+- subtype: pick the closest label (e.g. denim_jacket for blue jean jackets, blazer for tailored jackets that read as suiting).
+- category: top | bottom | shoes | outerwear | mid_layer (blazers = mid_layer).
+- layerRole: base for shirts/tees/hoodies/sweaters/dresses; mid for blazers; outer for coats/jackets worn as outer layer.
+- formality: match visible construction (suiting/blazer/dress shoes → higher; jersey/tee/sneakers → lower).
+- materialVibe / patternOrTexture / silhouette / warmth / versatility: best guess from the photo; use "${UNSPECIFIED}" if not visible.
+- Never use lazy generic core combos (e.g. Shirt+Blue+All Season+Casual) unless the photo is clearly that.
+- Footwear must be Shoes, Boots, Sneakers, or Sandals — never Shirt/T-Shirt for shoes.`;
 
 /**
- * @param {Buffer} imageBuffer
- * @param {string} [mimeType]
- * @returns {Promise<{ type: string, color: string, season: string, style: string, confidence: 'high'|'low' }>}
+ * @returns {Promise<object>} full parsed fields including confidence
  */
 async function analyzeItemImageOpenAI(imageBuffer, mimeType) {
   const apiKey = process.env.OPENAI_API_KEY?.trim();
@@ -55,15 +98,15 @@ async function analyzeItemImageOpenAI(imageBuffer, mimeType) {
   const dataUrl = `data:${mime};base64,${b64}`;
 
   const controller = new AbortController();
-  const timeoutMs = Math.min(Math.max(Number(process.env.OPENAI_ANALYZE_TIMEOUT_MS) || 25000, 5000), 120000);
+  const timeoutMs = Math.min(Math.max(Number(process.env.OPENAI_ANALYZE_TIMEOUT_MS) || 35000, 5000), 120000);
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const completion = await client.chat.completions.create(
       {
         model,
-        temperature: 0.1,
-        max_tokens: 220,
+        temperature: 0.15,
+        max_tokens: 520,
         response_format: {
           type: 'json_schema',
           json_schema: ITEM_SCHEMA,
@@ -75,7 +118,7 @@ async function analyzeItemImageOpenAI(imageBuffer, mimeType) {
             content: [
               {
                 type: 'text',
-                text: 'Classify this garment. Return JSON matching the schema including confidence.',
+                text: 'Classify this garment. Return JSON matching the schema including confidence and rich fields.',
               },
               { type: 'image_url', image_url: { url: dataUrl, detail: 'high' } },
             ],
@@ -98,6 +141,17 @@ async function analyzeItemImageOpenAI(imageBuffer, mimeType) {
       season: parsed.season,
       style: parsed.style,
       confidence,
+      category: parsed.category,
+      subtype: parsed.subtype,
+      formality: parsed.formality,
+      silhouette: parsed.silhouette,
+      materialVibe: parsed.materialVibe,
+      patternOrTexture: parsed.patternOrTexture,
+      layerRole: parsed.layerRole,
+      statementLevel: parsed.statementLevel,
+      colorFamily: parsed.colorFamily,
+      warmth: parsed.warmth,
+      versatility: parsed.versatility,
     };
   } finally {
     clearTimeout(timer);

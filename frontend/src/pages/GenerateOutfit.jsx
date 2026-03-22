@@ -31,14 +31,17 @@ function GenerateOutfit() {
   const [vibe, setVibe] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [errorHint, setErrorHint] = useState(null);
 
   async function handleSubmit(e) {
     e.preventDefault();
     if (!occasion || !vibe) {
       setError("Please choose an occasion and an aesthetic.");
+      setErrorHint(null);
       return;
     }
     setError(null);
+    setErrorHint(null);
     setLoading(true);
     try {
       const res = await authFetch("/api/outfits/generate", {
@@ -50,14 +53,17 @@ function GenerateOutfit() {
         const msg = data.error || "Generation failed. Try again.";
         if (res.status === 401) {
           setError("Please log in to generate outfits.");
+          setErrorHint(null);
         } else {
           setError(msg);
+          setErrorHint(data.suggestion || null);
         }
         setLoading(false);
         return;
       }
       navigate("/results", { state: { outfit: data } });
     } catch (err) {
+      setErrorHint(null);
       const msg = err.name === "TypeError" && (err.message === "Failed to fetch" || err.message?.includes("fetch"))
         ? "Could not reach the server. Start the backend and try again."
         : "Could not reach the server. Check that the backend is running.";
@@ -122,6 +128,9 @@ function GenerateOutfit() {
           {error && (
             <div className="generate-feedback" role="alert">
               <p className="generate-error">{error}</p>
+              {errorHint && (
+                <p className="generate-suggestion">{errorHint}</p>
+              )}
               {(/wardrobe|not enough|doesn'?t have enough|suitable items|pieces that fit/i.test(error)) && (
                 <p className="generate-cta">
                   <Link to="/add-item">Add items to your wardrobe</Link> or try again later.

@@ -1124,6 +1124,13 @@ body.signup-page-open {
   color: #a03028;
 }
 
+.generate-suggestion {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--auth-text, #4a4038);
+}
+
 .generate-cta {
   margin: 0;
   font-size: 0.8125rem;
@@ -1318,6 +1325,15 @@ body.signup-page-open {
   font-weight: 400;
 }
 
+.outfit-stylist-confidence {
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--auth-text-muted, #6a5a4a);
+  margin: 0 0 10px;
+}
+
 .explanation {
   font-size: 0.875rem;
   line-height: 1.55;
@@ -1325,6 +1341,17 @@ body.signup-page-open {
   margin: 0;
   padding-top: 14px;
   border-top: 1px solid var(--auth-border, rgba(0,0,0,0.06));
+}
+
+.results-hint {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--auth-text-muted, #6a5a4a);
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  background: rgba(139, 94, 60, 0.06);
+  border-radius: 8px;
+  border: 1px solid rgba(139, 94, 60, 0.12);
 }
 
 /* Add Item Page — photo-first, premium */
@@ -1527,6 +1554,33 @@ body.signup-page-open {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.additem-profile-details {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--auth-border, rgba(0,0,0,0.08));
+  background: rgba(0, 0, 0, 0.02);
+  font-size: 0.8125rem;
+  color: var(--auth-text-muted, #6a5a4a);
+}
+
+.additem-profile-details summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--auth-text, #2a2a2a);
+}
+
+.additem-profile-line {
+  margin: 8px 0 4px;
+  line-height: 1.45;
+}
+
+.additem-profile-hint {
+  margin: 0;
+  font-size: 0.75rem;
+  opacity: 0.9;
 }
 
 .additem-metadata-heading {

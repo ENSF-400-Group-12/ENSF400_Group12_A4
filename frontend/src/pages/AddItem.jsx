@@ -20,6 +20,17 @@ const styles = [
 ];
 
 /** Map API/fuzzy value to an allowed option (case-insensitive, contains). */
+function formatGarmentProfileSummary(p) {
+  if (!p || typeof p !== "object") return "";
+  const parts = [];
+  if (p.subtype) parts.push(String(p.subtype).replace(/_/g, " "));
+  if (p.formality) parts.push(`formality ${p.formality}`);
+  if (p.layerRole) parts.push(`layer ${p.layerRole}`);
+  if (p.materialVibe) parts.push(p.materialVibe);
+  if (p.versatility) parts.push(String(p.versatility).replace(/_/g, " "));
+  return parts.join(" · ");
+}
+
 function mapToOption(value, options) {
   if (!value || !options || !options.length) return null;
   const v = String(value).trim().toLowerCase();
@@ -52,6 +63,8 @@ function AddItem() {
   const [analysisUncertain, setAnalysisUncertain] = useState(false);
   /** false = server reports no OPENAI_API_KEY (vision off). null = unknown. */
   const [openaiConfigured, setOpenaiConfigured] = useState(null);
+  /** Rich signals from analysis (stored in DB, not shown as separate form fields). */
+  const [garmentProfile, setGarmentProfile] = useState(null);
   const [loadError, setLoadError] = useState(null);
   const [loading, setLoading] = useState(isEdit);
   const [submitLoading, setSubmitLoading] = useState(false);
@@ -76,6 +89,8 @@ function AddItem() {
           setSeason(data.item.season || "");
           setStyle(data.item.style || "");
           setNotes(data.item.notes || "");
+          const gp = data.item.garmentProfile;
+          setGarmentProfile(gp && typeof gp === "object" && Object.keys(gp).length ? gp : null);
         }
       } catch (e) {
         if (!cancelled) setLoadError("Failed to load item.");
@@ -97,6 +112,7 @@ function AddItem() {
       setFromOpenAI(false);
       setAnalysisUncertain(false);
       setOpenaiConfigured(null);
+      setGarmentProfile(null);
       return;
     }
     const url = URL.createObjectURL(imageFile);
@@ -138,6 +154,9 @@ function AddItem() {
               setOpenaiConfigured(data.openaiConfigured);
             } else {
               setOpenaiConfigured(null);
+            }
+            if (data.garmentProfile && typeof data.garmentProfile === "object" && Object.keys(data.garmentProfile).length) {
+              setGarmentProfile(data.garmentProfile);
             }
           }
         }
@@ -218,6 +237,7 @@ function AddItem() {
       form.append("season", season.trim());
       form.append("style", style.trim());
       form.append("notes", notes.trim());
+      form.append("garmentProfile", JSON.stringify(garmentProfile && Object.keys(garmentProfile).length ? garmentProfile : {}));
       if (imageFile) form.append("image", imageFile);
 
       const res = await authFetch("/api/items", { method: "POST", body: form });
@@ -335,6 +355,13 @@ function AddItem() {
                 {fromOpenAI ? "AI suggestion (vision): " : fromFilename ? "Filename suggestion: " : "Suggestions: "}
                 {[prefilledByAi.type && type, prefilledByAi.color && color, prefilledByAi.season && season, prefilledByAi.style && style].filter(Boolean).join(" · ") || "—"}
               </p>
+            )}
+            {garmentProfile && Object.keys(garmentProfile).length > 0 && (
+              <details className="additem-profile-details">
+                <summary>Style signals saved with this item</summary>
+                <p className="additem-profile-line">{formatGarmentProfileSummary(garmentProfile)}</p>
+                <p className="additem-profile-hint">Used for outfit matching — your dropdowns above are still what you confirm.</p>
+              </details>
             )}
             <h2 className="additem-metadata-heading">Confirm or edit</h2>
             <p className="additem-metadata-hint">Change any field if we got it wrong. Fill only what’s missing.</p>

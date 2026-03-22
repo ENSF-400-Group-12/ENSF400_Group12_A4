@@ -16,7 +16,10 @@ router.post('/generate', express.json(), async (req, res) => {
   try {
     const result = await generateOutfit(req.session.userId, occasion, vibe);
     if (result.error) {
-      return res.status(422).json({ error: result.error });
+      return res.status(422).json({
+        error: result.error,
+        suggestion: result.suggestion || null,
+      });
     }
     res.json(result);
   } catch (err) {

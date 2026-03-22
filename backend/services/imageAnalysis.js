@@ -5,6 +5,11 @@
 const path = require('path');
 const { inferFromFilename } = require('../lib/filenameInference');
 const { normalizeMetadata } = require('../lib/metadataOptions');
+const {
+  resolveGarmentProfile,
+  normalizeGarmentProfileInput,
+  stripUnspecified,
+} = require('../lib/garmentProfile');
 const { analyzeItemImageOpenAI } = require('./openaiItemAnalysis');
 
 const FOOTWEAR_TYPES = new Set(['Shoes', 'Sneakers', 'Boots', 'Sandals']);
@@ -29,8 +34,21 @@ function openAiConflictsWithFilename(aiType, filename) {
   return false;
 }
 
+function garmentProfileForAnalyzeRow(meta, richOverlay) {
+  const row = {
+    type: meta.type,
+    color: meta.color,
+    style: meta.style,
+    notes: meta.notes != null ? String(meta.notes) : '',
+    garment_profile: null,
+  };
+  const base = resolveGarmentProfile(row);
+  const overlay = normalizeGarmentProfileInput(richOverlay || {});
+  return stripUnspecified({ ...base, ...overlay });
+}
+
 /**
- * @returns {Promise<{ type?: string, color?: string, season?: string, style?: string, fromOpenAI?: boolean, fromFilename?: boolean, uncertain?: boolean }>}
+ * @returns {Promise<object>}
  */
 async function analyzeItemImage(imageBuffer, mimeType, filename) {
   if (!imageBuffer || imageBuffer.length === 0) {
@@ -49,7 +67,23 @@ async function analyzeItemImage(imageBuffer, mimeType, filename) {
           if (isSuspiciousLazyCombo(normalized) || openAiConflictsWithFilename(normalized.type, filename)) {
             console.warn('[analyzeItemImage] discarding OpenAI guess (lazy combo or conflicts with filename)');
           } else {
-            return { ...normalized, fromOpenAI: true };
+            const garmentProfile = garmentProfileForAnalyzeRow(
+              { ...normalized, notes: '' },
+              {
+                category: rest.category,
+                subtype: rest.subtype,
+                formality: rest.formality,
+                silhouette: rest.silhouette,
+                materialVibe: rest.materialVibe,
+                patternOrTexture: rest.patternOrTexture,
+                layerRole: rest.layerRole,
+                statementLevel: rest.statementLevel,
+                colorFamily: rest.colorFamily,
+                warmth: rest.warmth,
+                versatility: rest.versatility,
+              }
+            );
+            return { ...normalized, fromOpenAI: true, garmentProfile };
           }
         }
       }
@@ -67,7 +101,11 @@ function filenameInferenceOnly(filename) {
   }
   const inferred = inferFromFilename(filename);
   if (inferred && Object.keys(inferred).length > 0) {
-    return { ...inferred, fromFilename: true };
+    const garmentProfile = garmentProfileForAnalyzeRow(
+      { ...inferred, notes: path.basename(filename || '', path.extname(filename || '')) },
+      {}
+    );
+    return { ...inferred, fromFilename: true, garmentProfile };
   }
   return { uncertain: true };
 }

@@ -66,6 +66,9 @@ function OutfitCard({ outfit }) {
           );
         })}
       </div>
+      {outfit.stylistConfidence && (
+        <p className="outfit-stylist-confidence">Stylist pass: {outfit.stylistConfidence}</p>
+      )}
       {explanation && (
         <p className="explanation">{explanation}</p>
       )}
