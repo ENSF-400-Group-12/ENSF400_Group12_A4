@@ -15,6 +15,8 @@ const RUBRIC_SUMMARY = [
   'For Minimalist vibe, prefer a tight neutral palette (at most one accent color).',
   'Shoes should match the formality of top + bottom (e.g. sneakers for casual/street, dress shoes for formal).',
   'Do not add a casual or denim jacket to formal, date night, work, or minimalist looks unless it clearly elevates the set.',
+  'Blazers belong over a base layer (shirt/tee/knit), not as the only “shirt” in a polished look.',
+  'Prefer simple 3-piece outfits; extra layers must earn their place.',
 ].join(' ');
 
 function isNeutralColor(color) {
@@ -26,14 +28,14 @@ function isBrightColor(color) {
 }
 
 /**
- * @param {object} selected - { top, bottom, shoes, outerwear } nullable items with type, color, style
+ * @param {object} selected - { top, mid, bottom, shoes, outerwear } nullable items with type, color, style
  * @param {string} occasion
  * @param {string} vibe
  * @returns {number} bonus/penalty added to outfit score
  */
 function scoreOutfitCoherence(selected, occasion, vibe) {
   let score = 0;
-  const pieces = ['top', 'bottom', 'shoes', 'outerwear']
+  const pieces = ['top', 'mid', 'bottom', 'shoes', 'outerwear']
     .map((k) => selected[k])
     .filter(Boolean);
   if (pieces.length === 0) return 0;
@@ -65,6 +67,15 @@ function scoreOutfitCoherence(selected, occasion, vibe) {
 
   if (vibeLower === 'sporty' || vibeLower === 'streetwear' || occasionLower === 'outdoor' || occasionLower === 'weekend') {
     if (SPORTISH.test(styles) || /streetwear|casual/.test(styles)) score += 6;
+  }
+
+  const mid = selected.mid;
+  if (
+    mid
+    && ((mid.type || '').toLowerCase() === 'blazer' || /blazer/i.test(mid.type || ''))
+    && (vibeLower === 'streetwear' || vibeLower === 'sporty' || vibeLower === 'emo')
+  ) {
+    score -= 22;
   }
 
   const colorStr = colors.join(' ').toLowerCase();

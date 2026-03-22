@@ -27,6 +27,8 @@ module.exports = defineConfig({
         ...process.env,
         PORT: '18080',
         FRONTEND_ORIGIN: 'http://localhost:13000,http://localhost:3000,http://localhost:3001',
+        // Deterministic F3 e2e: local candidate pick + grammar; rerank tested manually / without CI
+        ...(process.env.CI === '1' ? { OPENAI_OUTFIT_RERANK: '0' } : {}),
       },
       url: 'http://localhost:18080/',
       reuseExistingServer: !process.env.CI,
