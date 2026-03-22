@@ -1185,6 +1185,12 @@ body.signup-page-open {
   margin: 0 0 16px;
 }
 
+.outfit-meta-ai {
+  font-weight: 500;
+  color: var(--auth-text, #4a4038);
+  opacity: 0.92;
+}
+
 .outfit-items {
   display: flex;
   flex-direction: column;

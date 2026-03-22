@@ -11,6 +11,11 @@ function OutfitCard({ outfit }) {
       {occasion && vibe && (
         <p className="outfit-meta">
           {occasion} · {vibe}
+          {outfit.reranked && (
+            <span className="outfit-meta-ai" title="Picked from several rule-based options, then refined for coherence">
+              {' '}· AI-refined
+            </span>
+          )}
         </p>
       )}
       <div className="outfit-items outfit-items--grid">
