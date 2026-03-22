@@ -53,6 +53,19 @@ function ensureGarmentProfileColumn(database) {
   }
 }
 
+function ensureFavoriteOutfitsSchema(database) {
+  database.run(`
+    CREATE TABLE IF NOT EXISTS favorite_outfits (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      payload TEXT NOT NULL,
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    )
+  `);
+  database.run(`CREATE INDEX IF NOT EXISTS idx_favorite_outfits_user_id ON favorite_outfits(user_id)`);
+}
+
 function persist() {
   if (!db) return;
   if (!fs.existsSync(dataDir)) {
@@ -72,6 +85,7 @@ async function initDb() {
     db = new SQL.Database(buffer);
     initSchema(db);
     ensureWardrobeSchema(db);
+    ensureFavoriteOutfitsSchema(db);
     persist();
   } else {
     if (!fs.existsSync(dataDir)) {
@@ -80,6 +94,7 @@ async function initDb() {
     db = new SQL.Database();
     initSchema(db);
     ensureWardrobeSchema(db);
+    ensureFavoriteOutfitsSchema(db);
     persist();
   }
   return db;
@@ -92,4 +107,4 @@ function getDb() {
   return db;
 }
 
-module.exports = { getDb, initSchema, ensureWardrobeSchema, initDb, persist };
+module.exports = { getDb, initSchema, ensureWardrobeSchema, ensureFavoriteOutfitsSchema, initDb, persist };

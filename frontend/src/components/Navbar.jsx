@@ -21,6 +21,7 @@ function Navbar() {
 
       <div className="nav-links">
         <Link to="/dashboard" className="nav-link nav-link--primary">Wardrobe</Link>
+        <Link to="/favorites" className="nav-link">Favorites</Link>
         <Link to="/profile" className="nav-link">Profile</Link>
         {user?.email && (
           <span className="nav-user-email" title={user.email}>
