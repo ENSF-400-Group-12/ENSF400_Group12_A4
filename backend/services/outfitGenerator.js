@@ -1,6 +1,6 @@
 /**
- * Rule-based outfit generator with local candidate search + optional OpenAI rerank.
- * Uses wardrobe metadata (type, color, season, style) — no weather, no RAG.
+ * Rule-based outfit generator: core = top + bottom + shoes; outerwear only when it clearly helps.
+ * Rejects weak fits for demanding occasion/vibe combinations.
  */
 
 const { getDb } = require('../db/connection');
@@ -17,6 +17,9 @@ const SLOT_TYPES = {
 const REQUIRED_SLOTS = ['top', 'bottom', 'shoes'];
 const INSUFFICIENT_MESSAGE =
   'Not enough items in your wardrobe to build an outfit. Add at least one top, one bottom, and one pair of shoes.';
+
+const NOT_SUITABLE_MESSAGE =
+  "Your wardrobe doesn't have enough pieces that fit this occasion and vibe. Try a different combination, or add items that match the look you want.";
 
 const VIBE_STYLE_KEYWORDS = {
   casual: ['casual', 'smart casual', 'streetwear'],
@@ -123,17 +126,16 @@ function getTopKForSlot(items, occasion, vibe, k) {
 }
 
 function selectedKey(selected) {
-  return ['top', 'bottom', 'shoes', 'outerwear']
+  return ['top', 'bottom', 'shoes']
     .map((s) => (selected[s] ? selected[s].id : 'x'))
     .join('-');
 }
 
+/** Core outfits only (no outerwear in search grid). */
 function buildLocalCandidates(bySlot, occasion, vibe) {
   const tops = getTopKForSlot(bySlot.top, occasion, vibe, TOP_K_SLOT);
   const bottoms = getTopKForSlot(bySlot.bottom, occasion, vibe, TOP_K_SLOT);
   const shoelist = getTopKForSlot(bySlot.shoes, occasion, vibe, TOP_K_SLOT);
-  const outerTop = getTopKForSlot(bySlot.outerwear, occasion, vibe, 2);
-  const outerChoices = bySlot.outerwear.length ? [null, ...outerTop] : [null];
 
   const raw = [];
   for (const top of tops) {
@@ -141,16 +143,13 @@ function buildLocalCandidates(bySlot, occasion, vibe) {
     const bottomOpts = isDress ? [null] : bottoms;
     for (const bottom of bottomOpts) {
       for (const shoes of shoelist) {
-        for (const outerwear of outerChoices) {
-          const selected = { top, bottom, shoes, outerwear };
-          let s = 0;
-          if (selected.top) s += scoreItem(selected.top, occasion, vibe);
-          if (selected.bottom) s += scoreItem(selected.bottom, occasion, vibe);
-          if (selected.shoes) s += scoreItem(selected.shoes, occasion, vibe);
-          if (selected.outerwear) s += scoreItem(selected.outerwear, occasion, vibe);
-          s += scoreOutfitCoherence(selected, occasion, vibe);
-          raw.push({ selected, localScore: s });
-        }
+        const selected = { top, bottom, shoes, outerwear: null };
+        let s = 0;
+        if (selected.top) s += scoreItem(selected.top, occasion, vibe);
+        if (selected.bottom) s += scoreItem(selected.bottom, occasion, vibe);
+        if (selected.shoes) s += scoreItem(selected.shoes, occasion, vibe);
+        s += scoreOutfitCoherence(selected, occasion, vibe);
+        raw.push({ selected, localScore: s });
       }
     }
   }
@@ -166,6 +165,64 @@ function buildLocalCandidates(bySlot, occasion, vibe) {
     if (unique.length >= MAX_CANDIDATES) break;
   }
   return unique;
+}
+
+function minAcceptableScore(occasion, vibe) {
+  let m = 132;
+  const o = (occasion || '').toLowerCase();
+  const v = (vibe || '').trim().toLowerCase();
+  if (o === 'formal' || v === 'formal' || v === 'classy') m += 34;
+  if (o === 'date night' && (v === 'classy' || v === 'formal')) m += 20;
+  if (o === 'work' && (v === 'formal' || v === 'minimalist' || v === 'classy')) m += 24;
+  if (v === 'minimalist' || v === 'formal') m += 10;
+  return m;
+}
+
+function pickWithVariety(candidates, userId, occasion, vibe) {
+  if (!candidates.length) return null;
+  const topScore = candidates[0].localScore;
+  const band = candidates.filter((c) => c.localScore >= topScore - 8);
+  if (band.length <= 1) return band[0];
+  let h = Number(userId) || 0;
+  const seed = `${occasion}|${vibe}`;
+  for (let i = 0; i < seed.length; i++) {
+    h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+  }
+  return band[h % band.length];
+}
+
+function maybeAddOuterwear(selected, bySlot, occasion, vibe, coreScore) {
+  if (!bySlot.outerwear?.length) return selected;
+  const occ = (occasion || '').toLowerCase();
+  const vib = (vibe || '').toLowerCase();
+  const wantLayer =
+    occ === 'outdoor' ||
+    occ === 'formal' ||
+    occ === 'work' ||
+    occ === 'date night' ||
+    /classy|formal|minimalist/.test(vib);
+
+  let bestOw = null;
+  let bestTotal = coreScore;
+  for (const ow of bySlot.outerwear) {
+    const sel = { ...selected, outerwear: ow };
+    let s = 0;
+    if (sel.top) s += scoreItem(sel.top, occasion, vibe);
+    if (sel.bottom) s += scoreItem(sel.bottom, occasion, vibe);
+    if (sel.shoes) s += scoreItem(sel.shoes, occasion, vibe);
+    s += scoreItem(ow, occasion, vibe);
+    s += scoreOutfitCoherence(sel, occasion, vibe);
+    if (s > bestTotal) {
+      bestTotal = s;
+      bestOw = ow;
+    }
+  }
+  const gain = bestTotal - coreScore;
+  const threshold = wantLayer ? 6 : 14;
+  if (bestOw && gain >= threshold) {
+    return { ...selected, outerwear: bestOw };
+  }
+  return selected;
 }
 
 function pickBestForSlot(items, occasion, vibe) {
@@ -202,22 +259,36 @@ async function generateOutfit(userId, occasion, vibe) {
     return { error: INSUFFICIENT_MESSAGE };
   }
 
-  let chosen = candidates[0];
+  const minScore = minAcceptableScore(occasion, vibe);
+  if (candidates[0].localScore < minScore) {
+    return { error: NOT_SUITABLE_MESSAGE };
+  }
+
+  let chosen = pickWithVariety(candidates, userId, occasion, vibe);
+  if (!chosen || chosen.localScore < minScore) {
+    return { error: NOT_SUITABLE_MESSAGE };
+  }
+
   let reranked = false;
   let explanation = buildExplanation(chosen.selected, occasion, vibe);
 
   const rerank = await rerankOutfitCandidates(candidates, occasion, vibe);
   if (rerank && candidates[rerank.chosenIndex]) {
-    chosen = candidates[rerank.chosenIndex];
-    explanation = rerank.explanation;
-    reranked = true;
+    const alt = candidates[rerank.chosenIndex];
+    if (alt.localScore >= minScore) {
+      chosen = alt;
+      explanation = rerank.explanation;
+      reranked = true;
+    }
   }
 
-  const selected = { ...chosen.selected };
+  let selected = { ...chosen.selected };
   const isDressAsTop = selected.top && (selected.top.type || '').toLowerCase().includes('dress');
   if (isDressAsTop) {
     selected.bottom = null;
   }
+
+  selected = maybeAddOuterwear(selected, bySlot, occasion, vibe, chosen.localScore);
 
   const outfitItems = [selected.top, selected.bottom, selected.shoes, selected.outerwear].filter(Boolean);
   return {
