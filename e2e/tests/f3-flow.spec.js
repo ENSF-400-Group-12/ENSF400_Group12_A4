@@ -30,8 +30,8 @@ test.describe('F1/F2/F3 browser flows', () => {
     await expect(page.locator('.clothing-card').first()).toBeVisible({ timeout: 20_000 });
 
     await page.goto('/generate');
-    await page.getByLabel('Occasion').selectOption('Work');
-    await page.locator('.generate-chips').getByRole('button', { name: 'Minimalist' }).click();
+    await page.getByLabel('Occasion').selectOption('Weekend');
+    await page.locator('.generate-field--vibe .generate-chips').getByRole('button', { name: 'Streetwear' }).click();
     await page.getByRole('button', { name: 'Generate Outfit' }).click();
     await expect(page).toHaveURL(/\/results$/, { timeout: 20_000 });
     await expect(page.getByRole('heading', { name: 'Recommended Outfit' })).toBeVisible();
