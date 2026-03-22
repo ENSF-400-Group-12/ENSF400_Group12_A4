@@ -35,6 +35,22 @@ function ensureWardrobeSchema(database) {
     )
   `);
   database.run(`CREATE INDEX IF NOT EXISTS idx_wardrobe_items_user_id ON wardrobe_items(user_id)`);
+  ensureGarmentProfileColumn(database);
+}
+
+function ensureGarmentProfileColumn(database) {
+  try {
+    const info = database.exec('PRAGMA table_info(wardrobe_items)');
+    if (!info.length || !info[0].values.length) return;
+    const nameIdx = info[0].columns.indexOf('name');
+    if (nameIdx < 0) return;
+    const hasProfile = info[0].values.some((row) => row[nameIdx] === 'garment_profile');
+    if (!hasProfile) {
+      database.run('ALTER TABLE wardrobe_items ADD COLUMN garment_profile TEXT');
+    }
+  } catch (err) {
+    console.warn('[db] garment_profile migration:', err.message);
+  }
 }
 
 function persist() {
@@ -54,15 +70,18 @@ async function initDb() {
   if (fs.existsSync(dbPath)) {
     const buffer = fs.readFileSync(dbPath);
     db = new SQL.Database(buffer);
+    initSchema(db);
+    ensureWardrobeSchema(db);
+    persist();
   } else {
     if (!fs.existsSync(dataDir)) {
       fs.mkdirSync(dataDir, { recursive: true });
     }
     db = new SQL.Database();
     initSchema(db);
+    ensureWardrobeSchema(db);
     persist();
   }
-  ensureWardrobeSchema(db);
   return db;
 }
 

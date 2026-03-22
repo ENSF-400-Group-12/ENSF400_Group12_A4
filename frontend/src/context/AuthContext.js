@@ -30,8 +30,8 @@ export function AuthProvider({ children }) {
     try {
       const res = await wrapAuthFetch(authFetch)('/api/auth/me');
       if (res.ok) {
-        const data = await res.json();
-        setUser(data.user);
+        const data = await res.json().catch(() => ({}));
+        setUser(data.user ?? null);
       } else {
         setUser(null);
       }

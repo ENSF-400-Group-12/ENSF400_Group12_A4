@@ -2,9 +2,14 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const { getDb, persist } = require('../db/connection');
-const requireAuth = require('../middleware/requireAuth');
+const { requireAuth } = require('../middleware/requireAuth');
 const { upload, memoryUpload } = require('../config/upload');
 const { analyzeItemImage } = require('../services/imageAnalysis');
+const {
+  profileForApi,
+  normalizeGarmentProfileInput,
+  serializeProfileForDb,
+} = require('../lib/garmentProfile');
 
 const router = express.Router();
 router.use(requireAuth);
@@ -29,7 +34,33 @@ function getSelectResult(db, sql, params) {
   return obj;
 }
 
-const MAX_LEN = { type: 80, color: 80, season: 80, style: 80, notes: 500 };
+const MAX_LEN = { type: 80, color: 80, season: 80, style: 80, notes: 500, garmentProfileJson: 12000 };
+
+function parseGarmentProfileFromBody(body) {
+  if (!body || body.garmentProfile == null || body.garmentProfile === '') return null;
+  try {
+    const raw = typeof body.garmentProfile === 'string' ? JSON.parse(body.garmentProfile) : body.garmentProfile;
+    if (!raw || typeof raw !== 'object') return null;
+    return serializeProfileForDb(normalizeGarmentProfileInput(raw));
+  } catch (_) {
+    return null;
+  }
+}
+
+function mapItemRow(row) {
+  return {
+    id: row.id,
+    type: row.type,
+    color: row.color,
+    season: row.season,
+    style: row.style,
+    notes: row.notes ?? '',
+    image_path: row.image_path,
+    created_at: row.created_at,
+    garmentProfile: profileForApi(row),
+  };
+}
+
 function validateItemFields(type, color, season, style, notes) {
   if (!type || !color || !season || !style) {
     return 'Type, color, season, and style are required.';
@@ -46,20 +77,12 @@ router.get('/', (req, res) => {
   try {
     const db = getDb();
     const rows = rowsToObjects(
-      db.exec('SELECT id, user_id, type, color, season, style, notes, image_path, created_at FROM wardrobe_items WHERE user_id = $uid ORDER BY created_at DESC', {
-        $uid: req.session.userId,
-      })
+      db.exec(
+        'SELECT id, user_id, type, color, season, style, notes, image_path, created_at, garment_profile FROM wardrobe_items WHERE user_id = $uid ORDER BY created_at DESC',
+        { $uid: req.session.userId }
+      )
     );
-    const items = rows.map((r) => ({
-      id: r.id,
-      type: r.type,
-      color: r.color,
-      season: r.season,
-      style: r.style,
-      notes: r.notes ?? '',
-      image_path: r.image_path,
-      created_at: r.created_at,
-    }));
+    const items = rows.map((r) => mapItemRow(r));
     res.json({ items });
   } catch (err) {
     res.status(500).json({ error: 'Failed to load wardrobe items.' });
@@ -81,8 +104,12 @@ router.post('/analyze', (req, res, next) => {
     return res.status(400).json({ error: 'No image provided.' });
   }
   try {
-    const metadata = await analyzeItemImage(req.file.buffer, req.file.mimetype);
-    res.json({ ...metadata });
+    const metadata = await analyzeItemImage(req.file.buffer, req.file.mimetype, req.file.originalname);
+    let suggestionSource = 'none';
+    if (metadata.fromOpenAI) suggestionSource = 'ai';
+    else if (metadata.fromFilename) suggestionSource = 'filename';
+    const openaiConfigured = Boolean(process.env.OPENAI_API_KEY?.trim());
+    res.json({ ...metadata, suggestionSource, openaiConfigured });
   } catch (err) {
     res.status(500).json({ error: 'Analysis failed. You can still add the item manually.' });
   }
@@ -95,25 +122,18 @@ router.get('/:id', (req, res) => {
   }
   try {
     const db = getDb();
-    const row = getSelectResult(db, 'SELECT id, user_id, type, color, season, style, notes, image_path, created_at FROM wardrobe_items WHERE id = $id', { $id: id });
+    const row = getSelectResult(
+      db,
+      'SELECT id, user_id, type, color, season, style, notes, image_path, created_at, garment_profile FROM wardrobe_items WHERE id = $id',
+      { $id: id }
+    );
     if (!row) {
       return res.status(404).json({ error: 'Item not found.' });
     }
     if (row.user_id !== req.session.userId) {
       return res.status(403).json({ error: 'You can only view your own items.' });
     }
-    res.json({
-      item: {
-        id: row.id,
-        type: row.type,
-        color: row.color,
-        season: row.season,
-        style: row.style,
-        notes: row.notes ?? '',
-        image_path: row.image_path,
-        created_at: row.created_at,
-      },
-    });
+    res.json({ item: mapItemRow(row) });
   } catch (err) {
     res.status(500).json({ error: 'Failed to load item.' });
   }
@@ -135,6 +155,10 @@ router.post('/', (req, res, next) => {
   const season = (req.body.season && req.body.season.trim()) || '';
   const style = (req.body.style && req.body.style.trim()) || '';
   const notes = req.body.notes != null ? String(req.body.notes).trim() : '';
+  const garmentProfileJson = parseGarmentProfileFromBody(req.body);
+  if (garmentProfileJson && garmentProfileJson.length > MAX_LEN.garmentProfileJson) {
+    return res.status(400).json({ error: 'Garment profile data is too large.' });
+  }
 
   const validationError = validateItemFields(type, color, season, style, notes);
   if (validationError) {
@@ -145,8 +169,8 @@ router.post('/', (req, res, next) => {
     const db = getDb();
     const image_path = req.file ? `/uploads/${req.file.filename}` : null;
     db.run(
-      `INSERT INTO wardrobe_items (user_id, type, color, season, style, notes, image_path)
-       VALUES ($uid, $type, $color, $season, $style, $notes, $path)`,
+      `INSERT INTO wardrobe_items (user_id, type, color, season, style, notes, image_path, garment_profile)
+       VALUES ($uid, $type, $color, $season, $style, $notes, $path, $gp)`,
       {
         $uid: req.session.userId,
         $type: type,
@@ -155,6 +179,7 @@ router.post('/', (req, res, next) => {
         $style: style,
         $notes: notes,
         $path: image_path,
+        $gp: garmentProfileJson,
       }
     );
     const idResult = db.exec('SELECT last_insert_rowid() as id');
@@ -163,18 +188,12 @@ router.post('/', (req, res, next) => {
       return res.status(500).json({ error: 'Item was not created. Please try again.' });
     }
     persist();
-    res.status(201).json({
-      item: {
-        id,
-        type,
-        color,
-        season,
-        style,
-        notes,
-        image_path,
-        created_at: new Date().toISOString(),
-      },
-    });
+    const created = getSelectResult(
+      db,
+      'SELECT id, user_id, type, color, season, style, notes, image_path, created_at, garment_profile FROM wardrobe_items WHERE id = $id',
+      { $id: id }
+    );
+    res.status(201).json({ item: mapItemRow(created) });
   } catch (err) {
     res.status(500).json({ error: 'Failed to save item.' });
   }
@@ -191,6 +210,13 @@ router.put('/:id', (req, res) => {
   const season = (req.body.season && req.body.season.trim()) || '';
   const style = (req.body.style && req.body.style.trim()) || '';
   const notes = req.body.notes != null ? String(req.body.notes).trim() : '';
+  let garmentProfileJson = null;
+  if (Object.prototype.hasOwnProperty.call(req.body, 'garmentProfile')) {
+    garmentProfileJson = parseGarmentProfileFromBody(req.body);
+    if (req.body.garmentProfile != null && req.body.garmentProfile !== '' && garmentProfileJson === null) {
+      return res.status(400).json({ error: 'Invalid garment profile JSON.' });
+    }
+  }
 
   const validationError = validateItemFields(type, color, season, style, notes);
   if (validationError) {
@@ -207,25 +233,28 @@ router.put('/:id', (req, res) => {
       return res.status(403).json({ error: 'You can only edit your own items.' });
     }
 
-    db.run(
-      `UPDATE wardrobe_items SET type = $type, color = $color, season = $season, style = $style, notes = $notes WHERE id = $id`,
-      { $type: type, $color: color, $season: season, $style: style, $notes: notes, $id: id }
-    );
+    if (garmentProfileJson !== null) {
+      if (garmentProfileJson.length > MAX_LEN.garmentProfileJson) {
+        return res.status(400).json({ error: 'Garment profile data is too large.' });
+      }
+      db.run(
+        `UPDATE wardrobe_items SET type = $type, color = $color, season = $season, style = $style, notes = $notes, garment_profile = $gp WHERE id = $id`,
+        { $type: type, $color: color, $season: season, $style: style, $notes: notes, $gp: garmentProfileJson, $id: id }
+      );
+    } else {
+      db.run(
+        `UPDATE wardrobe_items SET type = $type, color = $color, season = $season, style = $style, notes = $notes WHERE id = $id`,
+        { $type: type, $color: color, $season: season, $style: style, $notes: notes, $id: id }
+      );
+    }
     persist();
 
-    const updated = getSelectResult(db, 'SELECT id, user_id, type, color, season, style, notes, image_path, created_at FROM wardrobe_items WHERE id = $id', { $id: id });
-    res.json({
-      item: {
-        id: updated.id,
-        type: updated.type,
-        color: updated.color,
-        season: updated.season,
-        style: updated.style,
-        notes: updated.notes ?? '',
-        image_path: updated.image_path,
-        created_at: updated.created_at,
-      },
-    });
+    const updated = getSelectResult(
+      db,
+      'SELECT id, user_id, type, color, season, style, notes, image_path, created_at, garment_profile FROM wardrobe_items WHERE id = $id',
+      { $id: id }
+    );
+    res.json({ item: mapItemRow(updated) });
   } catch (err) {
     res.status(500).json({ error: 'Failed to update item.' });
   }
@@ -270,19 +299,12 @@ router.post('/:id/image', (req, res, next) => {
     db.run('UPDATE wardrobe_items SET image_path = $path WHERE id = $id', { $path: newPath, $id: id });
     persist();
 
-    const updated = getSelectResult(db, 'SELECT id, user_id, type, color, season, style, notes, image_path, created_at FROM wardrobe_items WHERE id = $id', { $id: id });
-    res.json({
-      item: {
-        id: updated.id,
-        type: updated.type,
-        color: updated.color,
-        season: updated.season,
-        style: updated.style,
-        notes: updated.notes ?? '',
-        image_path: updated.image_path,
-        created_at: updated.created_at,
-      },
-    });
+    const updated = getSelectResult(
+      db,
+      'SELECT id, user_id, type, color, season, style, notes, image_path, created_at, garment_profile FROM wardrobe_items WHERE id = $id',
+      { $id: id }
+    );
+    res.json({ item: mapItemRow(updated) });
   } catch (err) {
     res.status(500).json({ error: 'Failed to update image.' });
   }

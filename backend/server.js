@@ -1,19 +1,32 @@
-require('dotenv').config();
+const path = require('path');
+const { loadAllEnv, logEnvBootstrap } = require('./lib/loadEnv');
+loadAllEnv();
+
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const session = require('express-session');
-const path = require('path');
 const authRouter = require('./routes/auth');
 const itemsRouter = require('./routes/items');
+const outfitsRouter = require('./routes/outfits');
+const demoRouter = require('./routes/demo');
 const { initDb } = require('./db/connection');
 
 const app = express();
 const port = process.env.PORT || 8080;
+logEnvBootstrap(port);
 
+const defaultOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://localhost:13000',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:3001',
+  'http://127.0.0.1:13000',
+];
 const allowedOrigins = process.env.FRONTEND_ORIGIN
   ? process.env.FRONTEND_ORIGIN.split(',').map((s) => s.trim()).filter(Boolean)
-  : ['http://localhost:3000', 'http://localhost:3001'];
+  : defaultOrigins;
 
 app.use(cors({
   origin: (origin, callback) => {
@@ -48,6 +61,8 @@ app.get('/', (req, res) => {
 
 app.use('/api/auth', authRouter);
 app.use('/api/items', itemsRouter);
+app.use('/api/outfits', outfitsRouter);
+app.use('/api/demo', demoRouter);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 async function start() {

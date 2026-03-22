@@ -1,0 +1,236 @@
+[
+  {
+    "sourceFile": "adidas_brown.webp",
+    "outputFile": "adidas_brown.webp",
+    "imagePath": "/clothes-demo/adidas_brown.webp",
+    "type": "Sneakers",
+    "color": "Brown",
+    "season": "All Season",
+    "style": "Sport"
+  },
+  {
+    "sourceFile": "adidas_campus.jpg",
+    "outputFile": "adidas_campus.webp",
+    "imagePath": "/clothes-demo/adidas_campus.webp",
+    "type": "Sneakers",
+    "color": "Brown",
+    "season": "All Season",
+    "style": "Sport"
+  },
+  {
+    "sourceFile": "black_blazer.webp",
+    "outputFile": "black_blazer.webp",
+    "imagePath": "/clothes-demo/black_blazer.webp",
+    "type": "Blazer",
+    "color": "Black",
+    "season": "All Season",
+    "style": "Formal"
+  },
+  {
+    "sourceFile": "black_casual_shoes.jpg",
+    "outputFile": "black_casual_shoes.webp",
+    "imagePath": "/clothes-demo/black_casual_shoes.webp",
+    "type": "Shoes",
+    "color": "Black",
+    "season": "All Season",
+    "style": "Casual"
+  },
+  {
+    "sourceFile": "black_hoodie.jpg",
+    "outputFile": "black_hoodie.webp",
+    "imagePath": "/clothes-demo/black_hoodie.webp",
+    "type": "Hoodie",
+    "color": "Black",
+    "season": "All Season",
+    "style": "Casual"
+  },
+  {
+    "sourceFile": "black_pants.avif",
+    "outputFile": "black_pants.webp",
+    "imagePath": "/clothes-demo/black_pants.webp",
+    "type": "Pants",
+    "color": "Black",
+    "season": "All Season",
+    "style": "Casual"
+  },
+  {
+    "sourceFile": "black_striped_pants.jpg",
+    "outputFile": "black_striped_pants.webp",
+    "imagePath": "/clothes-demo/black_striped_pants.webp",
+    "type": "Pants",
+    "color": "Black",
+    "season": "All Season",
+    "style": "Casual"
+  },
+  {
+    "sourceFile": "black_sweat_pants.jpg",
+    "outputFile": "black_sweat_pants.webp",
+    "imagePath": "/clothes-demo/black_sweat_pants.webp",
+    "type": "Pants",
+    "color": "Black",
+    "season": "All Season",
+    "style": "Casual"
+  },
+  {
+    "sourceFile": "black_zip_up.webp",
+    "outputFile": "black_zip_up.webp",
+    "imagePath": "/clothes-demo/black_zip_up.webp",
+    "type": "Hoodie",
+    "color": "Black",
+    "season": "All Season",
+    "style": "Casual"
+  },
+  {
+    "sourceFile": "button_up_half_sleeve_navy.avif",
+    "outputFile": "button_up_half_sleeve_navy.webp",
+    "imagePath": "/clothes-demo/button_up_half_sleeve_navy.webp",
+    "type": "Shirt",
+    "color": "Navy",
+    "season": "All Season",
+    "style": "Casual"
+  },
+  {
+    "sourceFile": "cream_blazer.avif",
+    "outputFile": "cream_blazer.webp",
+    "imagePath": "/clothes-demo/cream_blazer.webp",
+    "type": "Blazer",
+    "color": "Cream",
+    "season": "All Season",
+    "style": "Formal"
+  },
+  {
+    "sourceFile": "formal_black.webp",
+    "outputFile": "formal_black.webp",
+    "imagePath": "/clothes-demo/formal_black.webp",
+    "type": "Shoes",
+    "color": "Black",
+    "season": "All Season",
+    "style": "Formal"
+  },
+  {
+    "sourceFile": "formal_brown.webp",
+    "outputFile": "formal_brown.webp",
+    "imagePath": "/clothes-demo/formal_brown.webp",
+    "type": "Shoes",
+    "color": "Brown",
+    "season": "All Season",
+    "style": "Formal"
+  },
+  {
+    "sourceFile": "green_hoodie.webp",
+    "outputFile": "green_hoodie.webp",
+    "imagePath": "/clothes-demo/green_hoodie.webp",
+    "type": "Hoodie",
+    "color": "Green",
+    "season": "All Season",
+    "style": "Casual"
+  },
+  {
+    "sourceFile": "green_sweat_pants.jpg",
+    "outputFile": "green_sweat_pants.webp",
+    "imagePath": "/clothes-demo/green_sweat_pants.webp",
+    "type": "Pants",
+    "color": "Green",
+    "season": "All Season",
+    "style": "Casual"
+  },
+  {
+    "sourceFile": "grey_zip_up.avif",
+    "outputFile": "grey_zip_up.webp",
+    "imagePath": "/clothes-demo/grey_zip_up.webp",
+    "type": "Hoodie",
+    "color": "Gray",
+    "season": "All Season",
+    "style": "Casual"
+  },
+  {
+    "sourceFile": "jeans.webp",
+    "outputFile": "jeans.webp",
+    "imagePath": "/clothes-demo/jeans.webp",
+    "type": "Jeans",
+    "color": "Blue",
+    "season": "All Season",
+    "style": "Casual"
+  },
+  {
+    "sourceFile": "jean_jacket.jpg",
+    "outputFile": "jean_jacket.webp",
+    "imagePath": "/clothes-demo/jean_jacket.webp",
+    "type": "Jacket",
+    "color": "Blue",
+    "season": "All Season",
+    "style": "Casual"
+  },
+  {
+    "sourceFile": "jean_shorts.webp",
+    "outputFile": "jean_shorts.webp",
+    "imagePath": "/clothes-demo/jean_shorts.webp",
+    "type": "Shorts",
+    "color": "Blue",
+    "season": "Summer",
+    "style": "Casual"
+  },
+  {
+    "sourceFile": "navy_blazer.webp",
+    "outputFile": "navy_blazer.webp",
+    "imagePath": "/clothes-demo/navy_blazer.webp",
+    "type": "Blazer",
+    "color": "Navy",
+    "season": "All Season",
+    "style": "Formal"
+  },
+  {
+    "sourceFile": "navy_pants.avif",
+    "outputFile": "navy_pants.webp",
+    "imagePath": "/clothes-demo/navy_pants.webp",
+    "type": "Pants",
+    "color": "Navy",
+    "season": "All Season",
+    "style": "Casual"
+  },
+  {
+    "sourceFile": "red_jays.jpg",
+    "outputFile": "red_jays.webp",
+    "imagePath": "/clothes-demo/red_jays.webp",
+    "type": "Sneakers",
+    "color": "Red",
+    "season": "All Season",
+    "style": "Sport"
+  },
+  {
+    "sourceFile": "white_button_up.webp",
+    "outputFile": "white_button_up.webp",
+    "imagePath": "/clothes-demo/white_button_up.webp",
+    "type": "Shirt",
+    "color": "White",
+    "season": "All Season",
+    "style": "Casual"
+  },
+  {
+    "sourceFile": "white_hoodie.webp",
+    "outputFile": "white_hoodie.webp",
+    "imagePath": "/clothes-demo/white_hoodie.webp",
+    "type": "Hoodie",
+    "color": "White",
+    "season": "All Season",
+    "style": "Casual"
+  },
+  {
+    "sourceFile": "white_jays.webp",
+    "outputFile": "white_jays.webp",
+    "imagePath": "/clothes-demo/white_jays.webp",
+    "type": "Sneakers",
+    "color": "White",
+    "season": "All Season",
+    "style": "Sport"
+  },
+  {
+    "sourceFile": "white_tee.jpg",
+    "outputFile": "white_tee.webp",
+    "imagePath": "/clothes-demo/white_tee.webp",
+    "type": "T-Shirt",
+    "color": "White",
+    "season": "All Season",
+    "style": "Casual"
+  }
+]

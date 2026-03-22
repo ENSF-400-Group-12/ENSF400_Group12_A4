@@ -1,6 +1,8 @@
-// Form for generating outfit recommendations — UI only, no backend logic yet
+// Form for generating outfit recommendations — occasion + vibe only, wired to API
 
 import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { authFetch } from "../config/api";
 
 const OCCASIONS = [
   "Casual",
@@ -24,52 +26,132 @@ const VIBES = [
 ];
 
 function GenerateOutfit() {
+  const navigate = useNavigate();
   const [occasion, setOccasion] = useState("");
   const [vibe, setVibe] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [errorHint, setErrorHint] = useState(null);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!occasion || !vibe) {
+      setError("Please choose an occasion and an aesthetic.");
+      setErrorHint(null);
+      return;
+    }
+    setError(null);
+    setErrorHint(null);
+    setLoading(true);
+    try {
+      const res = await authFetch("/api/outfits/generate", {
+        method: "POST",
+        body: JSON.stringify({ occasion, vibe }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const msg = data.error || "Generation failed. Try again.";
+        if (res.status === 401) {
+          setError("Please log in to generate outfits.");
+          setErrorHint(null);
+        } else {
+          setError(msg);
+          setErrorHint(data.suggestion || null);
+        }
+        setLoading(false);
+        return;
+      }
+      navigate("/results", { state: { outfit: data } });
+    } catch (err) {
+      setErrorHint(null);
+      const msg = err.name === "TypeError" && (err.message === "Failed to fetch" || err.message?.includes("fetch"))
+        ? "Could not reach the server. Start the backend and try again."
+        : "Could not reach the server. Check that the backend is running.";
+      setError(msg);
+      setLoading(false);
+    }
+  }
 
   return (
     <div className="generate-page">
       <div className="generate-card">
         <h1 className="generate-title">Generate Outfit</h1>
         <p className="generate-subtext">
-          Pick an occasion and the vibe you want.
+          Two quick choices: <strong>where you’re going</strong>, then <strong>how you want to look</strong>. We’ll build from your wardrobe — usually a clean three-piece look; an extra layer only when it clearly helps.
         </p>
 
-        <div className="generate-field">
-          <label htmlFor="generate-occasion">Occasion</label>
-          <select
-            id="generate-occasion"
-            className="generate-input"
-            value={occasion}
-            onChange={(e) => setOccasion(e.target.value)}
-          >
-            <option value="">Select occasion</option>
-            {OCCASIONS.map((opt) => (
-              <option key={opt} value={opt}>{opt}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="generate-field">
-          <span className="generate-label">Style / Vibe</span>
-          <p className="generate-hint">Choose one</p>
-          <div className="generate-chips" role="group" aria-label="Style or vibe">
-            {VIBES.map((opt) => (
-              <button
-                key={opt}
-                type="button"
-                className={`generate-chip ${vibe === opt ? "generate-chip--selected" : ""}`}
-                onClick={() => setVibe(vibe === opt ? null : opt)}
-              >
-                {opt}
-              </button>
-            ))}
+        <form onSubmit={handleSubmit} noValidate className="generate-form-inner">
+          <div className="generate-field">
+            <label htmlFor="generate-occasion">Occasion</label>
+            <p className="generate-field-help" id="generate-occasion-help">
+              Where you’re headed (context for the outfit).
+            </p>
+            <select
+              id="generate-occasion"
+              className="generate-input"
+              value={occasion}
+              onChange={(e) => setOccasion(e.target.value)}
+              aria-label="Occasion"
+              aria-describedby="generate-occasion-help"
+            >
+              <option value="">Choose an occasion…</option>
+              {OCCASIONS.map((opt) => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
           </div>
-        </div>
 
-        <button type="button" className="button-primary generate-button">
-          Generate Outfit
-        </button>
+          <div className="generate-field generate-field--vibe">
+            <span className="generate-label" id="generate-vibe-label">Aesthetic</span>
+            <p className="generate-field-help" id="generate-vibe-help">
+              The mood and dress code you want — not the same as occasion (e.g. Work + Minimalist, or Weekend + Streetwear).
+            </p>
+            <div
+              className="generate-chips"
+              role="group"
+              aria-labelledby="generate-vibe-label"
+              aria-describedby="generate-vibe-help"
+            >
+              {VIBES.map((opt) => (
+                <button
+                  key={opt}
+                  type="button"
+                  className={`generate-chip ${vibe === opt ? "generate-chip--selected" : ""}`}
+                  onClick={() => setVibe(vibe === opt ? null : opt)}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {error && (
+            <div className="generate-feedback" role="alert">
+              <p className="generate-error">{error}</p>
+              {errorHint && (
+                <p className="generate-suggestion">{errorHint}</p>
+              )}
+              {(/wardrobe|not enough|doesn'?t have enough|suitable items|pieces that fit/i.test(error)) && (
+                <p className="generate-cta">
+                  <Link to="/add-item">Add items to your wardrobe</Link> or try again later.
+                </p>
+              )}
+              {error.includes("log in") && (
+                <p className="generate-cta">
+                  <Link to="/">Go to login</Link>
+                </p>
+              )}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            className="button-primary generate-button"
+            disabled={loading}
+          >
+            {loading ? "Generating…" : "Generate Outfit"}
+          </button>
+        </form>
       </div>
     </div>
   );

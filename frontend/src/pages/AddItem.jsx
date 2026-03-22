@@ -20,6 +20,17 @@ const styles = [
 ];
 
 /** Map API/fuzzy value to an allowed option (case-insensitive, contains). */
+function formatGarmentProfileSummary(p) {
+  if (!p || typeof p !== "object") return "";
+  const parts = [];
+  if (p.subtype) parts.push(String(p.subtype).replace(/_/g, " "));
+  if (p.formality) parts.push(`formality ${p.formality}`);
+  if (p.layerRole) parts.push(`layer ${p.layerRole}`);
+  if (p.materialVibe) parts.push(p.materialVibe);
+  if (p.versatility) parts.push(String(p.versatility).replace(/_/g, " "));
+  return parts.join(" · ");
+}
+
 function mapToOption(value, options) {
   if (!value || !options || !options.length) return null;
   const v = String(value).trim().toLowerCase();
@@ -47,6 +58,13 @@ function AddItem() {
   const [analysisDone, setAnalysisDone] = useState(false);
   const [analysisFailed, setAnalysisFailed] = useState(false);
   const [prefilledByAi, setPrefilledByAi] = useState({ type: false, color: false, season: false, style: false });
+  const [fromFilename, setFromFilename] = useState(false);
+  const [fromOpenAI, setFromOpenAI] = useState(false);
+  const [analysisUncertain, setAnalysisUncertain] = useState(false);
+  /** false = server reports no OPENAI_API_KEY (vision off). null = unknown. */
+  const [openaiConfigured, setOpenaiConfigured] = useState(null);
+  /** Rich signals from analysis (stored in DB, not shown as separate form fields). */
+  const [garmentProfile, setGarmentProfile] = useState(null);
   const [loadError, setLoadError] = useState(null);
   const [loading, setLoading] = useState(isEdit);
   const [submitLoading, setSubmitLoading] = useState(false);
@@ -71,6 +89,8 @@ function AddItem() {
           setSeason(data.item.season || "");
           setStyle(data.item.style || "");
           setNotes(data.item.notes || "");
+          const gp = data.item.garmentProfile;
+          setGarmentProfile(gp && typeof gp === "object" && Object.keys(gp).length ? gp : null);
         }
       } catch (e) {
         if (!cancelled) setLoadError("Failed to load item.");
@@ -88,6 +108,11 @@ function AddItem() {
       setAnalysisDone(false);
       setAnalysisFailed(false);
       setPrefilledByAi({ type: false, color: false, season: false, style: false });
+      setFromFilename(false);
+      setFromOpenAI(false);
+      setAnalysisUncertain(false);
+      setOpenaiConfigured(null);
+      setGarmentProfile(null);
       return;
     }
     const url = URL.createObjectURL(imageFile);
@@ -108,6 +133,8 @@ function AddItem() {
         if (!res.ok && !cancelled) setAnalysisFailed(true);
         if (res.ok) {
           const data = await res.json();
+          const src = data.suggestionSource
+            || (data.fromOpenAI ? 'ai' : data.fromFilename ? 'filename' : 'none');
           const t = mapToOption(data.type, clothingTypes);
           const c = mapToOption(data.color, colors);
           const s = mapToOption(data.season, seasons);
@@ -117,7 +144,21 @@ function AddItem() {
           if (c) { setColor(c); nextPrefilled.color = true; }
           if (s) { setSeason(s); nextPrefilled.season = true; }
           if (st) { setStyle(st); nextPrefilled.style = true; }
-          if (!cancelled) setPrefilledByAi(nextPrefilled);
+          const anyFilled = Boolean(t || c || s || st);
+          if (!cancelled) {
+            setPrefilledByAi(nextPrefilled);
+            setFromOpenAI(src === 'ai');
+            setFromFilename(src === 'filename');
+            setAnalysisUncertain((src === 'none' || Boolean(data.uncertain)) && !anyFilled);
+            if (typeof data.openaiConfigured === 'boolean') {
+              setOpenaiConfigured(data.openaiConfigured);
+            } else {
+              setOpenaiConfigured(null);
+            }
+            if (data.garmentProfile && typeof data.garmentProfile === "object" && Object.keys(data.garmentProfile).length) {
+              setGarmentProfile(data.garmentProfile);
+            }
+          }
         }
       } catch (_) {
         if (!cancelled) setAnalysisFailed(true);
@@ -196,6 +237,7 @@ function AddItem() {
       form.append("season", season.trim());
       form.append("style", style.trim());
       form.append("notes", notes.trim());
+      form.append("garmentProfile", JSON.stringify(garmentProfile && Object.keys(garmentProfile).length ? garmentProfile : {}));
       if (imageFile) form.append("image", imageFile);
 
       const res = await authFetch("/api/items", { method: "POST", body: form });
@@ -208,7 +250,10 @@ function AddItem() {
       }
       navigate("/dashboard");
     } catch (err) {
-      setError(err.message || "Something went wrong. Please try again.");
+      const msg = err.name === "TypeError" && (err.message === "Failed to fetch" || err.message?.includes("fetch"))
+        ? "Could not reach the server. Start the backend and try again."
+        : (err.message || "Something went wrong. Please try again.");
+      setError(msg);
       setSubmitLoading(false);
     }
   };
@@ -239,7 +284,9 @@ function AddItem() {
       <div className="additem-card additem-card--wide">
         <h1 className="additem-title">{isEdit ? "Edit Item" : "Add Item"}</h1>
         <p className="additem-subtext">
-          {isEdit ? "Update the photo or details below." : "Add a photo — we'll suggest the details. Confirm or edit, then save."}
+          {isEdit
+            ? "Update the photo or details below."
+            : "Add a photo — we suggest details from the image (when AI is enabled) or from the filename. Always confirm or edit before saving."}
         </p>
 
         <form onSubmit={handleSubmit} className="additem-form">
@@ -270,6 +317,16 @@ function AddItem() {
                     We couldn’t analyze this photo. Add the details below and save.
                   </p>
                 )}
+                {analysisDone && analysisUncertain && !analyzing && (
+                  <p className="additem-fallback-msg" role="status">
+                    We couldn’t confidently identify this item. Please confirm the details below.
+                  </p>
+                )}
+                {analysisDone && openaiConfigured === false && !analyzing && (
+                  <p className="additem-fallback-msg additem-fallback-msg--warn" role="status">
+                    Photo analysis is off: the server has no API key loaded. Put <code className="additem-code">OPENAI_API_KEY</code> in a UTF-8 <code className="additem-code">.env</code> at the repo root, restart the backend on the same port as the dev proxy (default 8080), then try again.
+                  </p>
+                )}
                 <button
                   type="button"
                   className="additem-change-photo"
@@ -295,14 +352,22 @@ function AddItem() {
           <div className="additem-metadata">
             {analysisDone && (prefilledByAi.type || prefilledByAi.color || prefilledByAi.season || prefilledByAi.style) && (
               <p className="additem-detected-summary" role="status">
-                We detected: {[prefilledByAi.type && type, prefilledByAi.color && color, prefilledByAi.season && season, prefilledByAi.style && style].filter(Boolean).join(" · ") || "—"}
+                {fromOpenAI ? "AI suggestion (vision): " : fromFilename ? "Filename suggestion: " : "Suggestions: "}
+                {[prefilledByAi.type && type, prefilledByAi.color && color, prefilledByAi.season && season, prefilledByAi.style && style].filter(Boolean).join(" · ") || "—"}
               </p>
+            )}
+            {garmentProfile && Object.keys(garmentProfile).length > 0 && (
+              <details className="additem-profile-details">
+                <summary>Style signals saved with this item</summary>
+                <p className="additem-profile-line">{formatGarmentProfileSummary(garmentProfile)}</p>
+                <p className="additem-profile-hint">Used for outfit matching — your dropdowns above are still what you confirm.</p>
+              </details>
             )}
             <h2 className="additem-metadata-heading">Confirm or edit</h2>
             <p className="additem-metadata-hint">Change any field if we got it wrong. Fill only what’s missing.</p>
             <div className="additem-metadata-grid">
               <div className={`additem-field ${!type.trim() && analysisDone ? "additem-field--needs-value" : ""}`}>
-                <label htmlFor="additem-type">Type {prefilledByAi.type && type && <span className="additem-badge">detected</span>}</label>
+                <label htmlFor="additem-type">Type {prefilledByAi.type && type && <span className="additem-badge">{fromOpenAI ? "AI" : fromFilename ? "file" : "filled"}</span>}</label>
                 <select id="additem-type" className="additem-input" value={type} onChange={(e) => { setType(e.target.value); setPrefilledByAi((p) => ({ ...p, type: false })); }}>
                   <option value="">Select type</option>
                   {clothingTypes.map((t) => <option key={t} value={t}>{t}</option>)}
@@ -310,7 +375,7 @@ function AddItem() {
                 {fieldErrors.type && <span className="additem-inline-error">{fieldErrors.type}</span>}
               </div>
               <div className={`additem-field ${!color.trim() && analysisDone ? "additem-field--needs-value" : ""}`}>
-                <label htmlFor="additem-color">Color {prefilledByAi.color && color && <span className="additem-badge">detected</span>}</label>
+                <label htmlFor="additem-color">Color {prefilledByAi.color && color && <span className="additem-badge">{fromOpenAI ? "AI" : fromFilename ? "file" : "filled"}</span>}</label>
                 <select id="additem-color" className="additem-input" value={color} onChange={(e) => { setColor(e.target.value); setPrefilledByAi((p) => ({ ...p, color: false })); }}>
                   <option value="">Select color</option>
                   {colors.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -318,7 +383,7 @@ function AddItem() {
                 {fieldErrors.color && <span className="additem-inline-error">{fieldErrors.color}</span>}
               </div>
               <div className={`additem-field ${!season.trim() && analysisDone ? "additem-field--needs-value" : ""}`}>
-                <label htmlFor="additem-season">Season {prefilledByAi.season && season && <span className="additem-badge">detected</span>}</label>
+                <label htmlFor="additem-season">Season {prefilledByAi.season && season && <span className="additem-badge">{fromOpenAI ? "AI" : fromFilename ? "file" : "filled"}</span>}</label>
                 <select id="additem-season" className="additem-input" value={season} onChange={(e) => { setSeason(e.target.value); setPrefilledByAi((p) => ({ ...p, season: false })); }}>
                   <option value="">Select season</option>
                   {seasons.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -326,7 +391,7 @@ function AddItem() {
                 {fieldErrors.season && <span className="additem-inline-error">{fieldErrors.season}</span>}
               </div>
               <div className={`additem-field ${!style.trim() && analysisDone ? "additem-field--needs-value" : ""}`}>
-                <label htmlFor="additem-style">Style {prefilledByAi.style && style && <span className="additem-badge">detected</span>}</label>
+                <label htmlFor="additem-style">Style {prefilledByAi.style && style && <span className="additem-badge">{fromOpenAI ? "AI" : fromFilename ? "file" : "filled"}</span>}</label>
                 <select id="additem-style" className="additem-input" value={style} onChange={(e) => { setStyle(e.target.value); setPrefilledByAi((p) => ({ ...p, style: false })); }}>
                   <option value="">Select style</option>
                   {styles.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -353,12 +418,14 @@ function AddItem() {
           )}
           {error && <p className="additem-inline-error additem-error-block" role="alert">{error}</p>}
           <div className="additem-actions">
-            <button type="button" className="button-secondary" onClick={() => navigate("/dashboard")}>
-              Cancel
-            </button>
-            <button type="submit" className="button-primary additem-button" disabled={submitLoading}>
-              {submitLoading ? "Saving…" : isEdit ? "Update Item" : "Save Item"}
-            </button>
+            <div className="additem-actions-buttons">
+              <button type="button" className="button-secondary" onClick={() => navigate("/dashboard")}>
+                Cancel
+              </button>
+              <button type="submit" className="button-primary" disabled={submitLoading}>
+                {submitLoading ? "Saving…" : isEdit ? "Update Item" : "Save Item"}
+              </button>
+            </div>
             {!isEdit && allFilled && !submitLoading && (
               <span className="additem-all-set-hint">All set? Save to add this item to your wardrobe.</span>
             )}
