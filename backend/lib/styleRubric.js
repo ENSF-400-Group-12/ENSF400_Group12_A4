@@ -15,7 +15,7 @@ const RUBRIC_SUMMARY = [
   'For Minimalist vibe, prefer a tight neutral palette (at most one accent color).',
   'Shoes should match the formality of top + bottom (e.g. sneakers for casual/street, dress shoes for formal).',
   'Do not add a casual or denim jacket to formal, date night, work, or minimalist looks unless it clearly elevates the set.',
-  'Blazers belong over a base layer (shirt/tee/knit), not as the only “shirt” in a polished look.',
+  'In polished looks, a blazer is a mid layer over a base (button-up, tee, or knit) — not a stand-alone top; avoid a hoodie under a blazer unless the look is clearly casual/street.',
   'Prefer simple 3-piece outfits; extra layers must earn their place.',
 ].join(' ');
 
