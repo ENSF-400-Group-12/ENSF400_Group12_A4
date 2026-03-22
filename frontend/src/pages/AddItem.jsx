@@ -48,6 +48,7 @@ function AddItem() {
   const [analysisFailed, setAnalysisFailed] = useState(false);
   const [prefilledByAi, setPrefilledByAi] = useState({ type: false, color: false, season: false, style: false });
   const [fromFilename, setFromFilename] = useState(false);
+  const [fromOpenAI, setFromOpenAI] = useState(false);
   const [loadError, setLoadError] = useState(null);
   const [loading, setLoading] = useState(isEdit);
   const [submitLoading, setSubmitLoading] = useState(false);
@@ -90,6 +91,7 @@ function AddItem() {
       setAnalysisFailed(false);
       setPrefilledByAi({ type: false, color: false, season: false, style: false });
       setFromFilename(false);
+      setFromOpenAI(false);
       return;
     }
     const url = URL.createObjectURL(imageFile);
@@ -121,7 +123,8 @@ function AddItem() {
           if (st) { setStyle(st); nextPrefilled.style = true; }
           if (!cancelled) {
             setPrefilledByAi(nextPrefilled);
-            setFromFilename(Boolean(data.fromFilename));
+            setFromOpenAI(Boolean(data.fromOpenAI));
+            setFromFilename(Boolean(data.fromFilename) && !data.fromOpenAI);
           }
         }
       } catch (_) {
@@ -247,7 +250,9 @@ function AddItem() {
       <div className="additem-card additem-card--wide">
         <h1 className="additem-title">{isEdit ? "Edit Item" : "Add Item"}</h1>
         <p className="additem-subtext">
-          {isEdit ? "Update the photo or details below." : "Add a photo — we'll suggest the details. Confirm or edit, then save."}
+          {isEdit
+            ? "Update the photo or details below."
+            : "Add a photo — we suggest details from the image (when AI is enabled) or from the filename. Always confirm or edit before saving."}
         </p>
 
         <form onSubmit={handleSubmit} className="additem-form">
@@ -303,7 +308,7 @@ function AddItem() {
           <div className="additem-metadata">
             {analysisDone && (prefilledByAi.type || prefilledByAi.color || prefilledByAi.season || prefilledByAi.style) && (
               <p className="additem-detected-summary" role="status">
-                {fromFilename ? "Suggested from filename: " : "We detected: "}
+                {fromOpenAI ? "AI suggestion (from your photo): " : fromFilename ? "Suggested from filename: " : "Suggestions: "}
                 {[prefilledByAi.type && type, prefilledByAi.color && color, prefilledByAi.season && season, prefilledByAi.style && style].filter(Boolean).join(" · ") || "—"}
               </p>
             )}
@@ -311,7 +316,7 @@ function AddItem() {
             <p className="additem-metadata-hint">Change any field if we got it wrong. Fill only what’s missing.</p>
             <div className="additem-metadata-grid">
               <div className={`additem-field ${!type.trim() && analysisDone ? "additem-field--needs-value" : ""}`}>
-                <label htmlFor="additem-type">Type {prefilledByAi.type && type && <span className="additem-badge">{fromFilename ? "suggested" : "detected"}</span>}</label>
+                <label htmlFor="additem-type">Type {prefilledByAi.type && type && <span className="additem-badge">{fromOpenAI ? "AI" : fromFilename ? "suggested" : "filled"}</span>}</label>
                 <select id="additem-type" className="additem-input" value={type} onChange={(e) => { setType(e.target.value); setPrefilledByAi((p) => ({ ...p, type: false })); }}>
                   <option value="">Select type</option>
                   {clothingTypes.map((t) => <option key={t} value={t}>{t}</option>)}
@@ -319,7 +324,7 @@ function AddItem() {
                 {fieldErrors.type && <span className="additem-inline-error">{fieldErrors.type}</span>}
               </div>
               <div className={`additem-field ${!color.trim() && analysisDone ? "additem-field--needs-value" : ""}`}>
-                <label htmlFor="additem-color">Color {prefilledByAi.color && color && <span className="additem-badge">{fromFilename ? "suggested" : "detected"}</span>}</label>
+                <label htmlFor="additem-color">Color {prefilledByAi.color && color && <span className="additem-badge">{fromOpenAI ? "AI" : fromFilename ? "suggested" : "filled"}</span>}</label>
                 <select id="additem-color" className="additem-input" value={color} onChange={(e) => { setColor(e.target.value); setPrefilledByAi((p) => ({ ...p, color: false })); }}>
                   <option value="">Select color</option>
                   {colors.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -327,7 +332,7 @@ function AddItem() {
                 {fieldErrors.color && <span className="additem-inline-error">{fieldErrors.color}</span>}
               </div>
               <div className={`additem-field ${!season.trim() && analysisDone ? "additem-field--needs-value" : ""}`}>
-                <label htmlFor="additem-season">Season {prefilledByAi.season && season && <span className="additem-badge">{fromFilename ? "suggested" : "detected"}</span>}</label>
+                <label htmlFor="additem-season">Season {prefilledByAi.season && season && <span className="additem-badge">{fromOpenAI ? "AI" : fromFilename ? "suggested" : "filled"}</span>}</label>
                 <select id="additem-season" className="additem-input" value={season} onChange={(e) => { setSeason(e.target.value); setPrefilledByAi((p) => ({ ...p, season: false })); }}>
                   <option value="">Select season</option>
                   {seasons.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -335,7 +340,7 @@ function AddItem() {
                 {fieldErrors.season && <span className="additem-inline-error">{fieldErrors.season}</span>}
               </div>
               <div className={`additem-field ${!style.trim() && analysisDone ? "additem-field--needs-value" : ""}`}>
-                <label htmlFor="additem-style">Style {prefilledByAi.style && style && <span className="additem-badge">{fromFilename ? "suggested" : "detected"}</span>}</label>
+                <label htmlFor="additem-style">Style {prefilledByAi.style && style && <span className="additem-badge">{fromOpenAI ? "AI" : fromFilename ? "suggested" : "filled"}</span>}</label>
                 <select id="additem-style" className="additem-input" value={style} onChange={(e) => { setStyle(e.target.value); setPrefilledByAi((p) => ({ ...p, style: false })); }}>
                   <option value="">Select style</option>
                   {styles.map((s) => <option key={s} value={s}>{s}</option>)}
