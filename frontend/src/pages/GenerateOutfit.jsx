@@ -35,7 +35,7 @@ function GenerateOutfit() {
   async function handleSubmit(e) {
     e.preventDefault();
     if (!occasion || !vibe) {
-      setError("Please select both occasion and style/vibe.");
+      setError("Please choose an occasion and an aesthetic.");
       return;
     }
     setError(null);
@@ -71,18 +71,22 @@ function GenerateOutfit() {
       <div className="generate-card">
         <h1 className="generate-title">Generate Outfit</h1>
         <p className="generate-subtext">
-          Choose where you’re going, then one style vibe — we’ll match pieces from your wardrobe.
+          Two quick choices: <strong>where you’re going</strong>, then <strong>how you want to look</strong>. We’ll build from your wardrobe — usually a clean three-piece look; an extra layer only when it clearly helps.
         </p>
 
         <form onSubmit={handleSubmit} noValidate className="generate-form-inner">
           <div className="generate-field">
             <label htmlFor="generate-occasion">Occasion</label>
+            <p className="generate-field-help" id="generate-occasion-help">
+              Where you’re headed (context for the outfit).
+            </p>
             <select
               id="generate-occasion"
               className="generate-input"
               value={occasion}
               onChange={(e) => setOccasion(e.target.value)}
               aria-label="Occasion"
+              aria-describedby="generate-occasion-help"
             >
               <option value="">Choose an occasion…</option>
               {OCCASIONS.map((opt) => (
@@ -92,8 +96,16 @@ function GenerateOutfit() {
           </div>
 
           <div className="generate-field generate-field--vibe">
-            <span className="generate-label" id="generate-vibe-label">Style / vibe</span>
-            <div className="generate-chips" role="group" aria-labelledby="generate-vibe-label">
+            <span className="generate-label" id="generate-vibe-label">Aesthetic</span>
+            <p className="generate-field-help" id="generate-vibe-help">
+              The mood and dress code you want — not the same as occasion (e.g. Work + Minimalist, or Weekend + Streetwear).
+            </p>
+            <div
+              className="generate-chips"
+              role="group"
+              aria-labelledby="generate-vibe-label"
+              aria-describedby="generate-vibe-help"
+            >
               {VIBES.map((opt) => (
                 <button
                   key={opt}

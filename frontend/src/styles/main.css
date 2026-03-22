@@ -1018,6 +1018,14 @@ body.signup-page-open {
   gap: 12px;
 }
 
+.generate-field-help {
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--auth-text-muted, #6a5a4a);
+  margin: -4px 0 0;
+  max-width: 34rem;
+}
+
 .generate-field--vibe {
   margin-top: 8px;
   padding-top: 20px;
