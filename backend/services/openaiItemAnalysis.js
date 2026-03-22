@@ -1,6 +1,6 @@
 /**
  * OpenAI vision + structured JSON for clothing metadata.
- * Requires OPENAI_API_KEY; model from OPENAI_MODEL (default gpt-4o-mini).
+ * Model must report confidence; only "high" is used by the app (low → discarded).
  */
 
 const OpenAI = require('openai');
@@ -16,21 +16,27 @@ const ITEM_SCHEMA = {
       color: { type: 'string', enum: COLORS },
       season: { type: 'string', enum: SEASONS },
       style: { type: 'string', enum: STYLES },
+      confidence: { type: 'string', enum: ['high', 'low'] },
     },
-    required: ['type', 'color', 'season', 'style'],
+    required: ['type', 'color', 'season', 'style', 'confidence'],
     additionalProperties: false,
   },
 };
 
-const SYSTEM_PROMPT = `You are a clothing catalog assistant. Look at the garment photo and classify it for a wardrobe app.
-Pick exactly one value per field from the allowed enums only. Use "All Season" when unclear for season.
-Prefer the most specific garment type (e.g. Sneakers vs Shoes when clearly athletic footwear).
-Be conservative: if the image is not clothing, choose the closest reasonable category or Accessories.`;
+const SYSTEM_PROMPT = `You classify ONE clothing item in a photo for a wardrobe app (structured JSON).
+
+confidence:
+- "high" ONLY if garment type and main color are clearly visible (single item, reasonably sharp).
+- "low" if: blurry/dark photo, multiple competing items, face-only, not clothing, packaging, or you would be guessing.
+
+When confidence is "low", still output valid enum fields using placeholders: type "T-Shirt", color "Black", season "All Season", style "Casual" — the server discards them when confidence is not high.
+
+When confidence is "high", pick the most specific accurate type (e.g. Sneakers vs Shoes for clear athletic shoes; Hoodie vs Sweater when clearly a hooded sweatshirt).`;
 
 /**
  * @param {Buffer} imageBuffer
  * @param {string} [mimeType]
- * @returns {Promise<{ type: string, color: string, season: string, style: string }>}
+ * @returns {Promise<{ type: string, color: string, season: string, style: string, confidence: 'high'|'low' }>}
  */
 async function analyzeItemImageOpenAI(imageBuffer, mimeType) {
   const apiKey = process.env.OPENAI_API_KEY?.trim();
@@ -52,8 +58,8 @@ async function analyzeItemImageOpenAI(imageBuffer, mimeType) {
     const completion = await client.chat.completions.create(
       {
         model,
-        temperature: 0.2,
-        max_tokens: 200,
+        temperature: 0.1,
+        max_tokens: 220,
         response_format: {
           type: 'json_schema',
           json_schema: ITEM_SCHEMA,
@@ -65,7 +71,7 @@ async function analyzeItemImageOpenAI(imageBuffer, mimeType) {
             content: [
               {
                 type: 'text',
-                text: 'Return JSON only matching the schema: type, color, season, style for this garment.',
+                text: 'Classify this garment. Return JSON matching the schema including confidence.',
               },
               { type: 'image_url', image_url: { url: dataUrl, detail: 'low' } },
             ],
@@ -81,11 +87,13 @@ async function analyzeItemImageOpenAI(imageBuffer, mimeType) {
     if (!parsed.type || !parsed.color || !parsed.season || !parsed.style) {
       throw new Error('Incomplete structured fields');
     }
+    const confidence = parsed.confidence === 'high' ? 'high' : 'low';
     return {
       type: parsed.type,
       color: parsed.color,
       season: parsed.season,
       style: parsed.style,
+      confidence,
     };
   } finally {
     clearTimeout(timer);

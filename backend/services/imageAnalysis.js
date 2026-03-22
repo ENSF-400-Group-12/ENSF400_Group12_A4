@@ -1,6 +1,5 @@
 /**
- * Item image analysis: OpenAI vision (structured JSON) when configured,
- * else filename inference, else empty suggestions.
+ * Item analysis: OpenAI vision (high confidence only), else strong filename hints, else uncertain.
  */
 
 const { inferFromFilename } = require('../lib/filenameInference');
@@ -8,11 +7,7 @@ const { normalizeMetadata } = require('../lib/metadataOptions');
 const { analyzeItemImageOpenAI } = require('./openaiItemAnalysis');
 
 /**
- * Analyze an item image and return suggested metadata (canonical values only).
- * @param {Buffer} imageBuffer
- * @param {string} [mimeType]
- * @param {string} [filename]
- * @returns {Promise<{ type?: string, color?: string, season?: string, style?: string, fromOpenAI?: boolean, fromFilename?: boolean }>}
+ * @returns {Promise<{ type?: string, color?: string, season?: string, style?: string, fromOpenAI?: boolean, fromFilename?: boolean, uncertain?: boolean }>}
  */
 async function analyzeItemImage(imageBuffer, mimeType, filename) {
   if (!imageBuffer || imageBuffer.length === 0) {
@@ -23,13 +18,16 @@ async function analyzeItemImage(imageBuffer, mimeType, filename) {
   if (apiKey) {
     try {
       const raw = await analyzeItemImageOpenAI(imageBuffer, mimeType);
-      const normalized = normalizeMetadata(raw);
-      const keys = Object.keys(normalized).filter((k) => normalized[k]);
-      if (keys.length >= 4) {
-        return { ...normalized, fromOpenAI: true };
+      if (raw.confidence === 'high') {
+        const { confidence: _c, ...rest } = raw;
+        const normalized = normalizeMetadata(rest);
+        const filled = ['type', 'color', 'season', 'style'].filter((k) => normalized[k]);
+        if (filled.length >= 4) {
+          return { ...normalized, fromOpenAI: true };
+        }
       }
     } catch (err) {
-      console.warn('[analyzeItemImage] OpenAI failed, using filename fallback if any:', err.message);
+      console.warn('[analyzeItemImage] OpenAI failed:', err.message);
     }
   }
 
@@ -37,12 +35,14 @@ async function analyzeItemImage(imageBuffer, mimeType, filename) {
 }
 
 function filenameInferenceOnly(filename) {
-  if (!filename) return {};
+  if (!filename) {
+    return { uncertain: true };
+  }
   const inferred = inferFromFilename(filename);
   if (inferred && Object.keys(inferred).length > 0) {
     return { ...inferred, fromFilename: true };
   }
-  return {};
+  return { uncertain: true };
 }
 
 module.exports = { analyzeItemImage };
