@@ -1,7 +1,6 @@
 /**
- * Infer clothing metadata from filename (e.g. black_jays.jpg -> Sneakers, Black).
- * Used by image analysis when no real vision API is available.
- * Shared patterns with normalize-clothes script.
+ * Infer clothing metadata from filename only when the name strongly signals a category.
+ * Does NOT default to generic T-Shirt/Black for random names (e.g. IMG_1234.jpg → no inference).
  */
 const path = require('path');
 const { normalizeMetadata } = require('./metadataOptions');
@@ -22,21 +21,28 @@ const OVERRIDES = {
   'black_jordans.png': { type: 'Sneakers', color: 'Black', season: 'All Season', style: 'Sport' },
 };
 
+/** Order matters: more specific patterns first (tee before shirt token). */
 const TYPE_PATTERNS = [
-  { re: /tee|t-shirt|tshirt/i, type: 'T-Shirt' },
-  { re: /button_up|buttonup|shirt/i, type: 'Shirt' },
-  { re: /hoodie|zip_up|zipup/i, type: 'Hoodie' },
+  { re: /tee|t-?shirt|tshirt|\btop\b/i, type: 'T-Shirt' },
+  { re: /hoodie|hoody|sweatshirt|zip[\s_-]?up|zipup|pullover/i, type: 'Hoodie' },
   { re: /blazer/i, type: 'Blazer' },
-  { re: /jacket/i, type: 'Jacket' },
-  { re: /sweater/i, type: 'Sweater' },
-  { re: /pants|sweat_pants|striped_pants/i, type: 'Pants' },
-  { re: /jeans/i, type: 'Jeans' },
+  { re: /jean[\s_-]?jacket|denim[\s_-]?jacket/i, type: 'Jacket' },
+  { re: /jacket|bomber|windbreaker|anorak/i, type: 'Jacket' },
+  { re: /sweater|jumper|cardigan|knit/i, type: 'Sweater' },
+  { re: /sweat[\s_-]?pants|joggers|track[\s_-]?pants/i, type: 'Pants' },
+  { re: /pants|chinos|khakis|trousers|slacks/i, type: 'Pants' },
+  { re: /jeans|denim(?!.*jacket)/i, type: 'Jeans' },
   { re: /shorts/i, type: 'Shorts' },
   { re: /skirt/i, type: 'Skirt' },
-  { re: /dress/i, type: 'Dress' },
-  { re: /shoes|jays|jordan|formal_|casual_shoes|adidas|campus/i, type: 'Sneakers' },
-  { re: /boots/i, type: 'Boots' },
-  { re: /sandals/i, type: 'Sandals' },
+  { re: /dress(?!.*shirt)/i, type: 'Dress' },
+  { re: /sneaker|trainer|runners|jays|jordan|adidas|campus|yeezy|air[\s_-]?max|footwear/i, type: 'Sneakers' },
+  { re: /boot\b|boots|chelsea|combat[\s_-]?boot/i, type: 'Boots' },
+  { re: /sandal|slides|flip[\s_-]?flop/i, type: 'Sandals' },
+  { re: /loafer|oxford|derby|heel|stiletto|mule|clog/i, type: 'Shoes' },
+  { re: /shoes|footwear/i, type: 'Shoes' },
+  { re: /button[\s_-]?up|buttonup|oxford[\s_-]?shirt|dress[\s_-]?shirt|polo|flannel|blouse/i, type: 'Shirt' },
+  { re: /(^|[_\s-])shirt(?=$|[_\s-])/i, type: 'Shirt' },
+  { re: /coat|trench|parka|peacoat/i, type: 'Coat' },
 ];
 
 const COLOR_PATTERNS = [
@@ -54,18 +60,22 @@ function inferFromFilename(filename) {
   const override = OVERRIDES[basename];
   if (override) return override;
 
-  let type = 'T-Shirt';
+  let type = null;
   for (const { re, type: t } of TYPE_PATTERNS) {
     if (re.test(base)) {
       type = t;
       break;
     }
   }
-  if (/formal_|casual_shoes|jays|jordan|adidas|campus/i.test(base)) {
-    type = base.includes('formal') ? 'Shoes' : 'Sneakers';
+  if (!type) return null;
+
+  if (/formal_|casual_shoes|jays|jordan|adidas|campus|sneaker|trainer/i.test(base)) {
+    type = base.includes('formal') && !/sneaker|trainer|jays|jordan|adidas|campus/i.test(base)
+      ? 'Shoes'
+      : 'Sneakers';
   }
 
-  let color = 'Black';
+  let color = null;
   for (const c of COLOR_PATTERNS) {
     if (base.includes(c)) {
       color = c.charAt(0).toUpperCase() + c.slice(1);
@@ -74,10 +84,20 @@ function inferFromFilename(filename) {
     }
   }
 
-  const style = /formal|blazer/i.test(base) ? 'Formal' : /sport|adidas|jays|jordan/i.test(base) ? 'Sport' : 'Casual';
-  const season = /shorts/i.test(base) ? 'Summer' : 'All Season';
+  const style = /formal|blazer|oxford|loafer/i.test(base)
+    ? 'Formal'
+    : /sport|adidas|jays|jordan|sneaker|trainer|athletic/i.test(base)
+      ? 'Sport'
+      : 'Casual';
 
-  const raw = { type, color, season, style };
+  let season = null;
+  if (/shorts|summer/i.test(base)) season = 'Summer';
+  else if (type && (color || /winter|fleece|parka|coat/i.test(base))) season = 'All Season';
+
+  const raw = { type, style };
+  if (color) raw.color = color;
+  if (season) raw.season = season;
+
   const normalized = normalizeMetadata(raw);
   return Object.fromEntries(Object.entries(normalized).filter(([, v]) => v != null));
 }

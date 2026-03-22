@@ -49,6 +49,7 @@ function AddItem() {
   const [prefilledByAi, setPrefilledByAi] = useState({ type: false, color: false, season: false, style: false });
   const [fromFilename, setFromFilename] = useState(false);
   const [fromOpenAI, setFromOpenAI] = useState(false);
+  const [analysisUncertain, setAnalysisUncertain] = useState(false);
   const [loadError, setLoadError] = useState(null);
   const [loading, setLoading] = useState(isEdit);
   const [submitLoading, setSubmitLoading] = useState(false);
@@ -92,6 +93,7 @@ function AddItem() {
       setPrefilledByAi({ type: false, color: false, season: false, style: false });
       setFromFilename(false);
       setFromOpenAI(false);
+      setAnalysisUncertain(false);
       return;
     }
     const url = URL.createObjectURL(imageFile);
@@ -121,10 +123,12 @@ function AddItem() {
           if (c) { setColor(c); nextPrefilled.color = true; }
           if (s) { setSeason(s); nextPrefilled.season = true; }
           if (st) { setStyle(st); nextPrefilled.style = true; }
+          const anyFilled = Boolean(t || c || s || st);
           if (!cancelled) {
             setPrefilledByAi(nextPrefilled);
             setFromOpenAI(Boolean(data.fromOpenAI));
             setFromFilename(Boolean(data.fromFilename) && !data.fromOpenAI);
+            setAnalysisUncertain(Boolean(data.uncertain) && !anyFilled);
           }
         }
       } catch (_) {
@@ -281,6 +285,11 @@ function AddItem() {
                 {analysisFailed && !analyzing && (
                   <p className="additem-fallback-msg" role="status">
                     We couldn’t analyze this photo. Add the details below and save.
+                  </p>
+                )}
+                {analysisDone && analysisUncertain && !analyzing && (
+                  <p className="additem-fallback-msg" role="status">
+                    We couldn’t confidently identify this item. Please confirm the details below.
                   </p>
                 )}
                 <button
