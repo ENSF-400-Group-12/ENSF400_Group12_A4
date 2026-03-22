@@ -1,12 +1,12 @@
 /**
- * Rule-based outfit generator. Uses wardrobe metadata (type, color, season, style)
- * to pick one item per slot (top, bottom, shoes, optional outerwear) and
- * produce a short explanation. No external APIs.
+ * Rule-based outfit generator with local candidate search + optional OpenAI rerank.
+ * Uses wardrobe metadata (type, color, season, style) — no weather, no RAG.
  */
 
 const { getDb } = require('../db/connection');
+const { scoreOutfitCoherence } = require('../lib/styleRubric');
+const { rerankOutfitCandidates } = require('./openaiOutfitRerank');
 
-// Item types grouped by outfit slot for selection
 const SLOT_TYPES = {
   top: ['Shirt', 'T-Shirt', 'Hoodie', 'Sweater', 'Blazer', 'Dress'],
   bottom: ['Pants', 'Jeans', 'Shorts', 'Skirt'],
@@ -18,10 +18,6 @@ const REQUIRED_SLOTS = ['top', 'bottom', 'shoes'];
 const INSUFFICIENT_MESSAGE =
   'Not enough items in your wardrobe to build an outfit. Add at least one top, one bottom, and one pair of shoes.';
 
-/**
- * Frontend vibes → backend style keywords for scoring.
- * Item style is stored from STYLES (Casual, Formal, Sport, etc.); vibes like "Sporty" / "Classy" map here.
- */
 const VIBE_STYLE_KEYWORDS = {
   casual: ['casual', 'smart casual', 'streetwear'],
   formal: ['formal', 'business', 'classy'],
@@ -30,14 +26,16 @@ const VIBE_STYLE_KEYWORDS = {
   classy: ['formal', 'classy', 'business', 'smart casual'],
   streetwear: ['streetwear', 'casual'],
   vintage: ['vintage'],
-  emo: ['vintage'], // no canonical "emo" style; vintage/alt overlap; also use color hint below
+  emo: ['vintage'],
 };
 
-/** Vibes that get a bonus when item color matches (e.g. dark for emo, neutral for minimalist). */
 const VIBE_COLOR_HINTS = {
   emo: /black|gray|grey|navy|burgundy|dark/i,
   minimalist: /black|white|gray|grey|navy|beige|cream/i,
 };
+
+const TOP_K_SLOT = 3;
+const MAX_CANDIDATES = 5;
 
 function rowsToObjects(execResult) {
   if (!execResult.length || !execResult[0].values.length) return [];
@@ -57,10 +55,6 @@ function slotForType(type) {
   return t ? 'top' : null;
 }
 
-/**
- * Score an item for a given occasion and vibe. Higher = better match.
- * Uses VIBE_STYLE_KEYWORDS so frontend vibes (Sporty, Classy, Emo, etc.) map to backend style values.
- */
 function scoreItem(item, occasion, vibe) {
   let score = 50;
   const style = (item.style || '').toLowerCase();
@@ -111,22 +105,79 @@ function buildExplanation(selected, occasion, vibe) {
     .map((slot) => selected[slot] && formatItemLabel(selected[slot]))
     .filter(Boolean);
   const list = parts.join(', ');
-  return `This ${occasion || 'outfit'} fits a ${vibe || 'relaxed'} vibe: ${list}. The pieces work together for the occasion.`;
+  return `This ${occasion || 'outfit'} look leans ${vibe || 'casual'}: ${list}. Pieces were scored for vibe and color harmony.`;
 }
 
-/** Pick the single best item from a slot array by score. */
-function pickBestForSlot(items, occasion, vibe) {
-  if (!items.length) return null;
+function getTopKForSlot(items, occasion, vibe, k) {
   const scored = items.map((item) => ({ item, score: scoreItem(item, occasion, vibe) }));
   scored.sort((a, b) => b.score - a.score);
-  return scored[0].item;
+  const out = [];
+  const seen = new Set();
+  for (const { item } of scored) {
+    if (seen.has(item.id)) continue;
+    seen.add(item.id);
+    out.push(item);
+    if (out.length >= k) break;
+  }
+  return out;
+}
+
+function selectedKey(selected) {
+  return ['top', 'bottom', 'shoes', 'outerwear']
+    .map((s) => (selected[s] ? selected[s].id : 'x'))
+    .join('-');
+}
+
+function buildLocalCandidates(bySlot, occasion, vibe) {
+  const tops = getTopKForSlot(bySlot.top, occasion, vibe, TOP_K_SLOT);
+  const bottoms = getTopKForSlot(bySlot.bottom, occasion, vibe, TOP_K_SLOT);
+  const shoelist = getTopKForSlot(bySlot.shoes, occasion, vibe, TOP_K_SLOT);
+  const outerTop = getTopKForSlot(bySlot.outerwear, occasion, vibe, 2);
+  const outerChoices = bySlot.outerwear.length ? [null, ...outerTop] : [null];
+
+  const raw = [];
+  for (const top of tops) {
+    const isDress = (top.type || '').toLowerCase().includes('dress');
+    const bottomOpts = isDress ? [null] : bottoms;
+    for (const bottom of bottomOpts) {
+      for (const shoes of shoelist) {
+        for (const outerwear of outerChoices) {
+          const selected = { top, bottom, shoes, outerwear };
+          let s = 0;
+          if (selected.top) s += scoreItem(selected.top, occasion, vibe);
+          if (selected.bottom) s += scoreItem(selected.bottom, occasion, vibe);
+          if (selected.shoes) s += scoreItem(selected.shoes, occasion, vibe);
+          if (selected.outerwear) s += scoreItem(selected.outerwear, occasion, vibe);
+          s += scoreOutfitCoherence(selected, occasion, vibe);
+          raw.push({ selected, localScore: s });
+        }
+      }
+    }
+  }
+
+  raw.sort((a, b) => b.localScore - a.localScore);
+  const seen = new Set();
+  const unique = [];
+  for (const c of raw) {
+    const key = selectedKey(c.selected);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push(c);
+    if (unique.length >= MAX_CANDIDATES) break;
+  }
+  return unique;
+}
+
+function pickBestForSlot(items, occasion, vibe) {
+  if (!items.length) return null;
+  const top = getTopKForSlot(items, occasion, vibe, 1);
+  return top[0] || null;
 }
 
 /**
- * Generate one outfit for the user. Returns { items, explanation, occasion, vibe }
- * or { error } if the wardrobe has too few items to fill required slots.
+ * @returns {Promise<{ items, explanation, occasion, vibe, reranked?, candidateCount? } | { error: string }>}
  */
-function generateOutfit(userId, occasion, vibe) {
+async function generateOutfit(userId, occasion, vibe) {
   const db = getDb();
   const rows = rowsToObjects(
     db.exec(
@@ -146,21 +197,29 @@ function generateOutfit(userId, occasion, vibe) {
     return { error: INSUFFICIENT_MESSAGE };
   }
 
-  const selected = {
-    top: pickBestForSlot(bySlot.top, occasion, vibe),
-    bottom: pickBestForSlot(bySlot.bottom, occasion, vibe),
-    shoes: pickBestForSlot(bySlot.shoes, occasion, vibe),
-    outerwear: bySlot.outerwear.length ? pickBestForSlot(bySlot.outerwear, occasion, vibe) : null,
-  };
+  const candidates = buildLocalCandidates(bySlot, occasion, vibe);
+  if (!candidates.length) {
+    return { error: INSUFFICIENT_MESSAGE };
+  }
 
+  let chosen = candidates[0];
+  let reranked = false;
+  let explanation = buildExplanation(chosen.selected, occasion, vibe);
+
+  const rerank = await rerankOutfitCandidates(candidates, occasion, vibe);
+  if (rerank && candidates[rerank.chosenIndex]) {
+    chosen = candidates[rerank.chosenIndex];
+    explanation = rerank.explanation;
+    reranked = true;
+  }
+
+  const selected = { ...chosen.selected };
   const isDressAsTop = selected.top && (selected.top.type || '').toLowerCase().includes('dress');
   if (isDressAsTop) {
     selected.bottom = null;
   }
 
   const outfitItems = [selected.top, selected.bottom, selected.shoes, selected.outerwear].filter(Boolean);
-  const explanation = buildExplanation(selected, occasion, vibe);
-
   return {
     items: outfitItems.map(({ id, type, color, season, style, notes, image_path, created_at }) => ({
       id,
@@ -175,7 +234,15 @@ function generateOutfit(userId, occasion, vibe) {
     explanation,
     occasion: occasion || 'Casual',
     vibe: vibe || 'Casual',
+    reranked,
+    candidateCount: candidates.length,
   };
 }
 
-module.exports = { generateOutfit, slotForType, scoreItem, pickBestForSlot, SLOT_TYPES };
+module.exports = {
+  generateOutfit,
+  slotForType,
+  scoreItem,
+  pickBestForSlot,
+  SLOT_TYPES,
+};

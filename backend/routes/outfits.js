@@ -5,7 +5,7 @@ const { generateOutfit } = require('../services/outfitGenerator');
 const router = express.Router();
 router.use(requireAuth);
 
-router.post('/generate', express.json(), (req, res) => {
+router.post('/generate', express.json(), async (req, res) => {
   const occasion = (req.body.occasion && String(req.body.occasion).trim()) || '';
   const vibe = (req.body.vibe && String(req.body.vibe).trim()) || '';
 
@@ -14,12 +14,13 @@ router.post('/generate', express.json(), (req, res) => {
   }
 
   try {
-    const result = generateOutfit(req.session.userId, occasion, vibe);
+    const result = await generateOutfit(req.session.userId, occasion, vibe);
     if (result.error) {
       return res.status(422).json({ error: result.error });
     }
     res.json(result);
   } catch (err) {
+    console.error('Outfit generate error:', err);
     res.status(500).json({ error: 'Outfit generation failed. Please try again.' });
   }
 });
