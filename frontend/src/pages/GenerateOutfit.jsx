@@ -74,7 +74,7 @@ function GenerateOutfit() {
           Pick an occasion and the vibe you want.
         </p>
 
-        <form onSubmit={handleSubmit} noValidate>
+        <form onSubmit={handleSubmit} noValidate className="generate-form-inner">
           <div className="generate-field">
             <label htmlFor="generate-occasion">Occasion</label>
             <select
@@ -82,18 +82,19 @@ function GenerateOutfit() {
               className="generate-input"
               value={occasion}
               onChange={(e) => setOccasion(e.target.value)}
+              aria-label="Occasion"
             >
-              <option value="">Select occasion</option>
+              <option value="">Choose an occasion…</option>
               {OCCASIONS.map((opt) => (
                 <option key={opt} value={opt}>{opt}</option>
               ))}
             </select>
           </div>
 
-          <div className="generate-field">
-            <span className="generate-label">Style / Vibe</span>
-            <p className="generate-hint">Choose one</p>
-            <div className="generate-chips" role="group" aria-label="Style or vibe">
+          <div className="generate-field generate-field--vibe">
+            <span className="generate-label" id="generate-vibe-label">Style / vibe</span>
+            <p className="generate-hint" id="generate-vibe-hint">Pick one chip that matches the look you want.</p>
+            <div className="generate-chips" role="group" aria-labelledby="generate-vibe-label" aria-describedby="generate-vibe-hint">
               {VIBES.map((opt) => (
                 <button
                   key={opt}
@@ -110,7 +111,7 @@ function GenerateOutfit() {
           {error && (
             <div className="generate-feedback" role="alert">
               <p className="generate-error">{error}</p>
-              {(error.toLowerCase().includes("wardrobe") || error.toLowerCase().includes("not enough")) && (
+              {(/wardrobe|not enough|doesn'?t have enough|suitable items|pieces that fit/i.test(error)) && (
                 <p className="generate-cta">
                   <Link to="/add-item">Add items to your wardrobe</Link> or try again later.
                 </p>
