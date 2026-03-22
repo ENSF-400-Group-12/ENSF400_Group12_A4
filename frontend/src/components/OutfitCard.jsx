@@ -4,19 +4,45 @@ import { apiUrl } from '../config/api';
 
 function OutfitCard({ outfit }) {
   const { items = [], explanation, occasion, vibe } = outfit;
+  const occStr = occasion != null ? String(occasion).trim() : '';
+  const vibeStr = vibe != null ? String(vibe).trim() : '';
+  const sameLabel =
+    occStr &&
+    vibeStr &&
+    occStr.toLowerCase() === vibeStr.toLowerCase();
 
   return (
     <div className="card outfit-card">
       <h2>Recommended Outfit</h2>
-      {occasion && vibe && (
-        <p className="outfit-meta">
-          {occasion} · {vibe}
-          {outfit.reranked && (
-            <span className="outfit-meta-ai" title="Picked from several rule-based options, then refined for coherence">
-              {' '}· AI-refined
-            </span>
+      {(occStr || vibeStr) && (
+        <div className="outfit-context">
+          {sameLabel ? (
+            <p className="outfit-context-line">
+              <span className="outfit-context-k">Look</span>
+              {occStr}
+            </p>
+          ) : (
+            <>
+              {occStr ? (
+                <p className="outfit-context-line">
+                  <span className="outfit-context-k">Occasion</span>
+                  {occStr}
+                </p>
+              ) : null}
+              {vibeStr ? (
+                <p className="outfit-context-line">
+                  <span className="outfit-context-k">Vibe</span>
+                  {vibeStr}
+                </p>
+              ) : null}
+            </>
           )}
-        </p>
+          {outfit.reranked ? (
+            <p className="outfit-context-ai" title="Picked from several rule-based options, then refined for coherence">
+              AI-refined pick
+            </p>
+          ) : null}
+        </div>
       )}
       <div className="outfit-items outfit-items--grid">
         {items.map((item) => {

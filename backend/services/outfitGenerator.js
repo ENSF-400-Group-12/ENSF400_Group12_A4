@@ -107,8 +107,10 @@ function buildExplanation(selected, occasion, vibe) {
   const parts = ['top', 'bottom', 'shoes', 'outerwear']
     .map((slot) => selected[slot] && formatItemLabel(selected[slot]))
     .filter(Boolean);
-  const list = parts.join(', ');
-  return `This ${occasion || 'outfit'} look leans ${vibe || 'casual'}: ${list}. Pieces were scored for vibe and color harmony.`;
+  const list = parts.join(' · ');
+  const occ = (occasion || '').trim() || 'this look';
+  const vb = (vibe || '').trim() || 'versatile';
+  return `${list}. Picked for ${occ} with a ${vb.toLowerCase()} feel — cohesive color and style.`;
 }
 
 function getTopKForSlot(items, occasion, vibe, k) {
