@@ -87,7 +87,10 @@ function Dashboard() {
 
   const handleLoadDemo = async () => {
     try {
-      const res = await authFetch("/api/demo/seed", { method: "POST" });
+      const res = await authFetch("/api/demo/seed", {
+        method: "POST",
+        body: JSON.stringify({}),
+      });
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
         await fetchItems();

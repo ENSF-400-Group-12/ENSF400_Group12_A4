@@ -9,13 +9,30 @@ const { getDb, persist } = require('../db/connection');
 const { requireAuth } = require('../middleware/requireAuth');
 
 const router = express.Router();
-const MANIFEST_PATH = path.resolve(__dirname, '..', '..', 'frontend', 'public', 'clothes-demo-manifest.json');
+
+function resolveManifestPath() {
+  const candidates = [
+    path.resolve(__dirname, '..', '..', 'frontend', 'public', 'clothes-demo-manifest.json'),
+    path.resolve(process.cwd(), 'frontend', 'public', 'clothes-demo-manifest.json'),
+    path.resolve(process.cwd(), '..', 'frontend', 'public', 'clothes-demo-manifest.json'),
+    path.join(__dirname, '..', 'data', 'clothes-demo-manifest.json'),
+  ];
+  for (const p of candidates) {
+    try {
+      if (fs.existsSync(p)) return p;
+    } catch (_) {
+      /* ignore */
+    }
+  }
+  return null;
+}
 
 /** Public health check for demo assets (no secrets). */
 router.get('/status', (_req, res) => {
   try {
+    const p = resolveManifestPath();
     res.json({
-      manifestExists: fs.existsSync(MANIFEST_PATH),
+      manifestExists: Boolean(p),
     });
   } catch (err) {
     res.status(500).json({ error: 'Status check failed.' });
@@ -24,12 +41,14 @@ router.get('/status', (_req, res) => {
 
 router.post('/seed', requireAuth, (req, res) => {
   try {
-    if (!fs.existsSync(MANIFEST_PATH)) {
+    const manifestPath = resolveManifestPath();
+    if (!manifestPath) {
       return res.status(404).json({
-        error: 'Demo manifest not found. Run: cd backend && npm run normalize-clothes',
+        error:
+          'Demo manifest not found. From repo root run: cd backend && npm run normalize-clothes',
       });
     }
-    const manifest = JSON.parse(fs.readFileSync(MANIFEST_PATH, 'utf8'));
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
     const db = getDb();
     const userId = req.session.userId;
 

@@ -13,6 +13,7 @@ const VALID_EXT = ['.jpg', '.jpeg', '.png', '.webp', '.avif'];
 const SRC_DIR = path.join(__dirname, '../../frontend/public/clothes');
 const OUT_DIR = path.join(__dirname, '../../frontend/public/clothes-demo');
 const MANIFEST_PATH = path.join(__dirname, '../../frontend/public/clothes-demo-manifest.json');
+const MANIFEST_BACKEND_COPY = path.join(__dirname, '../data/clothes-demo-manifest.json');
 
 // Manual overrides for ambiguous filenames: { filename: { type, color, season, style } }
 const OVERRIDES = {
@@ -135,8 +136,15 @@ async function main() {
     console.log('OK:', file, '->', outName);
   }
 
-  fs.writeFileSync(MANIFEST_PATH, JSON.stringify(manifest, null, 2), 'utf8');
+  const json = JSON.stringify(manifest, null, 2);
+  fs.writeFileSync(MANIFEST_PATH, json, 'utf8');
   console.log('\nManifest written to', MANIFEST_PATH);
+  const dataDir = path.dirname(MANIFEST_BACKEND_COPY);
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+  }
+  fs.writeFileSync(MANIFEST_BACKEND_COPY, json, 'utf8');
+  console.log('Manifest copy for API:', MANIFEST_BACKEND_COPY);
   console.log('Normalized:', manifest.length, 'files');
 }
 
