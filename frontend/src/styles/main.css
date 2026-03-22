@@ -1032,6 +1032,24 @@ body.signup-page-open {
   border-top: 1px solid var(--auth-border, rgba(0,0,0,0.06));
 }
 
+.generate-field--weather {
+  margin-top: 8px;
+  padding-top: 20px;
+  border-top: 1px solid var(--auth-border, rgba(0,0,0,0.06));
+}
+
+.generate-weather-live {
+  margin: -4px 0 4px;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--auth-text, #2a2a2a);
+}
+
+.generate-weather-live--muted {
+  color: var(--auth-text-muted, #6a5a4a);
+  font-style: italic;
+}
+
 .generate-field label,
 .generate-label {
   font-size: 0.875rem;

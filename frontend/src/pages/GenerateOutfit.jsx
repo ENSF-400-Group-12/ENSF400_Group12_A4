@@ -1,8 +1,14 @@
-// Form for generating outfit recommendations — occasion + vibe only, wired to API
+// Form for generating outfit recommendations — occasion, vibe, and weather; wired to API
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { authFetch } from "../config/api";
+import {
+  WEATHER_OPTIONS,
+  DEFAULT_WEATHER,
+  fetchCurrentWeather,
+  formatWeatherSummary,
+} from "../lib/weather";
 
 const OCCASIONS = [
   "Casual",
@@ -29,14 +35,53 @@ function GenerateOutfit() {
   const navigate = useNavigate();
   const [occasion, setOccasion] = useState("");
   const [vibe, setVibe] = useState(null);
+  const [weather, setWeather] = useState(DEFAULT_WEATHER);
+  const [weatherStatus, setWeatherStatus] = useState("idle");
+  const [weatherSummary, setWeatherSummary] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [errorHint, setErrorHint] = useState(null);
+
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      setWeatherStatus("unsupported");
+      setWeatherSummary("Location is not available in this browser. Choose a weather preset below.");
+      return;
+    }
+
+    setWeatherStatus("loading");
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const { option, tempC } = await fetchCurrentWeather(
+            pos.coords.latitude,
+            pos.coords.longitude
+          );
+          setWeather(option);
+          setWeatherSummary(formatWeatherSummary(tempC, option));
+          setWeatherStatus("ok");
+        } catch {
+          setWeatherStatus("error");
+          setWeatherSummary("Could not load live weather. Choose a condition below.");
+        }
+      },
+      () => {
+        setWeatherStatus("denied");
+        setWeatherSummary("Location not shared. Choose the weather for your outfit below.");
+      },
+      { enableHighAccuracy: false, timeout: 15000, maximumAge: 300000 }
+    );
+  }, []);
 
   async function handleSubmit(e) {
     e.preventDefault();
     if (!occasion || !vibe) {
       setError("Please choose an occasion and an aesthetic.");
+      setErrorHint(null);
+      return;
+    }
+    if (!weather) {
+      setError("Please choose a weather condition.");
       setErrorHint(null);
       return;
     }
@@ -46,7 +91,7 @@ function GenerateOutfit() {
     try {
       const res = await authFetch("/api/outfits/generate", {
         method: "POST",
-        body: JSON.stringify({ occasion, vibe }),
+        body: JSON.stringify({ occasion, vibe, weather }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -123,6 +168,35 @@ function GenerateOutfit() {
                 </button>
               ))}
             </div>
+          </div>
+
+          <div className="generate-field generate-field--weather">
+            <label htmlFor="generate-weather">Weather</label>
+            <p className="generate-field-help" id="generate-weather-help">
+              Outfits use the condition you pick; we prefill from your location when possible. Change it if you’re planning ahead.
+            </p>
+            {weatherStatus === "loading" && (
+              <p className="generate-weather-live generate-weather-live--muted" aria-live="polite">
+                Detecting location and loading weather…
+              </p>
+            )}
+            {(weatherStatus === "ok" || weatherStatus === "error" || weatherStatus === "denied" || weatherStatus === "unsupported") && weatherSummary && (
+              <p className="generate-weather-live" id="generate-weather-live" aria-live="polite">
+                {weatherSummary}
+              </p>
+            )}
+            <select
+              id="generate-weather"
+              className="generate-input"
+              value={weather}
+              onChange={(e) => setWeather(e.target.value)}
+              aria-label="Weather conditions"
+              aria-describedby="generate-weather-help generate-weather-live"
+            >
+              {WEATHER_OPTIONS.map((opt) => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
           </div>
 
           {error && (

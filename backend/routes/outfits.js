@@ -2,6 +2,9 @@ const express = require('express');
 const { requireAuth } = require('../middleware/requireAuth');
 const { generateOutfit } = require('../services/outfitGenerator');
 const { getDb, persist } = require('../db/connection');
+const { ALLOWED_WEATHER } = require('../lib/weatherOptions');
+
+const ALLOWED_WEATHER_SET = new Set(ALLOWED_WEATHER);
 
 const router = express.Router();
 router.use(requireAuth);
@@ -80,9 +83,11 @@ function sanitizeFavoriteOutfit(body) {
     });
   }
 
+  const weatherRaw = body.weather != null ? String(body.weather).trim().slice(0, 80) : '';
   const outfit = {
     occasion: body.occasion != null ? String(body.occasion).trim().slice(0, MAX_LEN.occasion) : '',
     vibe: body.vibe != null ? String(body.vibe).trim().slice(0, MAX_LEN.vibe) : '',
+    weather: weatherRaw || undefined,
     explanation: body.explanation != null ? String(body.explanation).trim().slice(0, MAX_LEN.explanation) : '',
     reranked: Boolean(body.reranked),
     stylistConfidence: body.stylistConfidence != null
@@ -198,13 +203,18 @@ router.delete('/favorites/:id', (req, res) => {
 router.post('/generate', express.json(), async (req, res) => {
   const occasion = (req.body.occasion && String(req.body.occasion).trim()) || '';
   const vibe = (req.body.vibe && String(req.body.vibe).trim()) || '';
+  const weatherRaw = req.body.weather != null ? String(req.body.weather).trim() : '';
+  const weather = weatherRaw || 'Cloudy';
 
   if (!occasion || !vibe) {
     return res.status(400).json({ error: 'Occasion and vibe are required.' });
   }
+  if (!ALLOWED_WEATHER_SET.has(weather)) {
+    return res.status(400).json({ error: 'Invalid weather option.' });
+  }
 
   try {
-    const result = await generateOutfit(req.session.userId, occasion, vibe);
+    const result = await generateOutfit(req.session.userId, occasion, vibe, weather);
     if (result.error) {
       return res.status(422).json({
         error: result.error,

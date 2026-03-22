@@ -15,9 +15,16 @@ test.describe('F1/F2/F3 browser flows', () => {
     await expect(page).toHaveURL(/\/dashboard$/);
 
     await page.goto('/generate');
+    await expect(page.locator('#generate-weather')).toBeVisible();
     await page.getByLabel('Occasion').selectOption('Casual');
     await page.locator('.generate-chips').getByRole('button', { name: 'Casual' }).first().click();
+    const genFailPromise = page.waitForResponse(
+      (r) => r.url().includes('/api/outfits/generate') && r.request().method() === 'POST'
+    );
     await page.getByRole('button', { name: 'Generate Outfit' }).click();
+    const genFailResp = await genFailPromise;
+    const genFailBody = JSON.parse(genFailResp.request().postData() || '{}');
+    expect(genFailBody.weather).toBeTruthy();
     await expect(page.locator('.generate-error')).toContainText(/not enough|wardrobe/i, { timeout: 15_000 });
 
     await page.goto('/dashboard');
@@ -30,9 +37,16 @@ test.describe('F1/F2/F3 browser flows', () => {
     await expect(page.locator('.clothing-card').first()).toBeVisible({ timeout: 20_000 });
 
     await page.goto('/generate');
+    await expect(page.locator('#generate-weather')).toBeVisible();
     await page.getByLabel('Occasion').selectOption('Weekend');
     await page.locator('.generate-field--vibe .generate-chips').getByRole('button', { name: 'Streetwear' }).click();
+    const genOkPromise = page.waitForResponse(
+      (r) => r.url().includes('/api/outfits/generate') && r.request().method() === 'POST'
+    );
     await page.getByRole('button', { name: 'Generate Outfit' }).click();
+    const genOkResp = await genOkPromise;
+    const genOkBody = JSON.parse(genOkResp.request().postData() || '{}');
+    expect(genOkBody.weather).toBeTruthy();
     await expect(page).toHaveURL(/\/results$/, { timeout: 20_000 });
     await expect(page.getByRole('heading', { name: 'Recommended Outfit' })).toBeVisible();
     await expect(page.locator('.outfit-card')).toBeVisible();

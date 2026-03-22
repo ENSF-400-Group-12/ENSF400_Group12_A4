@@ -194,7 +194,39 @@ function scoreItem(item, occasion, vibe) {
   return score;
 }
 
-function scoreItemRich(item, occasion, vibe) {
+/** Nudge scores toward weather-appropriate pieces (outerwear, layers, open footwear). Labels: Clear, Cloudy, Rain, Snow, Hot, Cold. */
+function weatherItemBonus(item, weather) {
+  const w = String(weather || '').trim();
+  if (!w) return 0;
+  const type = (item.type || '').toLowerCase();
+  const slot = item.slot;
+  let b = 0;
+
+  const coldLike = w === 'Snow' || w === 'Cold';
+  const hotLike = w === 'Hot';
+  const wetLike = w === 'Rain';
+  const layerBoost = coldLike || wetLike;
+
+  if (coldLike || wetLike) {
+    if (slot === 'outerwear' || type === 'jacket' || type === 'coat') b += 24;
+    if (type === 'sweater' || type === 'hoodie') b += 12;
+    if (type === 'boots') b += 10;
+    if (type === 'sneakers') b += 4;
+    if (type === 'sandals') b -= 22;
+    if (type === 'shorts') b -= 18;
+  }
+  if (hotLike) {
+    if (type === 'shorts') b += 14;
+    if (type === 'sandals') b += 12;
+    if (type === 't-shirt') b += 8;
+    if (slot === 'outerwear' || type === 'coat') b -= 22;
+    if (type === 'jacket') b -= 8;
+  }
+  if (layerBoost && (slot === 'outerwear' || type === 'jacket' || type === 'coat')) b += 6;
+  return b;
+}
+
+function scoreItemRich(item, occasion, vibe, weather = '') {
   let s = scoreItem(item, occasion, vibe);
   const p = item.profile || {};
   const sub = p.subtype || '';
@@ -246,7 +278,7 @@ function scoreItemRich(item, occasion, vibe) {
     if (fr <= 2) s -= 12;
   }
 
-  return s + occasionVibeSpecificityNudge(item, occasion, vibe);
+  return s + occasionVibeSpecificityNudge(item, occasion, vibe) + weatherItemBonus(item, weather);
 }
 
 function formatItemLabel(item) {
@@ -267,7 +299,7 @@ function formatOutfitFingerprint(selected) {
 /**
  * @param {{ altShort?: string, gap?: number } | null} compare - close runner-up for transparency (no fluff)
  */
-function buildExplanation(selected, occasion, vibe, outerwearAdded, compare) {
+function buildExplanation(selected, occasion, vibe, outerwearAdded, compare, weather = '') {
   const parts = ['top', 'mid', 'bottom', 'shoes', 'outerwear']
     .map((slot) => selected[slot] && formatItemLabel(selected[slot]))
     .filter(Boolean);
@@ -285,11 +317,14 @@ function buildExplanation(selected, occasion, vibe, outerwearAdded, compare) {
   if (compare?.altShort != null && compare.gap != null && compare.gap <= 6) {
     msg += ` Narrowly beat a similar mix (${compare.altShort}) for this occasion + aesthetic.`;
   }
+  if (weather && String(weather).trim()) {
+    msg += ` Weather: ${weather}.`;
+  }
   return msg;
 }
 
-function getTopKForSlot(items, occasion, vibe, k) {
-  const scored = items.map((item) => ({ item, score: scoreItemRich(item, occasion, vibe) }));
+function getTopKForSlot(items, occasion, vibe, k, weather = '') {
+  const scored = items.map((item) => ({ item, score: scoreItemRich(item, occasion, vibe, weather) }));
   scored.sort((a, b) => b.score - a.score);
   const out = [];
   const seen = new Set();
@@ -425,11 +460,11 @@ function passesGrammar(selected, occasion, vibe) {
   return true;
 }
 
-function buildLocalCandidates(bySlot, occasion, vibe) {
-  const tops = getTopKForSlot(bySlot.top, occasion, vibe, TOP_K_SLOT);
-  const bottoms = getTopKForSlot(bySlot.bottom, occasion, vibe, TOP_K_SLOT);
-  const shoelist = getTopKForSlot(bySlot.shoes, occasion, vibe, TOP_K_SLOT).filter((s) => shoeAllowedForLook(s, occasion, vibe));
-  const midOptions = bySlot.mid?.length ? [null, ...getTopKForSlot(bySlot.mid, occasion, vibe, TOP_K_SLOT)] : [null];
+function buildLocalCandidates(bySlot, occasion, vibe, weather = '') {
+  const tops = getTopKForSlot(bySlot.top, occasion, vibe, TOP_K_SLOT, weather);
+  const bottoms = getTopKForSlot(bySlot.bottom, occasion, vibe, TOP_K_SLOT, weather);
+  const shoelist = getTopKForSlot(bySlot.shoes, occasion, vibe, TOP_K_SLOT, weather).filter((s) => shoeAllowedForLook(s, occasion, vibe));
+  const midOptions = bySlot.mid?.length ? [null, ...getTopKForSlot(bySlot.mid, occasion, vibe, TOP_K_SLOT, weather)] : [null];
 
   const raw = [];
   for (const top of tops) {
@@ -444,10 +479,10 @@ function buildLocalCandidates(bySlot, occasion, vibe) {
           const selected = { top, bottom, shoes, mid, outerwear: null };
           if (!passesGrammar(selected, occasion, vibe)) continue;
           let s = 0;
-          if (selected.top) s += scoreItemRich(selected.top, occasion, vibe);
-          if (selected.bottom) s += scoreItemRich(selected.bottom, occasion, vibe);
-          if (selected.shoes) s += scoreItemRich(selected.shoes, occasion, vibe);
-          if (selected.mid) s += scoreItemRich(selected.mid, occasion, vibe);
+          if (selected.top) s += scoreItemRich(selected.top, occasion, vibe, weather);
+          if (selected.bottom) s += scoreItemRich(selected.bottom, occasion, vibe, weather);
+          if (selected.shoes) s += scoreItemRich(selected.shoes, occasion, vibe, weather);
+          if (selected.mid) s += scoreItemRich(selected.mid, occasion, vibe, weather);
           s += scoreOutfitCoherence(selected, occasion, vibe);
           if (selected.mid && polishedContext(occasion, vibe)) s += 12;
           if (selected.mid && isMidBlazer(selected.mid) && polishedContext(occasion, vibe) && selected.top) {
@@ -497,7 +532,7 @@ function minAcceptableScore(occasion, vibe) {
   return m;
 }
 
-function pickWithVariety(candidates, userId, occasion, vibe) {
+function pickWithVariety(candidates, userId, occasion, vibe, weather = '') {
   if (!candidates.length) return null;
   const topScore = candidates[0].localScore;
   const band = candidates.filter((c) => c.localScore >= topScore - PICK_QUALITY_BAND);
@@ -520,7 +555,7 @@ function pickWithVariety(candidates, userId, occasion, vibe) {
   const bestAdj = scored[0].adj;
   const nearTie = scored.filter((x) => x.adj >= bestAdj - 3);
   let h = Number(userId) || 0;
-  const seed = `${occasion}|${vibe}|pick`;
+  const seed = `${occasion}|${vibe}|${weather || ''}|pick`;
   for (let i = 0; i < seed.length; i++) {
     h = (h * 31 + seed.charCodeAt(i)) >>> 0;
   }
@@ -543,8 +578,8 @@ function isCasualDenimOuterwear(item) {
   return denimCue || casualCue;
 }
 
-function scoreOuterwearLayer(ow, occasion, vibe, coreSelected) {
-  let s = scoreItemRich(ow, occasion, vibe);
+function scoreOuterwearLayer(ow, occasion, vibe, coreSelected, weather = '') {
+  let s = scoreItemRich(ow, occasion, vibe, weather);
   const occ = (occasion || '').toLowerCase();
   const vib = (vibe || '').toLowerCase();
   const polished = polishedContext(occasion, vibe);
@@ -581,20 +616,27 @@ function occasionWantsOptionalLayer(occasion, vibe) {
   return false;
 }
 
-function maybeAddOuterwear(selected, bySlot, occasion, vibe, coreScore) {
+function weatherWantsOuterwear(weather) {
+  const w = String(weather || '').trim();
+  return ['Rain', 'Snow', 'Cold'].includes(w);
+}
+
+function maybeAddOuterwear(selected, bySlot, occasion, vibe, coreScore, weather = '') {
   if (!bySlot.outerwear?.length) return { selected, added: false };
-  const wantLayer = occasionWantsOptionalLayer(occasion, vibe);
+  const fromOccasion = occasionWantsOptionalLayer(occasion, vibe);
+  const fromWeather = weatherWantsOuterwear(weather);
+  const wantLayer = fromOccasion || fromWeather;
 
   let bestOw = null;
   let bestTotal = coreScore;
   for (const ow of bySlot.outerwear) {
     const sel = { ...selected, outerwear: ow };
     let s = 0;
-    if (sel.top) s += scoreItemRich(sel.top, occasion, vibe);
-    if (sel.mid) s += scoreItemRich(sel.mid, occasion, vibe);
-    if (sel.bottom) s += scoreItemRich(sel.bottom, occasion, vibe);
-    if (sel.shoes) s += scoreItemRich(sel.shoes, occasion, vibe);
-    s += scoreOuterwearLayer(ow, occasion, vibe, selected);
+    if (sel.top) s += scoreItemRich(sel.top, occasion, vibe, weather);
+    if (sel.mid) s += scoreItemRich(sel.mid, occasion, vibe, weather);
+    if (sel.bottom) s += scoreItemRich(sel.bottom, occasion, vibe, weather);
+    if (sel.shoes) s += scoreItemRich(sel.shoes, occasion, vibe, weather);
+    s += scoreOuterwearLayer(ow, occasion, vibe, selected, weather);
     s += scoreOutfitCoherence(sel, occasion, vibe);
     if (s > bestTotal) {
       bestTotal = s;
@@ -602,7 +644,11 @@ function maybeAddOuterwear(selected, bySlot, occasion, vibe, coreScore) {
     }
   }
   const gain = bestTotal - coreScore;
-  const threshold = wantLayer ? 28 : 42;
+  let threshold = 42;
+  if (wantLayer) {
+    if (fromWeather && !fromOccasion) threshold = 22;
+    else threshold = 28;
+  }
   if (bestOw && gain >= threshold) {
     return { selected: { ...selected, outerwear: bestOw }, added: true };
   }
@@ -627,7 +673,7 @@ function rejectHint(occasion, vibe, candidates) {
 /**
  * @returns {Promise<{ items, explanation, occasion, vibe, reranked?, candidateCount?, stylistConfidence? } | { error: string, suggestion?: string }>}
  */
-async function generateOutfit(userId, occasion, vibe) {
+async function generateOutfit(userId, occasion, vibe, weather = 'Cloudy') {
   const db = getDb();
   const rows = rowsToObjects(
     db.exec(
@@ -647,7 +693,7 @@ async function generateOutfit(userId, occasion, vibe) {
     return { error: INSUFFICIENT_MESSAGE, suggestion: rejectHint(occasion, vibe, []) };
   }
 
-  let candidates = buildLocalCandidates(bySlot, occasion, vibe);
+  let candidates = buildLocalCandidates(bySlot, occasion, vibe, weather);
   if (!candidates.length) {
     return {
       error: NOT_SUITABLE_MESSAGE,
@@ -664,7 +710,7 @@ async function generateOutfit(userId, occasion, vibe) {
     };
   }
 
-  let chosen = pickWithVariety(candidates, userId, occasion, vibe);
+  let chosen = pickWithVariety(candidates, userId, occasion, vibe, weather);
   if (!chosen || chosen.localScore < minScore) {
     return {
       error: NOT_SUITABLE_MESSAGE,
@@ -676,7 +722,7 @@ async function generateOutfit(userId, occasion, vibe) {
   let reranked = false;
   let stylistConfidence = null;
 
-  const rerank = await rerankOutfitCandidates(candidates, occasion, vibe);
+  const rerank = await rerankOutfitCandidates(candidates, occasion, vibe, weather);
   if (rerank?.rejectAll && rerank.confidence === 'high') {
     return {
       error: rerank.stylistReason || NOT_SUITABLE_MESSAGE,
@@ -687,7 +733,7 @@ async function generateOutfit(userId, occasion, vibe) {
     const alt = candidates[rerank.chosenIndex];
     if (alt.localScore >= minScore) {
       chosen = alt;
-      explanation = rerank.stylistReason || buildExplanation(alt.selected, occasion, vibe, false, null);
+      explanation = rerank.stylistReason || buildExplanation(alt.selected, occasion, vibe, false, null, weather);
       reranked = true;
       stylistConfidence = rerank.confidence;
     }
@@ -710,12 +756,12 @@ async function generateOutfit(userId, occasion, vibe) {
     selected.bottom = null;
   }
 
-  const owResult = maybeAddOuterwear(selected, bySlot, occasion, vibe, chosen.localScore);
+  const owResult = maybeAddOuterwear(selected, bySlot, occasion, vibe, chosen.localScore, weather);
   selected = owResult.selected;
   if (!reranked) {
-    explanation = buildExplanation(selected, occasion, vibe, owResult.added, compare);
+    explanation = buildExplanation(selected, occasion, vibe, owResult.added, compare, weather);
   } else if (!explanation.trim()) {
-    explanation = buildExplanation(selected, occasion, vibe, owResult.added, null);
+    explanation = buildExplanation(selected, occasion, vibe, owResult.added, null, weather);
   } else if (owResult.added && selected.outerwear) {
     explanation = `${explanation.trim()} Added ${formatItemLabel(selected.outerwear)} as outerwear — only because it improves the look.`;
   }
@@ -735,6 +781,7 @@ async function generateOutfit(userId, occasion, vibe) {
     explanation,
     occasion: occasion || 'Casual',
     vibe: vibe || 'Casual',
+    weather: weather || 'Cloudy',
     reranked,
     candidateCount: candidates.length,
     stylistConfidence: stylistConfidence || undefined,
@@ -746,7 +793,7 @@ module.exports = {
   slotForType,
   scoreItem,
   pickBestForSlot: (items, occasion, vibe) => {
-    const top = getTopKForSlot(items, occasion, vibe, 1);
+    const top = getTopKForSlot(items, occasion, vibe, 1, '');
     return top[0] || null;
   },
   SLOT_TYPES,

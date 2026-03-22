@@ -3,9 +3,10 @@
 import { apiUrl } from '../config/api';
 
 function OutfitCard({ outfit, heading = "Recommended Outfit" }) {
-  const { items = [], explanation, occasion, vibe } = outfit;
+  const { items = [], explanation, occasion, vibe, weather } = outfit;
   const occStr = occasion != null ? String(occasion).trim() : '';
   const vibeStr = vibe != null ? String(vibe).trim() : '';
+  const weatherStr = weather != null ? String(weather).trim() : '';
   const sameLabel =
     occStr &&
     vibeStr &&
@@ -14,13 +15,21 @@ function OutfitCard({ outfit, heading = "Recommended Outfit" }) {
   return (
     <div className="card outfit-card">
       <h2>{heading}</h2>
-      {(occStr || vibeStr) && (
+      {(occStr || vibeStr || weatherStr) && (
         <div className="outfit-context">
           {sameLabel ? (
-            <p className="outfit-context-line">
-              <span className="outfit-context-k">Look</span>
-              {occStr}
-            </p>
+            <>
+              <p className="outfit-context-line">
+                <span className="outfit-context-k">Look</span>
+                {occStr}
+              </p>
+              {weatherStr ? (
+                <p className="outfit-context-line">
+                  <span className="outfit-context-k">Weather</span>
+                  {weatherStr}
+                </p>
+              ) : null}
+            </>
           ) : (
             <>
               {occStr ? (
@@ -33,6 +42,12 @@ function OutfitCard({ outfit, heading = "Recommended Outfit" }) {
                 <p className="outfit-context-line">
                   <span className="outfit-context-k">Vibe</span>
                   {vibeStr}
+                </p>
+              ) : null}
+              {weatherStr ? (
+                <p className="outfit-context-line">
+                  <span className="outfit-context-k">Weather</span>
+                  {weatherStr}
                 </p>
               ) : null}
             </>
