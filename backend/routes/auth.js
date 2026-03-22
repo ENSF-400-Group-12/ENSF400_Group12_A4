@@ -97,7 +97,7 @@ router.post('/logout', (req, res) => {
 
 router.get('/me', (req, res) => {
   if (!req.session || !req.session.userId) {
-    return res.status(401).json({ error: 'Not authenticated' });
+    return res.json({ user: null });
   }
   res.json({ user: { id: req.session.userId, email: req.session.email } });
 });
