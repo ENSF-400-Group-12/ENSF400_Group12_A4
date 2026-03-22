@@ -37,7 +37,7 @@ const VIBE_COLOR_HINTS = {
   minimalist: /black|white|gray|grey|navy|beige|cream/i,
 };
 
-const TOP_K_SLOT = 3;
+const TOP_K_SLOT = 4;
 const MAX_CANDIDATES = 5;
 
 function rowsToObjects(execResult) {
@@ -167,21 +167,34 @@ function buildLocalCandidates(bySlot, occasion, vibe) {
   return unique;
 }
 
+/** Hard-to-dress combinations — require a stronger-scoring wardrobe match or reject. */
+function occasionVibeClash(occasion, vibe) {
+  const o = (occasion || '').trim().toLowerCase();
+  const v = (vibe || '').trim().toLowerCase();
+  if (!v) return false;
+  if (o === 'formal' && ['casual', 'streetwear', 'sporty', 'emo'].includes(v)) return true;
+  if (o === 'work' && ['streetwear', 'emo', 'sporty'].includes(v)) return true;
+  if ((o === 'casual' || o === 'weekend') && v === 'formal') return true;
+  if (o === 'outdoor' && (v === 'formal' || v === 'classy')) return true;
+  return false;
+}
+
 function minAcceptableScore(occasion, vibe) {
-  let m = 132;
+  let m = 136;
   const o = (occasion || '').toLowerCase();
   const v = (vibe || '').trim().toLowerCase();
   if (o === 'formal' || v === 'formal' || v === 'classy') m += 34;
   if (o === 'date night' && (v === 'classy' || v === 'formal')) m += 20;
   if (o === 'work' && (v === 'formal' || v === 'minimalist' || v === 'classy')) m += 24;
   if (v === 'minimalist' || v === 'formal') m += 10;
+  if (occasionVibeClash(occasion, vibe)) m += 32;
   return m;
 }
 
 function pickWithVariety(candidates, userId, occasion, vibe) {
   if (!candidates.length) return null;
   const topScore = candidates[0].localScore;
-  const band = candidates.filter((c) => c.localScore >= topScore - 8);
+  const band = candidates.filter((c) => c.localScore >= topScore - 14);
   if (band.length <= 1) return band[0];
   let h = Number(userId) || 0;
   const seed = `${occasion}|${vibe}`;
@@ -218,7 +231,7 @@ function maybeAddOuterwear(selected, bySlot, occasion, vibe, coreScore) {
     }
   }
   const gain = bestTotal - coreScore;
-  const threshold = wantLayer ? 6 : 14;
+  const threshold = wantLayer ? 12 : 22;
   if (bestOw && gain >= threshold) {
     return { ...selected, outerwear: bestOw };
   }
