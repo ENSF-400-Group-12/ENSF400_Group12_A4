@@ -68,7 +68,7 @@ async function rerankOutfitCandidates(candidates, occasion, vibe) {
           {
             role: 'system',
             content:
-              'You choose exactly one outfit candidate by index. Judge color harmony, occasion appropriateness, and vibe. Use only listed pieces; do not invent items or mention weather. Occasion and vibe are already in the JSON — in "explanation" do not repeat those labels or say "this occasion"; write one short paragraph (max 90 words) on how the pieces work together.',
+              'You choose exactly one outfit candidate by index. Judge color harmony, occasion appropriateness, and vibe. Use only listed pieces; do not invent items or mention weather. Do not prefer looks that lean on a casual or denim-type jacket for formal, work, date night, or minimalist aesthetics unless that candidate is clearly strongest. Occasion and vibe are already in the JSON — in "explanation" do not repeat those labels or say "this occasion"; write one short paragraph (max 90 words) on how the pieces work together.',
           },
           {
             role: 'user',

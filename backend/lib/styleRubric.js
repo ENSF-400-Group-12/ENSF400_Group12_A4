@@ -7,7 +7,6 @@ const NEUTRAL = /^(black|white|gray|grey|navy|beige|cream|brown)$/i;
 const BRIGHT = /^(yellow|orange|pink|red|light blue|purple|green)$/i;
 const FORMALISH = /formal|business|blazer|smart casual/i;
 const SPORTISH = /sport|athletic/i;
-
 /** Short text passed to rerank prompt */
 const RUBRIC_SUMMARY = [
   'Prefer color harmony: neutrals (black, white, gray, navy, beige, cream, brown) work together.',
@@ -15,6 +14,7 @@ const RUBRIC_SUMMARY = [
   'For Formal or Work, favor Formal, Business, Smart Casual, Minimalist over Sport/Athletic.',
   'For Minimalist vibe, prefer a tight neutral palette (at most one accent color).',
   'Shoes should match the formality of top + bottom (e.g. sneakers for casual/street, dress shoes for formal).',
+  'Do not add a casual or denim jacket to formal, date night, work, or minimalist looks unless it clearly elevates the set.',
 ].join(' ');
 
 function isNeutralColor(color) {
@@ -70,6 +70,38 @@ function scoreOutfitCoherence(selected, occasion, vibe) {
   const colorStr = colors.join(' ').toLowerCase();
   if (/navy|blue/.test(colorStr) && /brown|beige|cream|tan/.test(colorStr)) {
     score += 5;
+  }
+
+  const ow = selected.outerwear;
+  if (ow) {
+    const owType = (ow.type || '').toLowerCase();
+    const owStyle = (ow.style || '').toLowerCase();
+    const owColor = (ow.color || '').toLowerCase();
+    const owNotes = (ow.notes || '').toLowerCase();
+    const denimJacket =
+      (owType === 'jacket' || owType === 'coat')
+      && (owColor === 'blue' || /denim|jean/i.test(owNotes) || (owStyle === 'casual' && owColor === 'blue'));
+
+    if (denimJacket && (occasionLower === 'formal' || occasionLower === 'date night' || occasionLower === 'work')) {
+      score -= 28;
+    }
+    if (denimJacket && (vibeLower === 'formal' || vibeLower === 'classy' || vibeLower === 'minimalist')) {
+      score -= 22;
+    }
+
+    const top = selected.top;
+    const bottom = selected.bottom;
+    if (top && bottom) {
+      const tc = (top.color || '').toLowerCase();
+      const bc = (bottom.color || '').toLowerCase();
+      const shoe = selected.shoes;
+      const sc = shoe ? (shoe.color || '').toLowerCase() : '';
+      const palette = [tc, bc, sc, owColor].filter(Boolean);
+      const unique = new Set(palette);
+      if (palette.length >= 3 && unique.size >= 3 && brightCount >= 2) {
+        score -= 8;
+      }
+    }
   }
 
   return score;
