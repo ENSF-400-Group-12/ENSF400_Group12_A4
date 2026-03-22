@@ -11,6 +11,17 @@ const { requireAuth } = require('../middleware/requireAuth');
 const router = express.Router();
 const MANIFEST_PATH = path.resolve(__dirname, '..', '..', 'frontend', 'public', 'clothes-demo-manifest.json');
 
+/** Public health check for demo assets (no secrets). */
+router.get('/status', (_req, res) => {
+  try {
+    res.json({
+      manifestExists: fs.existsSync(MANIFEST_PATH),
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Status check failed.' });
+  }
+});
+
 router.post('/seed', requireAuth, (req, res) => {
   try {
     if (!fs.existsSync(MANIFEST_PATH)) {

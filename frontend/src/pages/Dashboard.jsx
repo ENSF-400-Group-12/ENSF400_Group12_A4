@@ -1,7 +1,7 @@
 // Wardrobe Dashboard
 // Central hub for viewing and managing clothing items
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
 import ClothingCard from "../components/ClothingCard";
 import { authFetch, apiUrl } from "../config/api";
@@ -28,6 +28,8 @@ function Dashboard() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  /** Ignore stale /api/items responses (e.g. initial empty fetch finishing after Load demo). */
+  const fetchGenRef = useRef(0);
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("");
   const [filterColor, setFilterColor] = useState("");
@@ -35,6 +37,7 @@ function Dashboard() {
   const [filterStyle, setFilterStyle] = useState("");
 
   const fetchItems = useCallback(async () => {
+    const gen = ++fetchGenRef.current;
     setLoading(true);
     setError(null);
     try {
@@ -47,15 +50,19 @@ function Dashboard() {
         throw new Error(msg);
       }
       const data = await res.json();
+      if (gen !== fetchGenRef.current) return;
       setItems(data.items || []);
     } catch (err) {
+      if (gen !== fetchGenRef.current) return;
       const message = err.message || "Failed to load wardrobe.";
       setError(err.name === "TypeError" && err.message?.includes("fetch")
         ? "Could not reach the server. Start the backend (e.g. npm start in backend) and try again."
         : message);
       setItems([]);
     } finally {
-      setLoading(false);
+      if (gen === fetchGenRef.current) {
+        setLoading(false);
+      }
     }
   }, []);
 

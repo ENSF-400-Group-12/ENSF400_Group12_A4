@@ -1,9 +1,10 @@
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '.env') });
+require('dotenv').config({ path: path.resolve(__dirname, '..', '.env') });
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const session = require('express-session');
-const path = require('path');
 const authRouter = require('./routes/auth');
 const itemsRouter = require('./routes/items');
 const outfitsRouter = require('./routes/outfits');
@@ -15,7 +16,7 @@ const port = process.env.PORT || 8080;
 
 const allowedOrigins = process.env.FRONTEND_ORIGIN
   ? process.env.FRONTEND_ORIGIN.split(',').map((s) => s.trim()).filter(Boolean)
-  : ['http://localhost:3000', 'http://localhost:3001'];
+  : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:13000'];
 
 app.use(cors({
   origin: (origin, callback) => {
