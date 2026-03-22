@@ -14,9 +14,17 @@ const { initDb } = require('./db/connection');
 const app = express();
 const port = process.env.PORT || 8080;
 
+const defaultOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://localhost:13000',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:3001',
+  'http://127.0.0.1:13000',
+];
 const allowedOrigins = process.env.FRONTEND_ORIGIN
   ? process.env.FRONTEND_ORIGIN.split(',').map((s) => s.trim()).filter(Boolean)
-  : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:13000'];
+  : defaultOrigins;
 
 app.use(cors({
   origin: (origin, callback) => {

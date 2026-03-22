@@ -15,6 +15,7 @@ function resolveManifestPath() {
     path.resolve(__dirname, '..', '..', 'frontend', 'public', 'clothes-demo-manifest.json'),
     path.resolve(process.cwd(), 'frontend', 'public', 'clothes-demo-manifest.json'),
     path.resolve(process.cwd(), '..', 'frontend', 'public', 'clothes-demo-manifest.json'),
+    path.resolve(process.cwd(), 'backend', 'data', 'clothes-demo-manifest.json'),
     path.join(__dirname, '..', 'data', 'clothes-demo-manifest.json'),
   ];
   for (const p of candidates) {
@@ -70,6 +71,7 @@ router.post('/seed', requireAuth, (req, res) => {
       );
     }
     persist();
+    console.log('[demo/seed] ok user=%s count=%s manifest=%s', userId, manifest.length, manifestPath);
     res.json({ ok: true, count: manifest.length });
   } catch (err) {
     console.error('Demo seed error:', err);
