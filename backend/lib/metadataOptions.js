@@ -44,6 +44,16 @@ const TYPE_SYNONYMS = {
   'shirts': 'Shirt', 'pants': 'Pants', 'skirts': 'Skirt', 'shoes': 'Shoes'
 };
 
+const TYPE_DUPLICATE_FAMILY = {
+  Shirt: 'shirt_like',
+  Blouse: 'shirt_like',
+  Shoes: 'polished_footwear',
+  Heels: 'polished_footwear',
+  Flats: 'polished_footwear',
+  Boots: 'boots',
+  'Dress Boots': 'boots',
+};
+
 const COLOR_SYNONYMS = {
   'grey': 'Gray', 'navy blue': 'Navy', 'light blue': 'Light Blue', 'dark blue': 'Navy',
   'maroon': 'Burgundy', 'burgundy': 'Burgundy', 'olive green': 'Olive', 'beige': 'Beige',
@@ -99,4 +109,23 @@ function normalizeMetadata(raw) {
   return result;
 }
 
-module.exports = { TYPES, COLORS, SEASONS, STYLES, normalize, normalizeMetadata };
+function normalizeType(value) {
+  return normalize(value, TYPES, TYPE_SYNONYMS);
+}
+
+function normalizeTypeForDuplicates(value) {
+  const canonical = normalizeType(value);
+  if (!canonical) return null;
+  return TYPE_DUPLICATE_FAMILY[canonical] || canonical;
+}
+
+module.exports = {
+  TYPES,
+  COLORS,
+  SEASONS,
+  STYLES,
+  normalize,
+  normalizeType,
+  normalizeTypeForDuplicates,
+  normalizeMetadata,
+};

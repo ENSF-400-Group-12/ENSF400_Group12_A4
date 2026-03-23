@@ -66,6 +66,11 @@ const ITEM_SCHEMA = {
 
 const SYSTEM_PROMPT = `You classify ONE clothing item in a photo for a wardrobe / outfit app (structured JSON).
 
+Classify garments only.
+- Do not infer wearer gender.
+- Do not infer body type.
+- Do not infer attractiveness, beauty, or any sensitive personal trait.
+
 confidence:
 - "high" ONLY if garment type and main color are clearly visible (single item, reasonably sharp).
 - "low" if: blurry/dark photo, multiple competing items, face-only, not clothing, packaging, or you would be guessing.
@@ -73,14 +78,14 @@ confidence:
 When confidence is "low", still output valid enums for ALL fields. For core fields use placeholders: type "T-Shirt", color "Black", season "All Season", style "Casual". For rich fields use "${UNSPECIFIED}" only; the server discards low-confidence rows.
 
 When confidence is "high":
-- Distinguish: blazer vs denim jacket vs hoodie vs button-up vs tee; dress shoes vs sneakers vs boots; dress pants vs jeans vs joggers.
+- Distinguish: blouse vs button-up vs tee vs tank vs camisole vs bodysuit; cardigan vs sweater vs blazer; dress vs jumpsuit vs romper; heels vs flats vs dress boots vs generic boots vs sneakers vs sandals; leggings vs dress pants vs jeans vs joggers.
 - subtype: pick the closest label (e.g. denim_jacket for blue jean jackets, blazer for tailored jackets that read as suiting).
-- category: top | bottom | shoes | outerwear | mid_layer (blazers = mid_layer).
-- layerRole: base for shirts/tees/hoodies/sweaters/dresses; mid for blazers; outer for coats/jackets worn as outer layer.
+- category: top | bottom | shoes | outerwear | mid_layer | one_piece.
+- layerRole: base for tops and one-piece garments; mid for blazers and cardigans; outer for coats/jackets worn as outer layer.
 - formality: match visible construction (suiting/blazer/dress shoes → higher; jersey/tee/sneakers → lower).
 - materialVibe / patternOrTexture / silhouette / warmth / versatility: best guess from the photo; use "${UNSPECIFIED}" if not visible.
 - Never use lazy generic core combos (e.g. Shirt+Blue+All Season+Casual) unless the photo is clearly that.
-- Footwear must be Shoes, Boots, Sneakers, or Sandals, never Shirt/T-Shirt for shoes.`;
+- Footwear must be Shoes, Heels, Flats, Boots, Dress Boots, Sneakers, or Sandals, never Shirt/T-Shirt for shoes.`;
 
 /**
  * @returns {Promise<object>} full parsed fields including confidence

@@ -12,10 +12,13 @@ const {
 } = require('../lib/garmentProfile');
 const { analyzeItemImageOpenAI } = require('./openaiItemAnalysis');
 
-const FOOTWEAR_TYPES = new Set(['Shoes', 'Sneakers', 'Boots', 'Sandals']);
+const FOOTWEAR_TYPES = new Set(['Shoes', 'Heels', 'Flats', 'Sneakers', 'Boots', 'Dress Boots', 'Sandals']);
 const FOOTWEAR_IN_NAME =
-  /\b(sneaker|trainers?|runners?|jays|jordan|adidas|boots?|loafers?|oxfords?|sandal|slides?|yeezy|campus|footwear|shoes|shoe)\b/i;
+  /\b(sneaker|trainers?|runners?|jays|jordan|adidas|boots?|dress[\s_-]?boots?|loafers?|oxfords?|heel|heels|pump|pumps|flat|flats|sandal|slides?|yeezy|campus|footwear|shoes|shoe)\b/i;
 const HOODIE_IN_NAME = /\b(hoodie|hoody|sweatshirt|pullover|zip[\s_-]?up)\b/i;
+const ONE_PIECE_IN_NAME = /\b(dress|jumpsuit|romper)\b/i;
+const CARDIGAN_IN_NAME = /\b(cardigan)\b/i;
+const LEGGINGS_IN_NAME = /\b(leggings?)\b/i;
 
 /** Model sometimes returns "high" with a lazy default combo: treat as unusable. */
 function isSuspiciousLazyCombo(normalized) {
@@ -31,6 +34,9 @@ function openAiConflictsWithFilename(aiType, filename) {
   const base = path.basename(filename, path.extname(filename));
   if (FOOTWEAR_IN_NAME.test(base) && !FOOTWEAR_TYPES.has(aiType)) return true;
   if (HOODIE_IN_NAME.test(base) && (aiType === 'Shirt' || aiType === 'T-Shirt')) return true;
+  if (ONE_PIECE_IN_NAME.test(base) && !['Dress', 'Jumpsuit', 'Romper'].includes(aiType)) return true;
+  if (CARDIGAN_IN_NAME.test(base) && aiType !== 'Cardigan') return true;
+  if (LEGGINGS_IN_NAME.test(base) && aiType !== 'Leggings') return true;
   return false;
 }
 
