@@ -11,9 +11,10 @@ const sharp = require('sharp');
 
 const VALID_EXT = ['.jpg', '.jpeg', '.png', '.webp', '.avif'];
 const SRC_DIR = path.join(__dirname, '../../frontend/public/clothes');
-const OUT_DIR = path.join(__dirname, '../../frontend/public/clothes-demo');
-const MANIFEST_PATH = path.join(__dirname, '../../frontend/public/clothes-demo-manifest.json');
-const MANIFEST_BACKEND_COPY = path.join(__dirname, '../data/clothes-demo-manifest.json');
+const OUT_DIR_FRONTEND = path.join(__dirname, '../../frontend/public/clothes-demo');
+const OUT_DIR_BACKEND = path.join(__dirname, '../demo/clothes-demo');
+const MANIFEST_PATH_FRONTEND = path.join(__dirname, '../../frontend/public/clothes-demo-manifest.json');
+const MANIFEST_PATH_BACKEND = path.join(__dirname, '../demo/clothes-demo-manifest.json');
 
 // Manual overrides for ambiguous filenames: { filename: { type, color, season, style } }
 const OVERRIDES = {
@@ -90,8 +91,10 @@ async function main() {
     process.exit(1);
   }
 
-  if (!fs.existsSync(OUT_DIR)) {
-    fs.mkdirSync(OUT_DIR, { recursive: true });
+  for (const dir of [OUT_DIR_FRONTEND, OUT_DIR_BACKEND]) {
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
   }
 
   const files = fs.readdirSync(SRC_DIR).filter(f => {
@@ -114,13 +117,15 @@ async function main() {
     const srcPath = path.join(SRC_DIR, file);
     const baseName = path.basename(file, path.extname(file));
     const outName = baseName + '.webp';
-    const outPath = path.join(OUT_DIR, outName);
+    const outPathFrontend = path.join(OUT_DIR_FRONTEND, outName);
+    const outPathBackend = path.join(OUT_DIR_BACKEND, outName);
 
     try {
-      await sharp(srcPath)
+      const makeWebp = () => sharp(srcPath)
         .resize(800, 800, { fit: 'inside', withoutEnlargement: true })
-        .webp({ quality: 85 })
-        .toFile(outPath);
+        .webp({ quality: 85 });
+      await makeWebp().toFile(outPathFrontend);
+      await makeWebp().toFile(outPathBackend);
     } catch (err) {
       console.error('Failed:', file, err.message);
       continue;
@@ -137,14 +142,10 @@ async function main() {
   }
 
   const json = JSON.stringify(manifest, null, 2);
-  fs.writeFileSync(MANIFEST_PATH, json, 'utf8');
-  console.log('\nManifest written to', MANIFEST_PATH);
-  const dataDir = path.dirname(MANIFEST_BACKEND_COPY);
-  if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
-  }
-  fs.writeFileSync(MANIFEST_BACKEND_COPY, json, 'utf8');
-  console.log('Manifest copy for API:', MANIFEST_BACKEND_COPY);
+  fs.writeFileSync(MANIFEST_PATH_FRONTEND, json, 'utf8');
+  console.log('\nManifest written to', MANIFEST_PATH_FRONTEND);
+  fs.writeFileSync(MANIFEST_PATH_BACKEND, json, 'utf8');
+  console.log('Manifest copy for backend deploy bundle:', MANIFEST_PATH_BACKEND);
   console.log('Normalized:', manifest.length, 'files');
 }
 

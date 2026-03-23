@@ -95,9 +95,13 @@ function Dashboard() {
       if (res.ok) {
         await fetchItems();
       } else {
+        const codeMsg =
+          data.code === "DEMO_MANIFEST_MISSING"
+            ? "Demo wardrobe is not available on this server. If you are an admin, redeploy the backend with the demo bundle (backend/demo)."
+            : null;
         const msg = res.status === 401
           ? "Please log in first to load the demo wardrobe."
-          : (data.error || "Failed to load demo wardrobe.");
+          : (codeMsg || data.error || "Failed to load demo wardrobe.");
         alert(msg);
       }
     } catch (err) {

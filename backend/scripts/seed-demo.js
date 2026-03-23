@@ -9,17 +9,28 @@ const fs = require('fs');
 const path = require('path');
 const bcrypt = require('bcryptjs');
 
-const MANIFEST_PATH = path.join(__dirname, '../../frontend/public/clothes-demo-manifest.json');
+const MANIFEST_PATHS = [
+  path.join(__dirname, '../demo/clothes-demo-manifest.json'),
+  path.join(__dirname, '../../frontend/public/clothes-demo-manifest.json'),
+];
 const DEMO_EMAIL = 'demo@closetai.local';
 const DEMO_PASSWORD = 'demodemo123';
 
 async function main() {
-  if (!fs.existsSync(MANIFEST_PATH)) {
-    console.error('Run npm run normalize-clothes first.');
+  let manifestPath;
+  for (const p of MANIFEST_PATHS) {
+    if (fs.existsSync(p)) {
+      manifestPath = p;
+      break;
+    }
+  }
+  if (!manifestPath) {
+    console.error('Demo manifest not found. Run: cd backend && npm run normalize-clothes');
     process.exit(1);
   }
+  console.log('Using manifest:', manifestPath);
 
-  const manifest = JSON.parse(fs.readFileSync(MANIFEST_PATH, 'utf8'));
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
   const { initDb, getDb, persist } = require('../db/connection');
 
   await initDb();

@@ -31,6 +31,12 @@ If you set only `CLOSETAI_DATA_DIR`, the DB defaults to `<dataDir>/app.db`. You 
 
 The app creates directories on startup when possible.
 
+## Demo wardrobe (“Load demo wardrobe”)
+
+The backend ships a committed bundle under `backend/demo/` (manifest + WebP images). The API serves images at **`/clothes-demo/*`** so the Vercel app can load them via `REACT_APP_API_URL` (same origin as the API). You do **not** need to run `normalize-clothes` on the server after deploy.
+
+Optional: set `DEMO_MANIFEST_PATH` to an absolute path if you host the manifest outside the repo.
+
 ## 3. Required environment variables
 
 ### Core

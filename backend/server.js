@@ -61,8 +61,17 @@ const defaultOrigins = [
   'http://127.0.0.1:3001',
   'http://127.0.0.1:13000',
 ];
+/** Strip trailing slashes without regex (Sonar S5852 / backtracking risk on crafted strings). */
+function stripTrailingSlashes(s) {
+  let out = String(s || '');
+  while (out.endsWith('/')) {
+    out = out.slice(0, -1);
+  }
+  return out;
+}
+
 function normalizeOrigin(value) {
-  return String(value || '').trim().replace(/\/+$/, '').toLowerCase();
+  return stripTrailingSlashes(String(value || '').trim()).toLowerCase();
 }
 
 const allowedOrigins = (
@@ -117,6 +126,8 @@ app.get('/health', (_req, res) => {
 });
 
 app.use('/uploads', express.static(getUploadsDir()));
+const demoClothesStaticDir = path.join(__dirname, 'demo', 'clothes-demo');
+app.use('/clothes-demo', express.static(demoClothesStaticDir));
 app.use(cookieParser());
 app.use(session({
   secret: sessionSecret,
