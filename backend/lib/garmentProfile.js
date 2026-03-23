@@ -5,11 +5,15 @@
 
 const UNSPECIFIED = 'unspecified';
 
-const CATEGORY = ['top', 'bottom', 'shoes', 'outerwear', 'mid_layer', UNSPECIFIED];
+const CATEGORY = ['top', 'bottom', 'shoes', 'outerwear', 'mid_layer', 'one_piece', UNSPECIFIED];
 
 const SUBTYPE = [
   UNSPECIFIED,
   'tee',
+  'blouse',
+  'tank',
+  'camisole',
+  'bodysuit',
   'button_up',
   'polo',
   'hoodie',
@@ -22,15 +26,21 @@ const SUBTYPE = [
   'trench_coat',
   'wool_coat',
   'dress',
+  'jumpsuit',
+  'romper',
   'skirt',
   'dress_pants',
   'chinos',
   'jeans',
+  'leggings',
   'joggers',
   'shorts',
   'sneakers',
   'dress_shoes',
+  'heels',
+  'flats',
   'loafers',
+  'dress_boots',
   'chelsea_boots',
   'hiking_boots',
   'sandals',
@@ -104,10 +114,11 @@ function colorToFamily(color) {
 function typeToCategory(type) {
   const t = (type || '').trim();
   if (!t) return UNSPECIFIED;
-  if (t === 'Blazer') return 'mid_layer';
-  if (['Shirt', 'T-Shirt', 'Hoodie', 'Sweater', 'Dress'].includes(t)) return 'top';
-  if (['Pants', 'Jeans', 'Shorts', 'Skirt'].includes(t)) return 'bottom';
-  if (['Shoes', 'Boots', 'Sneakers', 'Sandals'].includes(t)) return 'shoes';
+  if (t === 'Blazer' || t === 'Cardigan') return 'mid_layer';
+  if (['Dress', 'Jumpsuit', 'Romper'].includes(t)) return 'one_piece';
+  if (['Shirt', 'Blouse', 'T-Shirt', 'Tank', 'Camisole', 'Bodysuit', 'Hoodie', 'Sweater'].includes(t)) return 'top';
+  if (['Pants', 'Jeans', 'Leggings', 'Shorts', 'Skirt'].includes(t)) return 'bottom';
+  if (['Shoes', 'Heels', 'Flats', 'Boots', 'Dress Boots', 'Sneakers', 'Sandals'].includes(t)) return 'shoes';
   if (['Jacket', 'Coat'].includes(t)) return 'outerwear';
   return UNSPECIFIED;
 }
@@ -117,19 +128,30 @@ function typeToSubtype(type, notes) {
   const n = (notes || '').toLowerCase();
   const map = {
     'T-Shirt': 'tee',
+    Blouse: 'blouse',
+    Tank: 'tank',
+    Camisole: 'camisole',
+    Bodysuit: 'bodysuit',
     Shirt: 'button_up',
     Hoodie: 'hoodie',
     Sweater: 'crewneck_sweater',
+    Cardigan: 'cardigan',
     Blazer: 'blazer',
     Jacket: /denim|jean/i.test(n) ? 'denim_jacket' : /bomber/i.test(n) ? 'bomber_jacket' : 'light_jacket',
     Coat: /trench/i.test(n) ? 'trench_coat' : 'wool_coat',
     Dress: 'dress',
+    Jumpsuit: 'jumpsuit',
+    Romper: 'romper',
     Skirt: 'skirt',
     Pants: /chino|khaki/i.test(n) ? 'chinos' : /dress|slack|trouser/i.test(n) ? 'dress_pants' : /jogger|track/i.test(n) ? 'joggers' : 'dress_pants',
     Jeans: 'jeans',
+    Leggings: 'leggings',
     Shorts: 'shorts',
     Sneakers: 'sneakers',
     Shoes: /loafer/i.test(n) ? 'loafers' : 'dress_shoes',
+    Heels: 'heels',
+    Flats: 'flats',
+    'Dress Boots': 'dress_boots',
     Boots: /chelsea/i.test(n) ? 'chelsea_boots' : /hik|work/i.test(n) ? 'hiking_boots' : 'chelsea_boots',
     Sandals: 'sandals',
   };
@@ -156,9 +178,9 @@ function styleToVersatility(style) {
 
 function typeToLayerRole(type) {
   const t = (type || '').trim();
-  if (t === 'Blazer') return 'mid';
+  if (t === 'Blazer' || t === 'Cardigan') return 'mid';
   if (['Jacket', 'Coat'].includes(t)) return 'outer';
-  if (['Shirt', 'T-Shirt', 'Hoodie', 'Sweater', 'Dress'].includes(t)) return 'base';
+  if (['Shirt', 'Blouse', 'T-Shirt', 'Tank', 'Camisole', 'Bodysuit', 'Hoodie', 'Sweater', 'Dress', 'Jumpsuit', 'Romper'].includes(t)) return 'base';
   return UNSPECIFIED;
 }
 
@@ -166,11 +188,11 @@ function typeToMaterialVibe(type, notes) {
   const t = (type || '').trim();
   const n = (notes || '').toLowerCase();
   if (t === 'Jeans' || /denim|jean/i.test(n)) return 'denim';
-  if (t === 'Hoodie' || t === 'Sweater' || /fleece|knit|wool/i.test(n)) return 'knit';
+  if (t === 'Hoodie' || t === 'Sweater' || t === 'Cardigan' || /fleece|knit|wool/i.test(n)) return 'knit';
   if (t === 'Blazer' || /suit|wool suit/i.test(n)) return 'suiting';
   if (/leather/i.test(n)) return 'leather';
-  if (t === 'Sneakers' || /mesh|tech/i.test(n)) return 'athletic';
-  if (t === 'T-Shirt' || t === 'Shirt') return 'cotton';
+  if (t === 'Sneakers' || t === 'Leggings' || /mesh|tech/i.test(n)) return 'athletic';
+  if (t === 'T-Shirt' || t === 'Shirt' || t === 'Blouse' || t === 'Tank' || t === 'Camisole' || t === 'Bodysuit') return 'cotton';
   return UNSPECIFIED;
 }
 

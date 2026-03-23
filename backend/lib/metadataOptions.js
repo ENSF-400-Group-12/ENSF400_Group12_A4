@@ -4,8 +4,11 @@
  */
 
 const TYPES = [
-  'Shirt', 'T-Shirt', 'Hoodie', 'Sweater', 'Jacket', 'Coat', 'Blazer',
-  'Pants', 'Jeans', 'Shorts', 'Skirt', 'Dress', 'Shoes', 'Boots', 'Sneakers', 'Sandals',
+  'Shirt', 'Blouse', 'T-Shirt', 'Tank', 'Camisole', 'Bodysuit',
+  'Hoodie', 'Sweater', 'Cardigan', 'Jacket', 'Coat', 'Blazer',
+  'Dress', 'Jumpsuit', 'Romper',
+  'Pants', 'Jeans', 'Leggings', 'Shorts', 'Skirt',
+  'Shoes', 'Heels', 'Flats', 'Boots', 'Dress Boots', 'Sneakers', 'Sandals',
   'Hat', 'Accessories'
 ];
 
@@ -23,10 +26,20 @@ const STYLES = [
 
 /** Synonyms / variants that map to a canonical value (lowercase key -> canonical) */
 const TYPE_SYNONYMS = {
+  blouse: 'Blouse', blouses: 'Blouse',
   'tshirt': 'T-Shirt', 't-shirt': 'T-Shirt', 't shirt': 'T-Shirt', 'tee': 'T-Shirt',
+  tank: 'Tank', tanks: 'Tank', tanktop: 'Tank', 'tank top': 'Tank',
+  camisole: 'Camisole', cami: 'Camisole', camis: 'Camisole',
+  bodysuit: 'Bodysuit', bodysuits: 'Bodysuit', bodysuit_top: 'Bodysuit',
   'hoody': 'Hoodie', 'sweatshirt': 'Hoodie', 'jumper': 'Sweater',
+  cardigan: 'Cardigan', cardigans: 'Cardigan',
   'blazers': 'Blazer', 'trousers': 'Pants', 'denim': 'Jeans', 'short': 'Shorts',
-  'dresses': 'Dress', 'sneaker': 'Sneakers', 'boot': 'Boots', 'sandal': 'Sandals',
+  leggings: 'Leggings', legging: 'Leggings',
+  'dresses': 'Dress', jumpsuits: 'Jumpsuit', rompers: 'Romper',
+  heels: 'Heels', heel: 'Heels', pumps: 'Heels',
+  flats: 'Flats', flat: 'Flats', ballerinas: 'Flats',
+  'dress boot': 'Dress Boots', 'dress boots': 'Dress Boots',
+  'sneaker': 'Sneakers', 'boot': 'Boots', 'sandal': 'Sandals',
   'accessory': 'Accessories', 'hats': 'Hat', 'jackets': 'Jacket', 'coats': 'Coat',
   'shirts': 'Shirt', 'pants': 'Pants', 'skirts': 'Skirt', 'shoes': 'Shoes'
 };

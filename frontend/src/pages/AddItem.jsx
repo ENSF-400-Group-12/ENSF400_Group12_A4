@@ -5,8 +5,11 @@ import { useParams, useNavigate } from "react-router-dom";
 import { authFetch, apiUrl } from "../config/api";
 
 const clothingTypes = [
-  "Shirt", "T-Shirt", "Hoodie", "Sweater", "Jacket", "Coat", "Blazer",
-  "Pants", "Jeans", "Shorts", "Skirt", "Dress", "Shoes", "Boots", "Sneakers", "Sandals",
+  "Shirt", "Blouse", "T-Shirt", "Tank", "Camisole", "Bodysuit",
+  "Hoodie", "Sweater", "Cardigan", "Jacket", "Coat", "Blazer",
+  "Dress", "Jumpsuit", "Romper",
+  "Pants", "Jeans", "Leggings", "Shorts", "Skirt",
+  "Shoes", "Heels", "Flats", "Boots", "Dress Boots", "Sneakers", "Sandals",
   "Hat", "Accessories"
 ];
 const colors = [
