@@ -28,6 +28,11 @@ function Navbar() {
             {user.email}
           </span>
         )}
+        {user && (
+          <span className={`nav-user-badge ${user.emailVerified ? "nav-user-badge--verified" : "nav-user-badge--unverified"}`}>
+            {user.emailVerified ? "Verified" : "Unverified"}
+          </span>
+        )}
         <button type="button" className="logout-button" onClick={handleLogout}>
           Logout
         </button>

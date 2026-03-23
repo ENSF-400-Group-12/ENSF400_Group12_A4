@@ -689,6 +689,25 @@ body.signup-page-open {
 
 }
 
+.nav-user-badge {
+  margin-left: 8px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.nav-user-badge--verified {
+  background: rgba(54, 179, 126, 0.2);
+  color: #dff5eb;
+}
+
+.nav-user-badge--unverified {
+  background: rgba(255, 184, 77, 0.2);
+  color: #ffe9bf;
+}
+
 /* Dashboard: aligned with auth branding */
 .dashboard-page {
   padding: 24px 16px 40px;
@@ -2031,6 +2050,16 @@ body.signup-page-open {
 
   color: #7b5e49;
 
+}
+
+.profile-inline-link {
+  color: #252850;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.profile-inline-link:hover {
+  text-decoration: underline;
 }
 
 .profile-value--muted {
