@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const { getDb, persist } = require('../db/connection');
 const { createRawToken, expiresAtIso, hashToken, isExpired } = require('../lib/authTokens');
 const { frontendBaseUrl, sendMail } = require('../services/mailer');
+const { routeLimiter } = require('../middleware/rateLimit');
 
 const router = express.Router();
 
@@ -11,6 +12,27 @@ const PASSWORD_MIN = 6;
 const VERIFY_EXPIRY_MIN = Number(process.env.EMAIL_VERIFY_EXPIRY_MIN || 60 * 24);
 const VERIFY_RESEND_COOLDOWN_SEC = Number(process.env.EMAIL_VERIFY_RESEND_COOLDOWN_SEC || 60);
 const RESET_EXPIRY_MIN = Number(process.env.PASSWORD_RESET_EXPIRY_MIN || 30);
+const LIMIT_WINDOW_MS = Number(process.env.AUTH_RATE_LIMIT_WINDOW_MS || 60 * 1000);
+const signupLimiter = routeLimiter('auth:signup', {
+  windowMs: LIMIT_WINDOW_MS,
+  max: Number(process.env.AUTH_RATE_LIMIT_SIGNUP_MAX || 6),
+});
+const loginLimiter = routeLimiter('auth:login', {
+  windowMs: LIMIT_WINDOW_MS,
+  max: Number(process.env.AUTH_RATE_LIMIT_LOGIN_MAX || 12),
+});
+const resendLimiter = routeLimiter('auth:resend_verification', {
+  windowMs: LIMIT_WINDOW_MS,
+  max: Number(process.env.AUTH_RATE_LIMIT_RESEND_MAX || 6),
+});
+const forgotLimiter = routeLimiter('auth:forgot_password', {
+  windowMs: LIMIT_WINDOW_MS,
+  max: Number(process.env.AUTH_RATE_LIMIT_FORGOT_MAX || 8),
+});
+const resetLimiter = routeLimiter('auth:reset_password', {
+  windowMs: LIMIT_WINDOW_MS,
+  max: Number(process.env.AUTH_RATE_LIMIT_RESET_MAX || 10),
+});
 
 function validateEmail(email) {
   if (!email || typeof email !== 'string') return false;
@@ -96,7 +118,7 @@ async function issueResetTokenAndSend(db, userId, email) {
   await sendMail({ to: email, subject: msg.subject, text: msg.text, html: msg.html });
 }
 
-router.post('/signup', (req, res) => {
+router.post('/signup', signupLimiter, (req, res) => {
   const { email, password } = req.body || {};
   const emailTrimmed = email && typeof email === 'string' ? email.trim().toLowerCase() : '';
 
@@ -111,7 +133,7 @@ router.post('/signup', (req, res) => {
     const db = getDb();
     const existing = getSelectResult(db, 'SELECT id FROM users WHERE email = $email', { $email: emailTrimmed });
     if (existing) {
-      return res.status(409).json({ error: 'An account with this email already exists.' });
+      return res.status(409).json({ error: 'Signup failed. Please try a different email or log in.' });
     }
     const password_hash = bcrypt.hashSync(password, 10);
     db.run(
@@ -147,7 +169,7 @@ router.post('/signup', (req, res) => {
   }
 });
 
-router.post('/login', (req, res) => {
+router.post('/login', loginLimiter, (req, res) => {
   const { email, password } = req.body || {};
   const emailTrimmed = email && typeof email === 'string' ? email.trim().toLowerCase() : '';
 
@@ -214,7 +236,7 @@ router.get('/me', (req, res) => {
   }
 });
 
-router.post('/resend-verification', async (req, res) => {
+router.post('/resend-verification', resendLimiter, async (req, res) => {
   if (!req.session || !req.session.userId) {
     return res.status(401).json({ error: 'Not authenticated.' });
   }
@@ -292,7 +314,7 @@ router.post('/verify-email', (req, res) => {
   }
 });
 
-router.post('/forgot-password', async (req, res) => {
+router.post('/forgot-password', forgotLimiter, async (req, res) => {
   const genericResponse = {
     ok: true,
     message: 'If an account exists for that email, a reset link has been sent.',
@@ -317,7 +339,7 @@ router.post('/forgot-password', async (req, res) => {
   }
 });
 
-router.post('/reset-password', (req, res) => {
+router.post('/reset-password', resetLimiter, (req, res) => {
   const rawToken = String((req.body && req.body.token) || '').trim();
   const newPassword = String((req.body && req.body.password) || '');
   if (!rawToken) return res.status(400).json({ error: 'Reset token is required.' });
