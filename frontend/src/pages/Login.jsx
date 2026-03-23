@@ -36,8 +36,12 @@ function Login() {
     }
     setLoading(true);
     try {
-      await login(email.trim(), password);
-      navigate(from, { replace: true });
+      const data = await login(email.trim(), password);
+      if (data.verificationRequired || (data.user && !data.user.emailVerified)) {
+        navigate("/verify-email", { replace: true });
+      } else {
+        navigate(from, { replace: true });
+      }
     } catch (err) {
       setError(err.message || "Login failed.");
     } finally {
@@ -116,6 +120,9 @@ function Login() {
               {loading ? "Signing in…" : "Login"}
             </button>
           </form>
+          <p className="signup-text">
+            <Link to="/forgot-password">Forgot password?</Link>
+          </p>
 
           <p className="signup-text">
             Don&apos;t have an account?

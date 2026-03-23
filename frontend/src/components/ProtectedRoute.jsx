@@ -17,6 +17,9 @@ export default function ProtectedRoute({ children }) {
   if (!user) {
     return <Navigate to="/" state={{ from: location }} replace />;
   }
+  if (!user.emailVerified && location.pathname !== '/verify-email') {
+    return <Navigate to="/verify-email" replace />;
+  }
 
   return children;
 }

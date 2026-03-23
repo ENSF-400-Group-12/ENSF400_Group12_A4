@@ -80,10 +80,38 @@ function readCommitForLog() {
   return 'unknown';
 }
 
-function logEnvBootstrap(port) {
+/**
+ * @param {number|string} port
+ * @param {object} [runtime] Safe, non-secret runtime diagnostics for logs
+ * @param {string} [runtime.nodeEnv]
+ * @param {string} [runtime.listenHost]
+ * @param {string} [runtime.dataDir]
+ * @param {string} [runtime.dbPath]
+ * @param {string} [runtime.uploadsDir]
+ * @param {boolean} [runtime.trustProxy]
+ * @param {boolean} [runtime.sessionCookieSecure]
+ */
+function logEnvBootstrap(port, runtime = {}) {
   const keyOk = Boolean(process.env.OPENAI_API_KEY && String(process.env.OPENAI_API_KEY).trim());
   const gitShort = readCommitForLog();
-  console.log('[boot] ClosetAI backend git=%s PORT=%s', gitShort, port);
+  let nodeEnv = process.env.NODE_ENV || 'development';
+  if (runtime.nodeEnv !== undefined && runtime.nodeEnv !== null) {
+    nodeEnv = runtime.nodeEnv;
+  }
+  console.log('[boot] ClosetAI backend git=%s NODE_ENV=%s PORT=%s', gitShort, nodeEnv, port);
+  if (runtime.listenHost != null) {
+    console.log('[boot] listen host=%s (set LISTEN_HOST to override)', runtime.listenHost);
+  }
+  if (runtime.dataDir) console.log('[boot] data dir=%s', runtime.dataDir);
+  if (runtime.dbPath) console.log('[boot] database file=%s', runtime.dbPath);
+  if (runtime.uploadsDir) console.log('[boot] uploads dir=%s', runtime.uploadsDir);
+  if (runtime.trustProxy != null) {
+    console.log('[boot] trust proxy=%s (TRUST_PROXY)', runtime.trustProxy ? 'on' : 'off');
+  }
+  if (runtime.sessionCookieSecure != null) {
+    console.log('[boot] session cookie secure=%s (SESSION_COOKIE_SECURE / NODE_ENV)', runtime.sessionCookieSecure ? 'on' : 'off');
+  }
+  console.log('[boot] session store=memory (single instance; not for horizontal scale)');
   console.log('[boot] Mounted: /api/auth /api/items /api/outfits /api/demo');
   console.log('[boot] OPENAI_API_KEY loaded: %s', keyOk ? 'yes' : 'no');
   if (!keyOk) {

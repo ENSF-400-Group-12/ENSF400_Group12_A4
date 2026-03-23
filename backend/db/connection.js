@@ -15,6 +15,34 @@ function initSchema(database) {
     )
   `);
   database.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email)`);
+  ensureUserAuthLifecycleSchema(database);
+}
+
+function ensureUserAuthLifecycleSchema(database) {
+  addColumnIfMissing(database, 'users', 'email_verified_at', 'TEXT', 'email_verified_at');
+  addColumnIfMissing(database, 'users', 'verification_token_hash', 'TEXT', 'verification_token_hash');
+  addColumnIfMissing(database, 'users', 'verification_expires_at', 'TEXT', 'verification_expires_at');
+  addColumnIfMissing(database, 'users', 'verification_sent_at', 'TEXT', 'verification_sent_at');
+  addColumnIfMissing(database, 'users', 'reset_token_hash', 'TEXT', 'reset_token_hash');
+  addColumnIfMissing(database, 'users', 'reset_expires_at', 'TEXT', 'reset_expires_at');
+  addColumnIfMissing(database, 'users', 'reset_sent_at', 'TEXT', 'reset_sent_at');
+  database.run('CREATE INDEX IF NOT EXISTS idx_users_verification_token_hash ON users(verification_token_hash)');
+  database.run('CREATE INDEX IF NOT EXISTS idx_users_reset_token_hash ON users(reset_token_hash)');
+}
+
+function addColumnIfMissing(database, table, column, typeSql, logKey) {
+  try {
+    const info = database.exec(`PRAGMA table_info(${table})`);
+    if (!info.length || !info[0].values.length) return;
+    const nameIdx = info[0].columns.indexOf('name');
+    if (nameIdx < 0) return;
+    const hasColumn = info[0].values.some((row) => row[nameIdx] === column);
+    if (!hasColumn) {
+      database.run(`ALTER TABLE ${table} ADD COLUMN ${column} ${typeSql}`);
+    }
+  } catch (err) {
+    console.warn(`[db] ${logKey} migration:`, err.message);
+  }
 }
 
 function ensureWardrobeSchema(database) {

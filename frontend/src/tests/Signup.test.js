@@ -21,6 +21,10 @@ const { useAuth } = require("../context/AuthContext");
 
 describe("Signup Page", () => {
 
+  beforeEach(() => {
+    mockNavigate.mockReset();
+  });
+
   // Test that the form renders correctly
   test("renders signup form", () => {
     useAuth.mockReturnValue({
@@ -124,7 +128,10 @@ describe("Signup Page", () => {
 
   // Test successful signup
   test("calls signup and navigates on success", async () => {
-    const mockSignup = jest.fn().mockResolvedValue();
+    const mockSignup = jest.fn().mockResolvedValue({
+      user: { id: 1, email: "test@test.com", emailVerified: false },
+      verificationRequired: true,
+    });
 
     useAuth.mockReturnValue({
       user: null,
@@ -154,9 +161,8 @@ describe("Signup Page", () => {
 
     await waitFor(() => {
       expect(mockSignup).toHaveBeenCalledWith("test@test.com", "123456");
-      
+      expect(mockNavigate).toHaveBeenCalledWith("/verify-email", { replace: true });
     });
-    expect(mockNavigate).toHaveBeenCalledWith("/dashboard", { replace: true });
   });
 
 });

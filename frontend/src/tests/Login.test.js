@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import Login from "../pages/Login";
 
@@ -17,6 +17,10 @@ jest.mock("react-router-dom", () => ({
 const { useAuth } = require("../context/AuthContext");
 
 describe("Login Page", () => {
+
+  beforeEach(() => {
+    mockNavigate.mockReset();
+  });
 
   test("renders login form", () => {
     useAuth.mockReturnValue({
@@ -77,7 +81,10 @@ describe("Login Page", () => {
   });
 
   test("calls login on successful submit", async () => {
-    const mockLogin = jest.fn().mockResolvedValue();
+    const mockLogin = jest.fn().mockResolvedValue({
+      user: { id: 1, email: "test@test.com", emailVerified: true },
+      verificationRequired: false,
+    });
 
     useAuth.mockReturnValue({
       user: null,
@@ -99,9 +106,12 @@ describe("Login Page", () => {
       target: { value: "1234" },
     });
 
-    fireEvent.click(screen.getByText(/login/i));
+    fireEvent.click(screen.getByRole("button", { name: /^login$/i }));
 
-    expect(mockLogin).toHaveBeenCalledWith("test@test.com", "1234");
+    await waitFor(() => {
+      expect(mockLogin).toHaveBeenCalledWith("test@test.com", "1234");
+      expect(mockNavigate).toHaveBeenCalledWith("/dashboard", { replace: true });
+    });
   });
 
 });

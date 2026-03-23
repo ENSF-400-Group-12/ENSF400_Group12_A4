@@ -1,6 +1,7 @@
 // Profile: account and wardrobe summary
 
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { authFetch } from "../config/api";
 
@@ -64,6 +65,19 @@ function Profile() {
           <div className="profile-row">
             <span className="profile-label">Email</span>
             <span className="profile-value">{user?.email ?? "Not signed in"}</span>
+          </div>
+
+          <div className="profile-row">
+            <span className="profile-label">Email status</span>
+            <span className="profile-value">
+              {user?.emailVerified ? "Verified" : "Verification needed"}
+              {!user?.emailVerified && (
+                <>
+                  {" "}
+                  <Link to="/verify-email" className="profile-inline-link">Verify now</Link>
+                </>
+              )}
+            </span>
           </div>
 
           <div className="profile-row">
