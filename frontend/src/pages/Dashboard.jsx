@@ -20,6 +20,7 @@ function Dashboard() {
   const [filterSeason, setFilterSeason] = useState("");
   const [filterStyle, setFilterStyle] = useState("");
   const [deleteItemId, setDeleteItemId] = useState(null);
+  const [clearAllOpen, setClearAllOpen] = useState(false);
 
   const fetchItems = useCallback(async () => {
     const gen = ++fetchGenRef.current;
@@ -74,7 +75,11 @@ function Dashboard() {
 
   const handleLoadDemo = async (section) => {
     try {
-      const res = await authFetch("/api/demo/seed", {
+      const path =
+        section && (section === "mens" || section === "womens")
+          ? `/api/demo/seed?section=${encodeURIComponent(section)}`
+          : "/api/demo/seed";
+      const res = await authFetch(path, {
         method: "POST",
         body: JSON.stringify(section ? { section } : {}),
       });
@@ -95,6 +100,21 @@ function Dashboard() {
       }
     } catch (err) {
       alert("Could not reach server. Start the backend and try again.");
+    }
+  };
+
+  const runClearAll = async () => {
+    setClearAllOpen(false);
+    try {
+      const res = await authFetch("/api/items/clear", { method: "POST", body: "{}" });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        await fetchItems();
+      } else {
+        window.alert(data.error || "Failed to clear wardrobe.");
+      }
+    } catch {
+      window.alert("Could not reach server.");
     }
   };
 
@@ -123,6 +143,16 @@ function Dashboard() {
         onCancel={() => setDeleteItemId(null)}
         onConfirm={runDeleteItem}
       />
+      <ConfirmDialog
+        open={clearAllOpen}
+        title="Clear all clothing?"
+        message="Removes every item from your wardrobe. This cannot be undone."
+        confirmLabel="Clear all"
+        cancelLabel="Cancel"
+        danger
+        onCancel={() => setClearAllOpen(false)}
+        onConfirm={runClearAll}
+      />
       <header className="dashboard-header">
         <div className="dashboard-header-top">
           <h1 className="dashboard-title">Your Wardrobe</h1>
@@ -148,6 +178,17 @@ function Dashboard() {
             <span className="dashboard-action-desc">Mix separates, one-piece looks, and weather-ready layers</span>
           </Link>
         </section>
+      )}
+      {items.length > 0 && (
+        <div className="dashboard-clear-row">
+          <button
+            type="button"
+            className="dashboard-clear-all-btn"
+            onClick={() => setClearAllOpen(true)}
+          >
+            Clear all clothing
+          </button>
+        </div>
       )}
 
       {items.length > 0 && (
