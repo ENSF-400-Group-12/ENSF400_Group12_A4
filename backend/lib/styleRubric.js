@@ -13,9 +13,11 @@ const RUBRIC_SUMMARY = [
   'Avoid mixing formal pieces with obviously athletic/sport styles unless occasion is casual or outdoor.',
   'For Formal or Work, favor Formal, Business, Smart Casual, Minimalist over Sport/Athletic.',
   'For Minimalist vibe, prefer a tight neutral palette (at most one accent color).',
-  'Shoes should match the formality of top + bottom (e.g. sneakers for casual/street, dress shoes for formal).',
+  'Shoes should match the formality of the base look (e.g. sneakers for casual/street, flats or heels for polished looks, dress shoes or dress boots for formal).',
+  'One-piece garments such as dresses and jumpsuits can serve as the full base instead of top + bottom.',
   'Do not add a casual or denim jacket to formal, date night, work, or minimalist looks unless it clearly elevates the set.',
-  'In polished looks, a blazer is a mid layer over a base (button-up, tee, or knit), not a stand-alone top; avoid a hoodie under a blazer unless the look is clearly casual/street.',
+  'In polished looks, a blazer is a mid layer over a base (shirt, blouse, tee, knit, dress, or jumpsuit), not a stand-alone top; avoid a hoodie under a blazer unless the look is clearly casual/street.',
+  'Cardigans are optional layers, especially for casual, smart casual, and weather-driven outfits.',
   'Prefer simple 3-piece outfits; extra layers must earn their place.',
 ].join(' ');
 
@@ -35,7 +37,7 @@ function isBrightColor(color) {
  */
 function scoreOutfitCoherence(selected, occasion, vibe) {
   let score = 0;
-  const pieces = ['top', 'mid', 'bottom', 'shoes', 'outerwear']
+  const pieces = ['one_piece', 'top', 'mid', 'bottom', 'shoes', 'outerwear']
     .map((k) => selected[k])
     .filter(Boolean);
   if (pieces.length === 0) return 0;

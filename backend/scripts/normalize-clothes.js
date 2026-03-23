@@ -10,6 +10,10 @@ const path = require('path');
 const sharp = require('sharp');
 
 const VALID_EXT = ['.jpg', '.jpeg', '.png', '.webp', '.avif'];
+const SKIP_SOURCE_FILES = new Set([
+  'brown_sweat_pants_source.png',
+  'womens-white-brown-shoes.avif',
+]);
 const SRC_DIR = path.join(__dirname, '../../frontend/public/clothes');
 const OUT_DIR_FRONTEND = path.join(__dirname, '../../frontend/public/clothes-demo');
 const OUT_DIR_BACKEND = path.join(__dirname, '../demo/clothes-demo');
@@ -28,6 +32,15 @@ const OVERRIDES = {
   'white_jays.webp': { type: 'Sneakers', color: 'White', season: 'All Season', style: 'Sport' },
   'red_jays.jpg': { type: 'Sneakers', color: 'Red', season: 'All Season', style: 'Sport' },
   'black_casual_shoes.jpg': { type: 'Shoes', color: 'Black', season: 'All Season', style: 'Casual' },
+  'womens-beige-pants.jpg': { type: 'Pants', color: 'Beige', season: 'All Season', style: 'Smart Casual' },
+  'womens-black-comfy-shoes.webp': { type: 'Flats', color: 'Black', season: 'All Season', style: 'Casual' },
+  'womens-black-formal-pants.webp': { type: 'Pants', color: 'Black', season: 'All Season', style: 'Formal' },
+  'womens-black-shoes-formal.jpg': { type: 'Heels', color: 'Black', season: 'All Season', style: 'Formal' },
+  'womens-brown-formal-pants.webp': { type: 'Pants', color: 'Brown', season: 'All Season', style: 'Formal' },
+  'womens-button-up.webp': { type: 'Blouse', color: 'White', season: 'All Season', style: 'Business' },
+  'womens-button-up-blue.webp': { type: 'Blouse', color: 'Blue', season: 'All Season', style: 'Business' },
+  'womens-button-up-green.webp': { type: 'Blouse', color: 'Green', season: 'All Season', style: 'Business' },
+  'womens-trench-coat.webp': { type: 'Coat', color: 'Beige', season: 'Fall', style: 'Formal' },
 };
 
 const TYPE_PATTERNS = [
@@ -51,6 +64,11 @@ const COLOR_PATTERNS = [
   'white', 'black', 'grey', 'gray', 'brown', 'navy', 'blue', 'red', 'green',
   'cream', 'beige', 'olive', 'burgundy', 'pink', 'purple', 'orange', 'yellow'
 ];
+
+function inferSection(relPath) {
+  const normalized = String(relPath || '').replace(/\\/g, '/').toLowerCase();
+  return normalized.startsWith('womens/') ? 'womens' : 'mens';
+}
 
 function inferMetadata(filename) {
   const base = path.basename(filename, path.extname(filename)).toLowerCase();
@@ -82,7 +100,36 @@ function inferMetadata(filename) {
 
 function isValidImageFile(filename) {
   const ext = path.extname(filename).toLowerCase();
-  return VALID_EXT.includes(ext) && !/!|#|\?/.test(filename);
+  return VALID_EXT.includes(ext) && !SKIP_SOURCE_FILES.has(filename.toLowerCase()) && !/!|#|\?/.test(filename);
+}
+
+function clearGeneratedWebps(dir) {
+  if (!fs.existsSync(dir)) return;
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      clearGeneratedWebps(full);
+      continue;
+    }
+    if (entry.isFile() && path.extname(entry.name).toLowerCase() === '.webp') {
+      fs.unlinkSync(full);
+    }
+  }
+}
+
+function listSourceFiles(dir) {
+  const out = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      out.push(...listSourceFiles(full));
+      continue;
+    }
+    if (entry.isFile()) {
+      out.push(full);
+    }
+  }
+  return out;
 }
 
 async function main() {
@@ -95,17 +142,14 @@ async function main() {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
+    clearGeneratedWebps(dir);
   }
 
-  const files = fs.readdirSync(SRC_DIR).filter(f => {
-    const full = path.join(SRC_DIR, f);
-    return fs.statSync(full).isFile() && isValidImageFile(f);
-  });
-
-  const ignored = fs.readdirSync(SRC_DIR).filter(f => {
-    const full = path.join(SRC_DIR, f);
-    return fs.statSync(full).isFile() && !isValidImageFile(f);
-  });
+  const sourceFiles = listSourceFiles(SRC_DIR);
+  const files = sourceFiles.filter((full) => isValidImageFile(path.basename(full)));
+  const ignored = sourceFiles
+    .map((full) => path.relative(SRC_DIR, full))
+    .filter((rel) => !isValidImageFile(path.basename(rel)));
 
   if (ignored.length) {
     console.log('Ignored (invalid):', ignored.join(', '));
@@ -113,9 +157,10 @@ async function main() {
 
   const manifest = [];
 
-  for (const file of files) {
-    const srcPath = path.join(SRC_DIR, file);
-    const baseName = path.basename(file, path.extname(file));
+  for (const srcPath of files) {
+    const relPath = path.relative(SRC_DIR, srcPath);
+    const sourceName = path.basename(srcPath);
+    const baseName = path.basename(srcPath, path.extname(srcPath));
     const outName = baseName + '.webp';
     const outPathFrontend = path.join(OUT_DIR_FRONTEND, outName);
     const outPathBackend = path.join(OUT_DIR_BACKEND, outName);
@@ -127,18 +172,19 @@ async function main() {
       await makeWebp().toFile(outPathFrontend);
       await makeWebp().toFile(outPathBackend);
     } catch (err) {
-      console.error('Failed:', file, err.message);
+      console.error('Failed:', relPath, err.message);
       continue;
     }
 
-    const metadata = inferMetadata(file);
+    const metadata = inferMetadata(sourceName);
     manifest.push({
-      sourceFile: file,
+      sourceFile: relPath,
       outputFile: outName,
       imagePath: `/clothes-demo/${outName}`,
+      demoSection: inferSection(relPath),
       ...metadata,
     });
-    console.log('OK:', file, '->', outName);
+    console.log('OK:', relPath, '->', outName);
   }
 
   const json = JSON.stringify(manifest, null, 2);

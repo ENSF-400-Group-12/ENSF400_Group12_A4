@@ -1,5 +1,5 @@
 /**
- * Outfit generator: grammar-aware candidates (top + bottom + shoes, optional mid blazer, optional outerwear).
+ * Outfit generator: grammar-aware candidates (separates or one-piece + shoes, optional mid layer, optional outerwear).
  * Uses garment profiles when present; derives from legacy fields otherwise.
  */
 
@@ -9,16 +9,16 @@ const { scoreOutfitCoherence } = require('../lib/styleRubric');
 const { rerankOutfitCandidates } = require('./openaiOutfitRerank');
 
 const SLOT_TYPES = {
-  top: ['Shirt', 'T-Shirt', 'Hoodie', 'Sweater', 'Dress'],
-  mid: ['Blazer'],
-  bottom: ['Pants', 'Jeans', 'Shorts', 'Skirt'],
-  shoes: ['Shoes', 'Boots', 'Sneakers', 'Sandals'],
+  top: ['Shirt', 'Blouse', 'T-Shirt', 'Tank', 'Camisole', 'Bodysuit', 'Hoodie', 'Sweater'],
+  mid: ['Blazer', 'Cardigan'],
+  one_piece: ['Dress', 'Jumpsuit', 'Romper'],
+  bottom: ['Pants', 'Jeans', 'Leggings', 'Shorts', 'Skirt'],
+  shoes: ['Shoes', 'Heels', 'Flats', 'Boots', 'Dress Boots', 'Sneakers', 'Sandals'],
   outerwear: ['Jacket', 'Coat'],
 };
 
-const REQUIRED_SLOTS = ['top', 'bottom', 'shoes'];
 const INSUFFICIENT_MESSAGE =
-  'Not enough items in your wardrobe to build an outfit. Add at least one top, one bottom, and one pair of shoes.';
+  'Not enough items in your wardrobe to build an outfit. Add either a one-piece garment or a top and bottom, plus one pair of shoes.';
 
 const NOT_SUITABLE_MESSAGE =
   "Your wardrobe doesn't have enough pieces that fit this occasion and aesthetic. Try a different combination, or add items that match the look you want.";
@@ -54,17 +54,23 @@ function rowsToObjects(execResult) {
   });
 }
 
-function slotForType(type) {
+function slotForType(type, profile = null) {
+  const category = profile?.category || '';
+  if (category === 'mid_layer') return 'mid';
+  if (category === 'one_piece') return 'one_piece';
+  if (category === 'top' || category === 'bottom' || category === 'shoes' || category === 'outerwear') {
+    return category;
+  }
   const t = (type || '').trim();
   for (const [slot, types] of Object.entries(SLOT_TYPES)) {
     if (types.some((x) => t.toLowerCase() === x.toLowerCase())) return slot;
   }
-  return t ? 'top' : null;
+  return null;
 }
 
 function rowToItem(row) {
-  const slot = slotForType(row.type);
   const profile = resolveGarmentProfile(row);
+  const slot = slotForType(row.type, profile);
   return {
     id: row.id,
     type: row.type,
@@ -150,7 +156,7 @@ function occasionVibeSpecificityNudge(item, occasion, vibe) {
 
   if (o === 'outdoor' && v === 'casual') {
     if (st.includes('casual') || st.includes('sport')) n += 6;
-    if (slot === 'shoes' && (type === 'boots' || sub === 'hiking_boots' || sub === 'sneakers')) n += 7;
+    if (slot === 'shoes' && (type === 'boots' || type === 'dress boots' || sub === 'hiking_boots' || sub === 'dress_boots' || sub === 'sneakers')) n += 7;
     if (slot === 'outerwear' || type === 'jacket' || type === 'coat') n += 5;
   }
 
@@ -210,7 +216,7 @@ function weatherItemBonus(item, weather) {
   if (coldLike || wetLike) {
     if (slot === 'outerwear' || type === 'jacket' || type === 'coat') b += 24;
     if (type === 'sweater' || type === 'hoodie') b += 12;
-    if (type === 'boots') b += 10;
+    if (type === 'boots' || type === 'dress boots') b += 10;
     if (type === 'sneakers') b += 4;
     if (type === 'sandals') b -= 22;
     if (type === 'shorts') b -= 18;
@@ -236,16 +242,23 @@ function scoreItemRich(item, occasion, vibe, weather = '') {
   const casual = casualishContext(occasion, vibe);
 
   if (item.slot === 'shoes' && pol) {
-    if (['sneakers', 'running_shoes', 'sandals'].includes(sub) || (item.type === 'Sneakers' && p.formality === 'low')) {
+    if (['sneakers', 'running_shoes', 'sandals', 'hiking_boots'].includes(sub) || (item.type === 'Sneakers' && p.formality === 'low')) {
       s -= 38;
     }
-    if (['dress_shoes', 'loafers', 'chelsea_boots'].includes(sub)) s += 18;
+    if (['dress_shoes', 'loafers', 'chelsea_boots', 'dress_boots', 'heels', 'flats'].includes(sub)) s += 18;
   }
 
   if (item.slot === 'bottom' && pol) {
     if (sub === 'joggers' || /jogger|track/i.test(item.notes || '')) s -= 42;
+    if (sub === 'leggings') s -= 34;
     if (sub === 'jeans' && p.materialVibe === 'denim' && vib === 'formal') s -= 25;
     if (['dress_pants', 'chinos'].includes(sub)) s += 14;
+  }
+
+  if (item.slot === 'one_piece') {
+    if (sub === 'dress' || sub === 'jumpsuit') s += 14;
+    if (sub === 'romper' && pol) s -= 18;
+    if (pol && p.formality && formalityRank(p.formality) >= 4) s += 10;
   }
 
   if (item.slot === 'top' && pol && (sub === 'tee' || item.type === 'T-Shirt')) {
@@ -258,6 +271,10 @@ function scoreItemRich(item, occasion, vibe, weather = '') {
 
   if (pol && item.slot === 'mid' && (sub === 'blazer' || item.type === 'Blazer')) {
     s += 22;
+  }
+  if (item.slot === 'mid' && (sub === 'cardigan' || item.type === 'Cardigan')) {
+    if (pol && (occ === 'formal' || vib === 'formal')) s -= 6;
+    else s += 8;
   }
 
   /* Formal blazer as mid-layer is usually wrong for relaxed / street contexts: avoid dominating candidates */
@@ -286,7 +303,7 @@ function formatItemLabel(item) {
 }
 
 function formatOutfitFingerprint(selected) {
-  return ['top', 'mid', 'bottom', 'shoes']
+  return ['one_piece', 'top', 'mid', 'bottom', 'shoes']
     .map((slot) => {
       const it = selected[slot];
       if (!it) return null;
@@ -300,15 +317,16 @@ function formatOutfitFingerprint(selected) {
  * @param {{ altShort?: string, gap?: number } | null} compare - close runner-up for transparency (no fluff)
  */
 function buildExplanation(selected, occasion, vibe, outerwearAdded, compare, weather = '') {
-  const parts = ['top', 'mid', 'bottom', 'shoes', 'outerwear']
+  const parts = ['one_piece', 'top', 'mid', 'bottom', 'shoes', 'outerwear']
     .map((slot) => selected[slot] && formatItemLabel(selected[slot]))
     .filter(Boolean);
   const list = parts.join(' · ');
   const occ = (occasion || '').trim() || 'this look';
   const vb = (vibe || '').trim() || 'versatile';
   let msg = `${list}. Picked for ${occ} with a ${vb.toLowerCase()} read: cohesion and formality line up without over-styling.`;
-  if (selected.mid && isMidBlazer(selected.mid) && selected.top) {
-    const base = formatItemLabel(selected.top);
+  const baseForLayer = selected.one_piece || selected.top;
+  if (selected.mid && isMidBlazer(selected.mid) && baseForLayer) {
+    const base = formatItemLabel(baseForLayer);
     msg += ` The blazer is layered over ${base.replace(/\s*\([^)]*\)\s*$/, '')} as the visible base, not worn as a stand-alone shirt.`;
   }
   if (outerwearAdded && selected.outerwear) {
@@ -338,7 +356,7 @@ function getTopKForSlot(items, occasion, vibe, k, weather = '') {
 }
 
 function selectedKey(selected) {
-  return ['top', 'mid', 'bottom', 'shoes']
+  return ['one_piece', 'top', 'mid', 'bottom', 'shoes']
     .map((s) => (selected[s] ? selected[s].id : 'x'))
     .join('-');
 }
@@ -354,8 +372,13 @@ function wardrobeStyleSignature(item) {
   return `${slot}|${t}|${c}|${st}|${sub}`;
 }
 
-function topShoeSignatureKey(selected) {
-  return `${wardrobeStyleSignature(selected.top)}__${wardrobeStyleSignature(selected.shoes)}`;
+function baseSignature(selected) {
+  if (selected.one_piece) return wardrobeStyleSignature(selected.one_piece);
+  return `${wardrobeStyleSignature(selected.top)}__${wardrobeStyleSignature(selected.bottom)}`;
+}
+
+function baseShoeSignatureKey(selected) {
+  return `${baseSignature(selected)}__${wardrobeStyleSignature(selected.shoes)}`;
 }
 
 /**
@@ -364,8 +387,8 @@ function topShoeSignatureKey(selected) {
 function selectDiverseCandidates(sortedRaw, max) {
   const result = [];
   const usedOutfitKey = new Set();
-  const usedTopShoe = new Set();
-  const usedTop = new Set();
+  const usedBaseShoe = new Set();
+  const usedBase = new Set();
   const usedShoe = new Set();
 
   function take(passFn) {
@@ -375,17 +398,17 @@ function selectDiverseCandidates(sortedRaw, max) {
       if (usedOutfitKey.has(k)) continue;
       if (!passFn(c)) continue;
       usedOutfitKey.add(k);
-      usedTopShoe.add(topShoeSignatureKey(c.selected));
-      if (c.selected.top) usedTop.add(wardrobeStyleSignature(c.selected.top));
+      usedBaseShoe.add(baseShoeSignatureKey(c.selected));
+      usedBase.add(baseSignature(c.selected));
       if (c.selected.shoes) usedShoe.add(wardrobeStyleSignature(c.selected.shoes));
       result.push(c);
     }
   }
 
-  take((c) => !usedTopShoe.has(topShoeSignatureKey(c.selected)));
+  take((c) => !usedBaseShoe.has(baseShoeSignatureKey(c.selected)));
   take((c) => {
-    const sig = wardrobeStyleSignature(c.selected.top);
-    return c.selected.top && !usedTop.has(sig);
+    const sig = baseSignature(c.selected);
+    return sig && !usedBase.has(sig);
   });
   take((c) => {
     const sig = wardrobeStyleSignature(c.selected.shoes);
@@ -400,8 +423,9 @@ function shoeAllowedForLook(shoe, occasion, vibe) {
   if (!polishedContext(occasion, vibe)) return true;
   const p = shoe.profile || {};
   const sub = p.subtype || '';
-  if (['sneakers', 'running_shoes', 'sandals'].includes(sub)) return false;
+  if (['sneakers', 'running_shoes', 'sandals', 'hiking_boots'].includes(sub)) return false;
   if (shoe.type === 'Sneakers' && p.versatility === 'sporty') return false;
+  if (shoe.type === 'Sandals') return false;
   return true;
 }
 
@@ -410,7 +434,16 @@ function bottomAllowedForLook(bottom, occasion, vibe) {
   const p = bottom.profile || {};
   const sub = p.subtype || '';
   if (sub === 'joggers') return false;
+  if (sub === 'leggings') return false;
   if (sub === 'jeans' && (vibe || '').toLowerCase() === 'formal') return false;
+  return true;
+}
+
+function onePieceAllowedForLook(onePiece, occasion, vibe) {
+  if (!onePiece) return false;
+  if (!polishedContext(occasion, vibe)) return true;
+  const sub = onePiece.profile?.subtype || '';
+  if (sub === 'romper') return false;
   return true;
 }
 
@@ -428,6 +461,12 @@ function isMidBlazer(item) {
   return item.profile?.subtype === 'blazer';
 }
 
+function isMidCardigan(item) {
+  if (!item) return false;
+  if (item.type === 'Cardigan') return true;
+  return item.profile?.subtype === 'cardigan';
+}
+
 /** Full formal: blazer only over a proper shirt or sweater (no tee, no hoodie). */
 function strictBlazerUnderlayerRequired(occasion, vibe) {
   const o = (occasion || '').trim().toLowerCase();
@@ -439,53 +478,75 @@ function strictBlazerUnderlayerRequired(occasion, vibe) {
  * When a blazer is the mid layer, the true "shirt" is the base top. Never treat the blazer as the only top in polished contexts.
  * @param {boolean} pol - polishedContext
  */
-function blazerBaseTopAllowed(top, occasion, vibe, pol) {
-  if (!top) return false;
-  const dress = (top.type || '').toLowerCase().includes('dress');
-  if (dress) return true;
-
-  if (pol) {
-    if (topActsAsHoodie(top)) return false;
-    if (strictBlazerUnderlayerRequired(occasion, vibe)) {
-      return top.type === 'Shirt' || top.type === 'Sweater';
-    }
-    return ['Shirt', 'T-Shirt', 'Sweater'].includes(top.type);
+function blazerBaseTopAllowed(base, occasion, vibe, pol, isOnePiece) {
+  if (!base) return false;
+  if (isOnePiece) {
+    return ['Dress', 'Jumpsuit'].includes(base.type);
   }
 
-  const okCasual = ['Shirt', 'T-Shirt', 'Hoodie', 'Sweater'].includes(top.type);
+  if (pol) {
+    if (topActsAsHoodie(base)) return false;
+    if (strictBlazerUnderlayerRequired(occasion, vibe)) {
+      return ['Shirt', 'Blouse', 'Sweater'].includes(base.type);
+    }
+    return ['Shirt', 'Blouse', 'T-Shirt', 'Tank', 'Camisole', 'Bodysuit', 'Sweater'].includes(base.type);
+  }
+
+  const okCasual = ['Shirt', 'Blouse', 'T-Shirt', 'Tank', 'Camisole', 'Bodysuit', 'Hoodie', 'Sweater'].includes(base.type);
   return okCasual;
 }
 
 function passesGrammar(selected, occasion, vibe) {
   const pol = polishedContext(occasion, vibe);
   if (!selected.shoes || !shoeAllowedForLook(selected.shoes, occasion, vibe)) return false;
-  if (selected.bottom && !bottomAllowedForLook(selected.bottom, occasion, vibe)) return false;
-  if (selected.mid && isMidBlazer(selected.mid)) {
-    const top = selected.top;
-    if (!top) return false;
-    if (!blazerBaseTopAllowed(top, occasion, vibe, pol)) return false;
+  if (selected.one_piece) {
+    if (!onePieceAllowedForLook(selected.one_piece, occasion, vibe)) return false;
+  } else {
+    if (!selected.top || !selected.bottom) return false;
+    if (!bottomAllowedForLook(selected.bottom, occasion, vibe)) return false;
   }
-  if (pol && selected.top && selected.top.type === 'Blazer') return false;
+  if (selected.mid && isMidBlazer(selected.mid)) {
+    const base = selected.one_piece || selected.top;
+    if (!base) return false;
+    if (!blazerBaseTopAllowed(base, occasion, vibe, pol, Boolean(selected.one_piece))) return false;
+  }
+  if (selected.mid && isMidCardigan(selected.mid) && selected.one_piece) {
+    const subtype = selected.one_piece.profile?.subtype || '';
+    if (subtype === 'romper' && pol) return false;
+  }
   return true;
 }
 
 function buildLocalCandidates(bySlot, occasion, vibe, weather = '') {
   const tops = getTopKForSlot(bySlot.top, occasion, vibe, TOP_K_SLOT, weather);
+  const onePieces = getTopKForSlot(bySlot.one_piece, occasion, vibe, TOP_K_SLOT, weather);
   const bottoms = getTopKForSlot(bySlot.bottom, occasion, vibe, TOP_K_SLOT, weather);
   const shoelist = getTopKForSlot(bySlot.shoes, occasion, vibe, TOP_K_SLOT, weather).filter((s) => shoeAllowedForLook(s, occasion, vibe));
   const midOptions = bySlot.mid?.length ? [null, ...getTopKForSlot(bySlot.mid, occasion, vibe, TOP_K_SLOT, weather)] : [null];
 
   const raw = [];
+  for (const onePiece of onePieces) {
+    for (const shoes of shoelist) {
+      for (const mid of midOptions) {
+        const selected = { one_piece: onePiece, top: null, bottom: null, shoes, mid, outerwear: null };
+        if (!passesGrammar(selected, occasion, vibe)) continue;
+        let s = 0;
+        s += scoreItemRich(selected.one_piece, occasion, vibe, weather);
+        s += scoreItemRich(selected.shoes, occasion, vibe, weather);
+        if (selected.mid) s += scoreItemRich(selected.mid, occasion, vibe, weather);
+        s += scoreOutfitCoherence(selected, occasion, vibe);
+        s += 28;
+        if (selected.mid && isMidBlazer(selected.mid) && polishedContext(occasion, vibe)) s += 10;
+        if (selected.mid && isMidCardigan(selected.mid)) s += 6;
+        raw.push({ selected, localScore: s });
+      }
+    }
+  }
   for (const top of tops) {
-    const isDress = (top.type || '').toLowerCase().includes('dress');
-    const bottomOpts = isDress ? [null] : bottoms.filter((b) => bottomAllowedForLook(b, occasion, vibe));
-    for (const bottom of bottomOpts) {
+    for (const bottom of bottoms.filter((b) => bottomAllowedForLook(b, occasion, vibe))) {
       for (const shoes of shoelist) {
         for (const mid of midOptions) {
-          if (mid && isDress && polishedContext(occasion, vibe)) {
-            /* dress + blazer allowed */
-          }
-          const selected = { top, bottom, shoes, mid, outerwear: null };
+          const selected = { one_piece: null, top, bottom, shoes, mid, outerwear: null };
           if (!passesGrammar(selected, occasion, vibe)) continue;
           let s = 0;
           if (selected.top) s += scoreItemRich(selected.top, occasion, vibe, weather);
@@ -496,10 +557,11 @@ function buildLocalCandidates(bySlot, occasion, vibe, weather = '') {
           if (selected.mid && polishedContext(occasion, vibe)) s += 12;
           if (selected.mid && isMidBlazer(selected.mid) && polishedContext(occasion, vibe) && selected.top) {
             const t = selected.top.type;
-            if (t === 'Shirt') s += 18;
+            if (t === 'Shirt' || t === 'Blouse') s += 18;
             else if (t === 'Sweater') s += 15;
-            else if (t === 'T-Shirt') s += 8;
+            else if (t === 'T-Shirt' || t === 'Tank' || t === 'Camisole' || t === 'Bodysuit') s += 8;
           }
+          if (selected.mid && isMidCardigan(selected.mid)) s += 6;
           raw.push({ selected, localScore: s });
         }
       }
@@ -550,14 +612,14 @@ function pickWithVariety(candidates, userId, occasion, vibe, weather = '') {
   const topFreq = {};
   const shoeFreq = {};
   for (const c of band) {
-    const tk = wardrobeStyleSignature(c.selected.top);
+    const tk = baseSignature(c.selected);
     const sk = wardrobeStyleSignature(c.selected.shoes);
     topFreq[tk] = (topFreq[tk] || 0) + 1;
     shoeFreq[sk] = (shoeFreq[sk] || 0) + 1;
   }
 
   const scored = band.map((c) => {
-    const tk = wardrobeStyleSignature(c.selected.top);
+    const tk = baseSignature(c.selected);
     const sk = wardrobeStyleSignature(c.selected.shoes);
     const tf = topFreq[tk] || 1;
     const sf = shoeFreq[sk] || 1;
@@ -609,11 +671,19 @@ function scoreOuterwearLayer(ow, occasion, vibe, coreSelected, weather = '') {
   }
 
   const bottom = coreSelected.bottom;
+  const onePiece = coreSelected.one_piece;
   if (bottom && isCasualDenimOuterwear(ow)) {
     const bt = (bottom.type || '').toLowerCase();
     const bc = (bottom.color || '').toLowerCase();
     if (bt === 'jeans' || bc === 'blue' || /jean|denim/i.test((bottom.notes || '').toLowerCase())) {
       s -= 24;
+    }
+  }
+  if (onePiece && isCasualDenimOuterwear(ow)) {
+    const ot = (onePiece.type || '').toLowerCase();
+    const oc = (onePiece.color || '').toLowerCase();
+    if (ot === 'dress' && (oc === 'blue' || /jean|denim/i.test((onePiece.notes || '').toLowerCase()))) {
+      s -= 20;
     }
   }
 
@@ -674,12 +744,12 @@ function rejectHint(occasion, vibe, candidates) {
   if (pol) {
     const hasBlazer = candidates?.some((c) => c?.selected?.mid && isMidBlazer(c.selected.mid));
     if (hasBlazer) {
-      return 'If you use a blazer, add a button-up, polo, knit, or clean tee to wear underneath, plus tailored pants and dress shoes or loafers.';
+      return 'If you use a blazer, pair it with a clean base such as a shirt, blouse, knit, dress, or jumpsuit, then finish with polished bottoms or a one-piece and refined shoes.';
     }
-    return 'Try adding a neutral button-up or Oxford shirt (to layer under a blazer if you have one), tailored trousers or chinos, and leather dress shoes or loafers.';
+    return 'Try adding a polished base such as a blouse, shirt, dress, or jumpsuit, then pair it with tailored bottoms or a one-piece and refined shoes like flats, heels, dress shoes, or dress boots.';
   }
   if (casualishContext(occasion, vibe)) {
-    return 'Try adding a clean tee or hoodie, one pair of versatile jeans or joggers, and sneakers that match your palette.';
+    return 'Try adding a flexible base such as a tee, tank, blouse, dress, or jumpsuit, then pair it with casual bottoms or a one-piece, plus shoes that fit the weather and vibe.';
   }
   return 'Add a few pieces that match the occasion and aesthetic you selected, then try again.';
 }
@@ -697,13 +767,14 @@ async function generateOutfit(userId, occasion, vibe, weather = 'Cloudy') {
   );
   const items = rows.map(rowToItem).filter((i) => i.slot);
 
-  const bySlot = { top: [], mid: [], bottom: [], shoes: [], outerwear: [] };
+  const bySlot = { top: [], mid: [], one_piece: [], bottom: [], shoes: [], outerwear: [] };
   items.forEach((item) => {
     if (bySlot[item.slot]) bySlot[item.slot].push(item);
   });
 
-  const missingSlot = REQUIRED_SLOTS.find((slot) => bySlot[slot].length === 0);
-  if (missingSlot) {
+  const hasOnePieceBase = bySlot.one_piece.length > 0;
+  const hasSeparatesBase = bySlot.top.length > 0 && bySlot.bottom.length > 0;
+  if ((!hasOnePieceBase && !hasSeparatesBase) || bySlot.shoes.length === 0) {
     return { error: INSUFFICIENT_MESSAGE, suggestion: rejectHint(occasion, vibe, []) };
   }
 
@@ -765,11 +836,6 @@ async function generateOutfit(userId, occasion, vibe, weather = 'Cloudy') {
   }
 
   let selected = { ...chosen.selected };
-  const isDressAsTop = selected.top && (selected.top.type || '').toLowerCase().includes('dress');
-  if (isDressAsTop) {
-    selected.bottom = null;
-  }
-
   const owResult = maybeAddOuterwear(selected, bySlot, occasion, vibe, chosen.localScore, weather);
   selected = owResult.selected;
   if (!reranked) {
@@ -780,7 +846,7 @@ async function generateOutfit(userId, occasion, vibe, weather = 'Cloudy') {
     explanation = `${explanation.trim()} Added ${formatItemLabel(selected.outerwear)} as outerwear, only because it improves the look.`;
   }
 
-  const outfitItems = [selected.top, selected.mid, selected.bottom, selected.shoes, selected.outerwear].filter(Boolean);
+  const outfitItems = [selected.one_piece, selected.top, selected.mid, selected.bottom, selected.shoes, selected.outerwear].filter(Boolean);
   return {
     items: outfitItems.map(({ id, type, color, season, style, notes, image_path, created_at }) => ({
       id,

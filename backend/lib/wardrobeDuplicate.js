@@ -5,6 +5,7 @@
 
 const crypto = require('node:crypto');
 const fs = require('node:fs');
+const { normalizeTypeForDuplicates } = require('./metadataOptions');
 
 function sha256FileBuffer(absPath) {
   const buf = fs.readFileSync(absPath);
@@ -36,9 +37,9 @@ function queryRows(db, sql, params) {
  * @returns {{ exact: object[], similar: object[] }} raw row objects from wardrobe_items
  */
 function findDuplicateRows(db, userId, contentHash, type, color, style) {
-  const t = norm(type);
   const c = norm(color);
   const st = norm(style);
+  const typeFamily = normalizeTypeForDuplicates(type) || norm(type);
 
   const exact = contentHash
     ? queryRows(
@@ -54,14 +55,15 @@ function findDuplicateRows(db, userId, contentHash, type, color, style) {
     `SELECT id, user_id, type, color, season, style, notes, image_path, created_at, garment_profile, content_hash
      FROM wardrobe_items
      WHERE user_id = $uid
-       AND lower(trim(type)) = $t
        AND lower(trim(color)) = $c
        AND lower(trim(style)) = $s`,
-    { $uid: userId, $t: t, $c: c, $s: st }
+    { $uid: userId, $c: c, $s: st }
   );
   const exactIds = new Set(exact.map((e) => e.id));
   const similar = simRows.filter((row) => {
     if (exactIds.has(row.id)) return false;
+    const rowTypeFamily = normalizeTypeForDuplicates(row.type) || norm(row.type);
+    if (rowTypeFamily !== typeFamily) return false;
     return !(contentHash && row.content_hash === contentHash);
   });
 

@@ -6,24 +6,7 @@ import { Link } from "react-router-dom";
 import ClothingCard from "../components/ClothingCard";
 import ConfirmDialog from "../components/ConfirmDialog";
 import { authFetch, apiUrl } from "../config/api";
-
-const clothingTypes = [
-  "Shirt", "T-Shirt", "Hoodie", "Sweater", "Jacket", "Coat", "Blazer",
-  "Pants", "Jeans", "Shorts", "Skirt", "Dress", "Shoes", "Boots", "Sneakers", "Sandals",
-  "Hat", "Accessories"
-];
-
-const colors = [
-  "Black", "White", "Gray", "Brown", "Beige", "Navy", "Blue", "Light Blue",
-  "Red", "Burgundy", "Green", "Olive", "Yellow", "Orange", "Purple", "Pink", "Cream"
-];
-
-const seasons = ["Spring", "Summer", "Fall", "Winter", "All Season"];
-
-const styles = [
-  "Casual", "Formal", "Business", "Streetwear", "Sport", "Athletic",
-  "Minimalist", "Vintage", "Smart Casual"
-];
+import { clothingTypes, colors, seasons, styles } from "../lib/wardrobeOptions";
 
 function Dashboard() {
   const [items, setItems] = useState([]);
@@ -89,11 +72,11 @@ function Dashboard() {
     }
   };
 
-  const handleLoadDemo = async () => {
+  const handleLoadDemo = async (section) => {
     try {
       const res = await authFetch("/api/demo/seed", {
         method: "POST",
-        body: JSON.stringify({}),
+        body: JSON.stringify(section ? { section } : {}),
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
@@ -102,6 +85,8 @@ function Dashboard() {
         const codeMsg =
           data.code === "DEMO_MANIFEST_MISSING"
             ? "Demo wardrobe is not available on this server. If you are an admin, redeploy the backend with the demo bundle (backend/demo)."
+            : data.code === "DEMO_SECTION_EMPTY"
+              ? "That demo wardrobe section is empty on this server."
             : null;
         const msg = res.status === 401
           ? "Please log in first to load the demo wardrobe."
@@ -148,7 +133,7 @@ function Dashboard() {
           )}
         </div>
         <p className="dashboard-subtext">
-          Add items, search, and filter. Your main hub for your closet.
+          Add items, search, and filter. Build outfits from separates, one-piece looks, layers, and footwear.
         </p>
       </header>
 
@@ -156,11 +141,11 @@ function Dashboard() {
         <section className="dashboard-actions" aria-label="Quick actions">
           <Link to="/add-item" className="dashboard-action-card dashboard-action-card--primary">
             <span className="dashboard-action-label">Add Item</span>
-            <span className="dashboard-action-desc">Upload a photo and add to your wardrobe</span>
+            <span className="dashboard-action-desc">Upload a photo and save any garment, layer, or shoe</span>
           </Link>
           <Link to="/generate" className="dashboard-action-card">
             <span className="dashboard-action-label">Generate Outfit</span>
-            <span className="dashboard-action-desc">Get outfit suggestions</span>
+            <span className="dashboard-action-desc">Mix separates, one-piece looks, and weather-ready layers</span>
           </Link>
         </section>
       )}
@@ -242,7 +227,7 @@ function Dashboard() {
             </>
           ) : (
             <>
-              <p className="dashboard-empty-text">Your wardrobe is empty. Add your first item to get started.</p>
+              <p className="dashboard-empty-text">Your wardrobe is empty. Add your first item or load a men's or women's demo wardrobe to explore different clothing mixes.</p>
               <div className="dashboard-empty-actions">
                 <Link to="/add-item">
                   <button type="button" className="button-primary">Add Item</button>
@@ -250,9 +235,16 @@ function Dashboard() {
                 <button
                   type="button"
                   className="button-secondary"
-                  onClick={handleLoadDemo}
+                  onClick={() => handleLoadDemo("mens")}
                 >
-                  Load demo wardrobe
+                  Load men's demo wardrobe
+                </button>
+                <button
+                  type="button"
+                  className="button-secondary"
+                  onClick={() => handleLoadDemo("womens")}
+                >
+                  Load women's demo wardrobe
                 </button>
               </div>
             </>

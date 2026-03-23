@@ -4,5 +4,6 @@ These files are **source/reference** images for building the seeded demo wardrob
 
 - **Runtime demo** (“Load demo wardrobe”) uses processed files under `../clothes-demo/` and `../clothes-demo-manifest.json`. Production backends also keep a copy under `backend/demo/` so Railway deploys work without the frontend folder.
 - To regenerate webp assets, use `backend/scripts/normalize-clothes.js` (see repo docs).
+- The `womens/` folder contains the real women's demo clothing sources used for the women's demo wardrobe section.
 
 Do not delete this folder if you want reproducible demo builds for the team.
