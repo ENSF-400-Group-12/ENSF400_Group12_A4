@@ -11,6 +11,7 @@ import GenerateOutfit from "./pages/GenerateOutfit";
 import Results from "./pages/Results";
 import Favorites from "./pages/Favorites";
 import Profile from "./pages/Profile";
+import VerifyEmail from "./pages/VerifyEmail";
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
 
           <Route
             element={

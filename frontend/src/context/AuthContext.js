@@ -58,7 +58,7 @@ export function AuthProvider({ children }) {
       throw new Error(data.error || 'Login failed.');
     }
     setUser(data.user);
-    return data.user;
+    return data;
   }, []);
 
   const signup = useCallback(async (email, password) => {
@@ -72,8 +72,34 @@ export function AuthProvider({ children }) {
       throw new Error(data.error || 'Signup failed.');
     }
     setUser(data.user);
-    return data.user;
+    return data;
   }, []);
+
+  const resendVerification = useCallback(async () => {
+    setError(null);
+    const res = await wrapAuthFetch(authFetch)('/api/auth/resend-verification', {
+      method: 'POST',
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.error || 'Could not send verification email.');
+    }
+    return data;
+  }, []);
+
+  const verifyEmail = useCallback(async (token) => {
+    setError(null);
+    const res = await wrapAuthFetch(authFetch)('/api/auth/verify-email', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.error || 'Could not verify email.');
+    }
+    await checkAuth();
+    return data;
+  }, [checkAuth]);
 
   const logout = useCallback(async () => {
     setError(null);
@@ -92,6 +118,8 @@ export function AuthProvider({ children }) {
     login,
     signup,
     logout,
+    resendVerification,
+    verifyEmail,
     checkAuth,
   };
 

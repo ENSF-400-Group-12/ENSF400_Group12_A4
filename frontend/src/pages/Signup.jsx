@@ -43,8 +43,12 @@ function Signup() {
     }
     setLoading(true);
     try {
-      await signup(emailTrimmed, password);
-      navigate("/dashboard", { replace: true });
+      const data = await signup(emailTrimmed, password);
+      if (data.verificationRequired || (data.user && !data.user.emailVerified)) {
+        navigate("/verify-email", { replace: true });
+      } else {
+        navigate("/dashboard", { replace: true });
+      }
     } catch (err) {
       setError(err.message || "Signup failed.");
     } finally {
