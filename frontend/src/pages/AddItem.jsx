@@ -1,8 +1,8 @@
-// Add or edit a clothing item — photo-first, low-friction
+// Add or edit a clothing item: photo-first, low-friction
 
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { authFetch } from "../config/api";
+import { authFetch, apiUrl } from "../config/api";
 
 const clothingTypes = [
   "Shirt", "T-Shirt", "Hoodie", "Sweater", "Jacket", "Coat", "Blazer",
@@ -54,6 +54,9 @@ function AddItem() {
   const [notes, setNotes] = useState("");
   const [imageFile, setImageFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
+  /** Resolved URL for saved image on edit (no new file chosen). */
+  const [existingServerImageUrl, setExistingServerImageUrl] = useState(null);
+  const [duplicateWarn, setDuplicateWarn] = useState(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisDone, setAnalysisDone] = useState(false);
   const [analysisFailed, setAnalysisFailed] = useState(false);
@@ -91,6 +94,8 @@ function AddItem() {
           setNotes(data.item.notes || "");
           const gp = data.item.garmentProfile;
           setGarmentProfile(gp && typeof gp === "object" && Object.keys(gp).length ? gp : null);
+          const ip = data.item.image_path;
+          setExistingServerImageUrl(ip ? apiUrl(ip) : null);
         }
       } catch (e) {
         if (!cancelled) setLoadError("Failed to load item.");
@@ -104,21 +109,25 @@ function AddItem() {
   useEffect(() => {
     if (!imageFile) {
       setPreviewUrl(null);
-      setAnalyzing(false);
-      setAnalysisDone(false);
-      setAnalysisFailed(false);
-      setPrefilledByAi({ type: false, color: false, season: false, style: false });
-      setFromFilename(false);
-      setFromOpenAI(false);
-      setAnalysisUncertain(false);
-      setOpenaiConfigured(null);
-      setGarmentProfile(null);
-      return;
+      return undefined;
     }
     const url = URL.createObjectURL(imageFile);
     setPreviewUrl(url);
     return () => URL.revokeObjectURL(url);
   }, [imageFile]);
+
+  useEffect(() => {
+    if (imageFile || isEdit) return;
+    setAnalyzing(false);
+    setAnalysisDone(false);
+    setAnalysisFailed(false);
+    setPrefilledByAi({ type: false, color: false, season: false, style: false });
+    setFromFilename(false);
+    setFromOpenAI(false);
+    setAnalysisUncertain(false);
+    setOpenaiConfigured(null);
+    setGarmentProfile(null);
+  }, [imageFile, isEdit]);
 
   useEffect(() => {
     if (!imageFile || isEdit) return;
@@ -197,10 +206,11 @@ function AddItem() {
     setImageFile(file);
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e, opts = {}) => {
     e.preventDefault();
     setError(null);
     setFieldErrors({});
+    if (!opts.duplicateOverride) setDuplicateWarn(null);
     if (!validate()) return;
 
     setSubmitLoading(true);
@@ -227,6 +237,7 @@ function AddItem() {
             return;
           }
         }
+        setDuplicateWarn(null);
         navigate("/dashboard");
         return;
       }
@@ -239,16 +250,24 @@ function AddItem() {
       form.append("notes", notes.trim());
       form.append("garmentProfile", JSON.stringify(garmentProfile && Object.keys(garmentProfile).length ? garmentProfile : {}));
       if (imageFile) form.append("image", imageFile);
+      if (opts.duplicateOverride) form.append("duplicateOverride", "1");
 
       const res = await authFetch("/api/items", { method: "POST", body: form });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        const msg = res.status === 401 ? "Session expired. Please log in again." : (data.error || "Save failed.");
-        setError(msg);
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setDuplicateWarn(null);
+        navigate("/dashboard");
+        return;
+      }
+      if (res.status === 409 && data.code === "DUPLICATE_ITEM") {
+        setDuplicateWarn(data);
         setSubmitLoading(false);
         return;
       }
-      navigate("/dashboard");
+      const msg = res.status === 401 ? "Session expired. Please log in again." : (data.error || "Save failed.");
+      setError(msg);
+      setSubmitLoading(false);
+      return;
     } catch (err) {
       const msg = err.name === "TypeError" && (err.message === "Failed to fetch" || err.message?.includes("fetch"))
         ? "Could not reach the server. Start the backend and try again."
@@ -286,7 +305,7 @@ function AddItem() {
         <p className="additem-subtext">
           {isEdit
             ? "Update the photo or details below."
-            : "Add a photo — we suggest details from the image (when AI is enabled) or from the filename. Always confirm or edit before saving."}
+            : "Add a photo: we suggest details from the image (when AI is enabled) or from the filename. Always confirm or edit before saving."}
         </p>
 
         <form onSubmit={handleSubmit} className="additem-form">
@@ -300,29 +319,33 @@ function AddItem() {
               onChange={handleFileChange}
               aria-label="Choose item photo"
             />
-            {previewUrl || (isEdit && !imageFile) ? (
+            {isEdit || previewUrl ? (
               <div className="additem-preview-wrap">
                 <div className="additem-preview-box">
                   {previewUrl ? (
-                    <img src={previewUrl} alt="Preview" className="additem-preview-img" />
+                    <img src={previewUrl} alt={isEdit ? "New photo preview" : "Preview"} className="additem-preview-img" />
+                  ) : existingServerImageUrl ? (
+                    <img src={existingServerImageUrl} alt="Saved wardrobe item" className="additem-preview-img" />
                   ) : (
-                    <span className="additem-preview-placeholder">{isEdit ? "Current photo kept" : "No image selected"}</span>
+                    <span className="additem-preview-placeholder">
+                      {isEdit ? "No photo on file yet. Choose a photo to add one." : "No image selected"}
+                    </span>
                   )}
                 </div>
-                {analyzing && (
+                {analyzing && !isEdit && (
                   <p className="additem-analyzing" aria-live="polite">Analyzing item…</p>
                 )}
-                {analysisFailed && !analyzing && (
+                {analysisFailed && !isEdit && !analyzing && (
                   <p className="additem-fallback-msg" role="status">
                     We couldn’t analyze this photo. Add the details below and save.
                   </p>
                 )}
-                {analysisDone && analysisUncertain && !analyzing && (
+                {analysisDone && analysisUncertain && !isEdit && !analyzing && (
                   <p className="additem-fallback-msg" role="status">
                     We couldn’t confidently identify this item. Please confirm the details below.
                   </p>
                 )}
-                {analysisDone && openaiConfigured === false && !analyzing && (
+                {analysisDone && openaiConfigured === false && !isEdit && !analyzing && (
                   <p className="additem-fallback-msg additem-fallback-msg--warn" role="status">
                     Photo analysis is off: the server has no API key loaded. Put <code className="additem-code">OPENAI_API_KEY</code> in a UTF-8 <code className="additem-code">.env</code> at the repo root, restart the backend on the same port as the dev proxy (default 8080), then try again.
                   </p>
@@ -348,19 +371,19 @@ function AddItem() {
             )}
           </div>
 
-          {/* Confirm or edit — AI-first */}
+          {/* Confirm or edit (AI suggestions) */}
           <div className="additem-metadata">
             {analysisDone && (prefilledByAi.type || prefilledByAi.color || prefilledByAi.season || prefilledByAi.style) && (
               <p className="additem-detected-summary" role="status">
                 {fromOpenAI ? "AI suggestion (vision): " : fromFilename ? "Filename suggestion: " : "Suggestions: "}
-                {[prefilledByAi.type && type, prefilledByAi.color && color, prefilledByAi.season && season, prefilledByAi.style && style].filter(Boolean).join(" · ") || "—"}
+                {[prefilledByAi.type && type, prefilledByAi.color && color, prefilledByAi.season && season, prefilledByAi.style && style].filter(Boolean).join(" · ") || "none yet"}
               </p>
             )}
             {garmentProfile && Object.keys(garmentProfile).length > 0 && (
               <details className="additem-profile-details">
                 <summary>Style signals saved with this item</summary>
                 <p className="additem-profile-line">{formatGarmentProfileSummary(garmentProfile)}</p>
-                <p className="additem-profile-hint">Used for outfit matching — your dropdowns above are still what you confirm.</p>
+                <p className="additem-profile-hint">Used for outfit matching. Your dropdowns above are still what you confirm.</p>
               </details>
             )}
             <h2 className="additem-metadata-heading">Confirm or edit</h2>
@@ -413,8 +436,95 @@ function AddItem() {
 
           {Object.keys(fieldErrors).length > 0 && (
             <p className="additem-validation-summary" role="alert">
-              Please fill in the missing fields below — then you can save.
+              Please fill in the missing fields below, then you can save.
             </p>
+          )}
+          {duplicateWarn && !isEdit && (
+            <div className="additem-dup-panel" role="region" aria-label="Possible duplicate wardrobe items">
+              <h2 className="additem-dup-title">
+                {(duplicateWarn.duplicateLevel === "exact" || duplicateWarn.duplicateLevel === "both")
+                  ? "Strong match: this photo is already saved in your wardrobe."
+                  : "Possible duplicate: same type, color, and style as an item you have."}
+              </h2>
+              <p className="additem-dup-lead">
+                {duplicateWarn.message || "Compare the thumbnail and details. If this is a different piece, you can still save it."}
+              </p>
+              {(duplicateWarn.exact?.length > 0) && (
+                <div className="additem-dup-group">
+                  <h3 className="additem-dup-group-title">Same image</h3>
+                  <div className="additem-dup-grid">
+                    {duplicateWarn.exact.map((it) => (
+                      <article key={it.id} className="additem-dup-card">
+                        <div className="additem-dup-thumb-wrap">
+                          {it.image_path ? (
+                            <img src={apiUrl(it.image_path)} alt="" className="additem-dup-thumb" />
+                          ) : (
+                            <span className="additem-dup-thumb additem-dup-thumb--empty">No photo</span>
+                          )}
+                        </div>
+                        <div className="additem-dup-meta">
+                          <span className="additem-dup-type">{it.type}</span>
+                          <span className="additem-dup-detail">{it.color} · {it.style}</span>
+                        </div>
+                        <button
+                          type="button"
+                          className="button-secondary additem-dup-use"
+                          onClick={() => navigate(`/edit-item/${it.id}`)}
+                        >
+                          Use this item
+                        </button>
+                      </article>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {(duplicateWarn.similar?.length > 0) && (
+                <div className="additem-dup-group">
+                  <h3 className="additem-dup-group-title">Very similar details</h3>
+                  <div className="additem-dup-grid">
+                    {duplicateWarn.similar.map((it) => (
+                      <article key={it.id} className="additem-dup-card">
+                        <div className="additem-dup-thumb-wrap">
+                          {it.image_path ? (
+                            <img src={apiUrl(it.image_path)} alt="" className="additem-dup-thumb" />
+                          ) : (
+                            <span className="additem-dup-thumb additem-dup-thumb--empty">No photo</span>
+                          )}
+                        </div>
+                        <div className="additem-dup-meta">
+                          <span className="additem-dup-type">{it.type}</span>
+                          <span className="additem-dup-detail">{it.color} · {it.style}</span>
+                        </div>
+                        <button
+                          type="button"
+                          className="button-secondary additem-dup-use"
+                          onClick={() => navigate(`/edit-item/${it.id}`)}
+                        >
+                          Open this item
+                        </button>
+                      </article>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div className="additem-dup-actions">
+                <button
+                  type="button"
+                  className="button-secondary"
+                  onClick={() => setDuplicateWarn(null)}
+                >
+                  Go back
+                </button>
+                <button
+                  type="button"
+                  className="button-primary"
+                  disabled={submitLoading}
+                  onClick={(ev) => handleSubmit(ev, { duplicateOverride: true })}
+                >
+                  {submitLoading ? "Saving…" : "Save anyway"}
+                </button>
+              </div>
+            </div>
           )}
           {error && <p className="additem-inline-error additem-error-block" role="alert">{error}</p>}
           <div className="additem-actions">
