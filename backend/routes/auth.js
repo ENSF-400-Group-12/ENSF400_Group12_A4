@@ -10,6 +10,7 @@ const EMAIL_MIN = 3;
 const PASSWORD_MIN = 6;
 const VERIFY_EXPIRY_MIN = Number(process.env.EMAIL_VERIFY_EXPIRY_MIN || 60 * 24);
 const VERIFY_RESEND_COOLDOWN_SEC = Number(process.env.EMAIL_VERIFY_RESEND_COOLDOWN_SEC || 60);
+const RESET_EXPIRY_MIN = Number(process.env.PASSWORD_RESET_EXPIRY_MIN || 30);
 
 function validateEmail(email) {
   if (!email || typeof email !== 'string') return false;
@@ -51,6 +52,16 @@ function verificationEmail(token) {
   };
 }
 
+function passwordResetEmail(token) {
+  const base = frontendBaseUrl();
+  const link = `${base}/reset-password?token=${encodeURIComponent(token)}`;
+  return {
+    subject: 'Reset your ClosetAI password',
+    text: `Use this link to reset your ClosetAI password: ${link}`,
+    html: `<p>We received a request to reset your ClosetAI password.</p><p><a href="${link}">Reset password</a></p><p>If you did not request this, you can ignore this email.</p>`,
+  };
+}
+
 async function issueVerificationTokenAndSend(db, userId, email) {
   const raw = createRawToken();
   const tokenHash = hashToken(raw);
@@ -65,6 +76,23 @@ async function issueVerificationTokenAndSend(db, userId, email) {
     { $h: tokenHash, $exp: expiresAt, $sent: sentAt, $id: userId }
   );
   const msg = verificationEmail(raw);
+  await sendMail({ to: email, subject: msg.subject, text: msg.text, html: msg.html });
+}
+
+async function issueResetTokenAndSend(db, userId, email) {
+  const raw = createRawToken();
+  const tokenHash = hashToken(raw);
+  const expiresAt = expiresAtIso(RESET_EXPIRY_MIN);
+  const sentAt = new Date().toISOString();
+  db.run(
+    `UPDATE users
+     SET reset_token_hash = $h,
+         reset_expires_at = $exp,
+         reset_sent_at = $sent
+     WHERE id = $id`,
+    { $h: tokenHash, $exp: expiresAt, $sent: sentAt, $id: userId }
+  );
+  const msg = passwordResetEmail(raw);
   await sendMail({ to: email, subject: msg.subject, text: msg.text, html: msg.html });
 }
 
@@ -261,6 +289,74 @@ router.post('/verify-email', (req, res) => {
     });
   } catch (err) {
     return res.status(500).json({ error: 'Could not verify email. Please try again.' });
+  }
+});
+
+router.post('/forgot-password', async (req, res) => {
+  const genericResponse = {
+    ok: true,
+    message: 'If an account exists for that email, a reset link has been sent.',
+  };
+  const emailRaw = req.body && typeof req.body.email === 'string' ? req.body.email : '';
+  const emailTrimmed = emailRaw.trim().toLowerCase();
+  if (!validateEmail(emailTrimmed)) return res.json(genericResponse);
+  try {
+    const db = getDb();
+    const row = getSelectResult(
+      db,
+      'SELECT id, email FROM users WHERE email = $email',
+      { $email: emailTrimmed }
+    );
+    if (!row) return res.json(genericResponse);
+    await issueResetTokenAndSend(db, row.id, row.email);
+    persist();
+    return res.json(genericResponse);
+  } catch (err) {
+    // Same response to avoid account enumeration signal.
+    return res.json(genericResponse);
+  }
+});
+
+router.post('/reset-password', (req, res) => {
+  const rawToken = String((req.body && req.body.token) || '').trim();
+  const newPassword = String((req.body && req.body.password) || '');
+  if (!rawToken) return res.status(400).json({ error: 'Reset token is required.' });
+  if (!validatePassword(newPassword)) {
+    return res.status(400).json({ error: 'Password must be at least 6 characters.' });
+  }
+  try {
+    const db = getDb();
+    const tokenHash = hashToken(rawToken);
+    const row = getSelectResult(
+      db,
+      `SELECT id, reset_expires_at
+       FROM users
+       WHERE reset_token_hash = $hash`,
+      { $hash: tokenHash }
+    );
+    if (!row || isExpired(row.reset_expires_at)) {
+      if (row && row.id) {
+        db.run(
+          'UPDATE users SET reset_token_hash = NULL, reset_expires_at = NULL WHERE id = $id',
+          { $id: row.id }
+        );
+        persist();
+      }
+      return res.status(400).json({ error: 'Reset link is invalid or expired.' });
+    }
+    const passwordHash = bcrypt.hashSync(newPassword, 10);
+    db.run(
+      `UPDATE users
+       SET password_hash = $ph,
+           reset_token_hash = NULL,
+           reset_expires_at = NULL
+       WHERE id = $id`,
+      { $ph: passwordHash, $id: row.id }
+    );
+    persist();
+    return res.json({ ok: true, message: 'Password reset successful. Please log in.' });
+  } catch (err) {
+    return res.status(500).json({ error: 'Could not reset password. Please try again.' });
   }
 });
 

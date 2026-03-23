@@ -120,6 +120,9 @@ function Login() {
               {loading ? "Signing in…" : "Login"}
             </button>
           </form>
+          <p className="signup-text">
+            <Link to="/forgot-password">Forgot password?</Link>
+          </p>
 
           <p className="signup-text">
             Don&apos;t have an account?
