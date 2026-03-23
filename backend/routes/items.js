@@ -5,11 +5,16 @@ const { getDb, persist } = require('../db/connection');
 const { requireAuth } = require('../middleware/requireAuth');
 const { upload, memoryUpload } = require('../config/upload');
 const { analyzeItemImage } = require('../services/imageAnalysis');
+const { getUploadsDir } = require('../lib/storageConfig');
+const { findDuplicateRows, sha256FileBuffer } = require('../lib/wardrobeDuplicate');
 const {
   profileForApi,
   normalizeGarmentProfileInput,
   serializeProfileForDb,
 } = require('../lib/garmentProfile');
+
+const ITEM_SELECT =
+  'SELECT id, user_id, type, color, season, style, notes, image_path, created_at, garment_profile, content_hash FROM wardrobe_items';
 
 const router = express.Router();
 router.use(requireAuth);
@@ -78,7 +83,7 @@ router.get('/', (req, res) => {
     const db = getDb();
     const rows = rowsToObjects(
       db.exec(
-        'SELECT id, user_id, type, color, season, style, notes, image_path, created_at, garment_profile FROM wardrobe_items WHERE user_id = $uid ORDER BY created_at DESC',
+        `${ITEM_SELECT} WHERE user_id = $uid ORDER BY created_at DESC`,
         { $uid: req.session.userId }
       )
     );
@@ -124,7 +129,7 @@ router.get('/:id', (req, res) => {
     const db = getDb();
     const row = getSelectResult(
       db,
-      'SELECT id, user_id, type, color, season, style, notes, image_path, created_at, garment_profile FROM wardrobe_items WHERE id = $id',
+      `${ITEM_SELECT} WHERE id = $id`,
       { $id: id }
     );
     if (!row) {
@@ -165,12 +170,55 @@ router.post('/', (req, res, next) => {
     return res.status(400).json({ error: validationError });
   }
 
+  const overrideDuplicate = req.body.duplicateOverride === '1'
+    || req.body.duplicateOverride === 'true'
+    || req.body.duplicateOverride === true;
+
   try {
     const db = getDb();
-    const image_path = req.file ? `/uploads/${req.file.filename}` : null;
+    const uploadsDir = getUploadsDir();
+    let contentHash = null;
+    let image_path = req.file ? `/uploads/${req.file.filename}` : null;
+
+    if (req.file) {
+      const diskPath = path.join(uploadsDir, req.file.filename);
+      try {
+        contentHash = sha256FileBuffer(diskPath);
+      } catch (hashErr) {
+        try { fs.unlinkSync(diskPath); } catch (_) {}
+        return res.status(500).json({ error: 'Could not read the uploaded image. Try again.' });
+      }
+      const { exact, similar } = findDuplicateRows(db, req.session.userId, contentHash, type, color, style);
+      if (!overrideDuplicate && (exact.length > 0 || similar.length > 0)) {
+        try { fs.unlinkSync(diskPath); } catch (_) {}
+        const duplicateLevel = exact.length > 0 ? (similar.length > 0 ? 'both' : 'exact') : 'similar';
+        const message = exact.length > 0
+          ? 'This image matches an item already in your wardrobe.'
+          : 'You may already have a very similar item (same type, color, and style).';
+        return res.status(409).json({
+          code: 'DUPLICATE_ITEM',
+          duplicateLevel,
+          message,
+          exact: exact.map(mapItemRow),
+          similar: similar.map(mapItemRow),
+        });
+      }
+    } else if (!overrideDuplicate) {
+      const { exact: _e, similar } = findDuplicateRows(db, req.session.userId, null, type, color, style);
+      if (similar.length > 0) {
+        return res.status(409).json({
+          code: 'DUPLICATE_ITEM',
+          duplicateLevel: 'similar',
+          message: 'You may already have a very similar item (same type, color, and style).',
+          exact: [],
+          similar: similar.map(mapItemRow),
+        });
+      }
+    }
+
     db.run(
-      `INSERT INTO wardrobe_items (user_id, type, color, season, style, notes, image_path, garment_profile)
-       VALUES ($uid, $type, $color, $season, $style, $notes, $path, $gp)`,
+      `INSERT INTO wardrobe_items (user_id, type, color, season, style, notes, image_path, garment_profile, content_hash)
+       VALUES ($uid, $type, $color, $season, $style, $notes, $path, $gp, $hash)`,
       {
         $uid: req.session.userId,
         $type: type,
@@ -180,6 +228,7 @@ router.post('/', (req, res, next) => {
         $notes: notes,
         $path: image_path,
         $gp: garmentProfileJson,
+        $hash: contentHash,
       }
     );
     const idResult = db.exec('SELECT last_insert_rowid() as id');
@@ -190,7 +239,7 @@ router.post('/', (req, res, next) => {
     persist();
     const created = getSelectResult(
       db,
-      'SELECT id, user_id, type, color, season, style, notes, image_path, created_at, garment_profile FROM wardrobe_items WHERE id = $id',
+      `${ITEM_SELECT} WHERE id = $id`,
       { $id: id }
     );
     res.status(201).json({ item: mapItemRow(created) });
@@ -251,7 +300,7 @@ router.put('/:id', (req, res) => {
 
     const updated = getSelectResult(
       db,
-      'SELECT id, user_id, type, color, season, style, notes, image_path, created_at, garment_profile FROM wardrobe_items WHERE id = $id',
+      `${ITEM_SELECT} WHERE id = $id`,
       { $id: id }
     );
     res.json({ item: mapItemRow(updated) });
@@ -289,19 +338,29 @@ router.post('/:id/image', (req, res, next) => {
       return res.status(403).json({ error: 'You can only update your own items.' });
     }
 
-    const uploadsDir = path.join(__dirname, '..', 'uploads');
+    const uploadsDir = getUploadsDir();
     if (row.image_path) {
       const oldPath = path.join(uploadsDir, path.basename(row.image_path));
       if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
     }
 
     const newPath = `/uploads/${req.file.filename}`;
-    db.run('UPDATE wardrobe_items SET image_path = $path WHERE id = $id', { $path: newPath, $id: id });
+    const diskNew = path.join(uploadsDir, req.file.filename);
+    let newHash = null;
+    try {
+      newHash = sha256FileBuffer(diskNew);
+    } catch (_) {
+      return res.status(500).json({ error: 'Could not read the uploaded image. Try again.' });
+    }
+    db.run(
+      'UPDATE wardrobe_items SET image_path = $path, content_hash = $h WHERE id = $id',
+      { $path: newPath, $h: newHash, $id: id }
+    );
     persist();
 
     const updated = getSelectResult(
       db,
-      'SELECT id, user_id, type, color, season, style, notes, image_path, created_at, garment_profile FROM wardrobe_items WHERE id = $id',
+      `${ITEM_SELECT} WHERE id = $id`,
       { $id: id }
     );
     res.json({ item: mapItemRow(updated) });
@@ -326,7 +385,7 @@ router.delete('/:id', (req, res) => {
       return res.status(403).json({ error: 'You can only delete your own items.' });
     }
 
-    const uploadsDir = path.join(__dirname, '..', 'uploads');
+    const uploadsDir = getUploadsDir();
     if (row.image_path) {
       const filePath = path.join(uploadsDir, path.basename(row.image_path));
       if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
