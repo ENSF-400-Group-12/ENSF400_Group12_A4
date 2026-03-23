@@ -9,7 +9,7 @@ const fs = require('fs');
 const path = require('path');
 const sharp = require('sharp');
 
-const VALID_EXT = ['.jpg', '.jpeg', '.png', '.webp', '.avif', '.svg'];
+const VALID_EXT = ['.jpg', '.jpeg', '.png', '.webp', '.avif'];
 const SKIP_SOURCE_FILES = new Set([
   'brown_sweat_pants_source.png',
   'womens-white-brown-shoes.avif',
@@ -32,22 +32,15 @@ const OVERRIDES = {
   'white_jays.webp': { type: 'Sneakers', color: 'White', season: 'All Season', style: 'Sport' },
   'red_jays.jpg': { type: 'Sneakers', color: 'Red', season: 'All Season', style: 'Sport' },
   'black_casual_shoes.jpg': { type: 'Shoes', color: 'Black', season: 'All Season', style: 'Casual' },
-  'ivory_work_blouse.svg': { type: 'Blouse', color: 'Ivory', season: 'All Season', style: 'Business' },
-  'navy_cardigan_layer.svg': { type: 'Cardigan', color: 'Navy', season: 'Fall', style: 'Smart Casual' },
-  'black_camisole_evening.svg': { type: 'Camisole', color: 'Black', season: 'Summer', style: 'Formal' },
-  'white_tank_summer.svg': { type: 'Tank', color: 'White', season: 'Summer', style: 'Casual' },
-  'black_bodysuit_minimal.svg': { type: 'Bodysuit', color: 'Black', season: 'All Season', style: 'Minimalist' },
-  'emerald_wrap_dress_formal.svg': { type: 'Dress', color: 'Green', season: 'All Season', style: 'Formal' },
-  'black_jumpsuit_evening.svg': { type: 'Jumpsuit', color: 'Black', season: 'All Season', style: 'Formal' },
-  'berry_romper_summer.svg': { type: 'Romper', color: 'Burgundy', season: 'Summer', style: 'Casual' },
-  'black_midi_skirt_work.svg': { type: 'Skirt', color: 'Black', season: 'All Season', style: 'Business' },
-  'charcoal_leggings_cold.svg': { type: 'Leggings', color: 'Gray', season: 'Winter', style: 'Casual' },
-  'nude_flats_polished.svg': { type: 'Flats', color: 'Beige', season: 'All Season', style: 'Smart Casual' },
-  'black_heels_formal.svg': { type: 'Heels', color: 'Black', season: 'All Season', style: 'Formal' },
-  'burgundy_dress_boots_cold.svg': { type: 'Dress Boots', color: 'Burgundy', season: 'Winter', style: 'Smart Casual' },
-  'tan_sandals_summer.svg': { type: 'Sandals', color: 'Beige', season: 'Summer', style: 'Casual' },
-  'camel_wool_coat_cold.svg': { type: 'Coat', color: 'Beige', season: 'Winter', style: 'Formal' },
-  'navy_pleated_trousers_work.svg': { type: 'Pants', color: 'Navy', season: 'All Season', style: 'Business' },
+  'womens-beige-pants.jpg': { type: 'Pants', color: 'Beige', season: 'All Season', style: 'Smart Casual' },
+  'womens-black-comfy-shoes.webp': { type: 'Flats', color: 'Black', season: 'All Season', style: 'Casual' },
+  'womens-black-formal-pants.webp': { type: 'Pants', color: 'Black', season: 'All Season', style: 'Formal' },
+  'womens-black-shoes-formal.jpg': { type: 'Heels', color: 'Black', season: 'All Season', style: 'Formal' },
+  'womens-brown-formal-pants.webp': { type: 'Pants', color: 'Brown', season: 'All Season', style: 'Formal' },
+  'womens-button-up.webp': { type: 'Blouse', color: 'White', season: 'All Season', style: 'Business' },
+  'womens-button-up-blue.webp': { type: 'Blouse', color: 'Blue', season: 'All Season', style: 'Business' },
+  'womens-button-up-green.webp': { type: 'Blouse', color: 'Green', season: 'All Season', style: 'Business' },
+  'womens-trench-coat.webp': { type: 'Coat', color: 'Beige', season: 'Fall', style: 'Formal' },
 };
 
 const TYPE_PATTERNS = [
@@ -71,6 +64,11 @@ const COLOR_PATTERNS = [
   'white', 'black', 'grey', 'gray', 'brown', 'navy', 'blue', 'red', 'green',
   'cream', 'beige', 'olive', 'burgundy', 'pink', 'purple', 'orange', 'yellow'
 ];
+
+function inferSection(relPath) {
+  const normalized = String(relPath || '').replace(/\\/g, '/').toLowerCase();
+  return normalized.startsWith('womens/') ? 'womens' : 'mens';
+}
 
 function inferMetadata(filename) {
   const base = path.basename(filename, path.extname(filename)).toLowerCase();
@@ -105,6 +103,20 @@ function isValidImageFile(filename) {
   return VALID_EXT.includes(ext) && !SKIP_SOURCE_FILES.has(filename.toLowerCase()) && !/!|#|\?/.test(filename);
 }
 
+function clearGeneratedWebps(dir) {
+  if (!fs.existsSync(dir)) return;
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      clearGeneratedWebps(full);
+      continue;
+    }
+    if (entry.isFile() && path.extname(entry.name).toLowerCase() === '.webp') {
+      fs.unlinkSync(full);
+    }
+  }
+}
+
 function listSourceFiles(dir) {
   const out = [];
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -130,6 +142,7 @@ async function main() {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
+    clearGeneratedWebps(dir);
   }
 
   const sourceFiles = listSourceFiles(SRC_DIR);
@@ -168,6 +181,7 @@ async function main() {
       sourceFile: relPath,
       outputFile: outName,
       imagePath: `/clothes-demo/${outName}`,
+      demoSection: inferSection(relPath),
       ...metadata,
     });
     console.log('OK:', relPath, '->', outName);

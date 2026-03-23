@@ -72,11 +72,11 @@ function Dashboard() {
     }
   };
 
-  const handleLoadDemo = async () => {
+  const handleLoadDemo = async (section) => {
     try {
       const res = await authFetch("/api/demo/seed", {
         method: "POST",
-        body: JSON.stringify({}),
+        body: JSON.stringify(section ? { section } : {}),
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
@@ -85,6 +85,8 @@ function Dashboard() {
         const codeMsg =
           data.code === "DEMO_MANIFEST_MISSING"
             ? "Demo wardrobe is not available on this server. If you are an admin, redeploy the backend with the demo bundle (backend/demo)."
+            : data.code === "DEMO_SECTION_EMPTY"
+              ? "That demo wardrobe section is empty on this server."
             : null;
         const msg = res.status === 401
           ? "Please log in first to load the demo wardrobe."
@@ -225,7 +227,7 @@ function Dashboard() {
             </>
           ) : (
             <>
-              <p className="dashboard-empty-text">Your wardrobe is empty. Add your first item or load the demo wardrobe to explore tops, layers, one-piece looks, and footwear.</p>
+              <p className="dashboard-empty-text">Your wardrobe is empty. Add your first item or load a men's or women's demo wardrobe to explore different clothing mixes.</p>
               <div className="dashboard-empty-actions">
                 <Link to="/add-item">
                   <button type="button" className="button-primary">Add Item</button>
@@ -233,9 +235,16 @@ function Dashboard() {
                 <button
                   type="button"
                   className="button-secondary"
-                  onClick={handleLoadDemo}
+                  onClick={() => handleLoadDemo("mens")}
                 >
-                  Load demo wardrobe
+                  Load men's demo wardrobe
+                </button>
+                <button
+                  type="button"
+                  className="button-secondary"
+                  onClick={() => handleLoadDemo("womens")}
+                >
+                  Load women's demo wardrobe
                 </button>
               </div>
             </>

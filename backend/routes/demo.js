@@ -11,6 +11,13 @@ const router = express.Router();
 
 /** Backend-owned bundle (deploys with Railway/backend image). */
 const COMMITTED_MANIFEST = path.join(__dirname, '..', 'demo', 'clothes-demo-manifest.json');
+const DEMO_SECTIONS = new Set(['mens', 'womens']);
+
+function normalizeDemoSection(value) {
+  const raw = String(value || '').trim().toLowerCase();
+  if (!raw) return 'all';
+  return DEMO_SECTIONS.has(raw) ? raw : null;
+}
 
 /**
  * Resolve demo manifest path. Order: DEMO_MANIFEST_PATH, committed backend/demo, monorepo fallbacks.
@@ -85,6 +92,13 @@ router.get('/status', (_req, res) => {
 
 router.post('/seed', requireAuth, (req, res) => {
   try {
+    const requestedSection = normalizeDemoSection(req.body?.section);
+    if (requestedSection == null) {
+      return res.status(400).json({
+        error: 'Demo section must be "mens" or "womens".',
+        code: 'DEMO_SECTION_INVALID',
+      });
+    }
     const { path: manifestPath, checked } = resolveManifestPath();
     if (!manifestPath) {
       console.warn('[demo/seed] manifest not found; checked paths:', checked.length);
@@ -117,12 +131,23 @@ router.post('/seed', requireAuth, (req, res) => {
       });
     }
 
+    const filteredManifest = requestedSection === 'all'
+      ? manifest
+      : manifest.filter((item) => String(item.demoSection || 'mens').toLowerCase() === requestedSection);
+
+    if (filteredManifest.length === 0) {
+      return res.status(422).json({
+        error: 'This demo wardrobe section is empty on the server.',
+        code: 'DEMO_SECTION_EMPTY',
+      });
+    }
+
     const db = getDb();
     const userId = req.session.userId;
 
     db.run('DELETE FROM wardrobe_items WHERE user_id = $uid', { $uid: userId });
 
-    for (const item of manifest) {
+    for (const item of filteredManifest) {
       db.run(
         `INSERT INTO wardrobe_items (user_id, type, color, season, style, notes, image_path)
          VALUES ($uid, $type, $color, $season, $style, $notes, $path)`,
@@ -138,8 +163,8 @@ router.post('/seed', requireAuth, (req, res) => {
       );
     }
     persist();
-    console.log('[demo/seed] ok user=%s count=%s manifest=%s', userId, manifest.length, manifestPath);
-    res.json({ ok: true, count: manifest.length });
+    console.log('[demo/seed] ok user=%s section=%s count=%s manifest=%s', userId, requestedSection, filteredManifest.length, manifestPath);
+    res.json({ ok: true, count: filteredManifest.length, section: requestedSection });
   } catch (err) {
     console.error('Demo seed error:', err);
     const msg = process.env.NODE_ENV === 'development' ? err.message : 'Failed to seed demo wardrobe.';
