@@ -4,7 +4,7 @@
  * Development: random secret per process start if unset (sessions reset on restart; set SESSION_SECRET for stability).
  */
 
-const crypto = require('crypto');
+const crypto = require('node:crypto');
 
 const MIN_PROD_SECRET_LEN = 32;
 
@@ -16,8 +16,9 @@ function isProductionNodeEnv() {
  * @returns {string}
  */
 function resolveSessionSecret() {
-  const fromEnv = process.env.SESSION_SECRET != null ? String(process.env.SESSION_SECRET).trim() : '';
-  if (fromEnv) {
+  const fromEnvRaw = process.env.SESSION_SECRET;
+  const fromEnv = fromEnvRaw == null ? '' : String(fromEnvRaw).trim();
+  if (fromEnv.length > 0) {
     if (isProductionNodeEnv() && fromEnv.length < MIN_PROD_SECRET_LEN) {
       throw new Error(
         `SESSION_SECRET must be at least ${MIN_PROD_SECRET_LEN} characters in production.`

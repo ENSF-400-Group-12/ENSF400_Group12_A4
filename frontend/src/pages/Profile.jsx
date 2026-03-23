@@ -10,6 +10,12 @@ function Profile() {
   const [favoriteCount, setFavoriteCount] = useState(null);
   const [itemsError, setItemsError] = useState(false);
   const [favoritesError, setFavoritesError] = useState(false);
+  const wardrobeValue = itemsError
+    ? "Unavailable"
+    : (itemCount === null ? "…" : itemCount);
+  const favoritesValue = favoritesError
+    ? "Unavailable"
+    : (favoriteCount === null ? "…" : favoriteCount);
 
   useEffect(() => {
     let cancelled = false;
@@ -62,16 +68,12 @@ function Profile() {
 
           <div className="profile-row">
             <span className="profile-label">Wardrobe items</span>
-            <span className="profile-value">
-              {itemsError ? "Unavailable" : itemCount !== null ? itemCount : "…"}
-            </span>
+            <span className="profile-value">{wardrobeValue}</span>
           </div>
 
           <div className="profile-row">
             <span className="profile-label">Saved outfits</span>
-            <span className="profile-value">
-              {favoritesError ? "Unavailable" : favoriteCount !== null ? favoriteCount : "…"}
-            </span>
+            <span className="profile-value">{favoritesValue}</span>
           </div>
         </div>
       </div>

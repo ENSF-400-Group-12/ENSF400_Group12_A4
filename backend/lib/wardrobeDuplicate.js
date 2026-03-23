@@ -3,8 +3,8 @@
  * plus a soft metadata match (same type, color, style) for likely duplicates.
  */
 
-const crypto = require('crypto');
-const fs = require('fs');
+const crypto = require('node:crypto');
+const fs = require('node:fs');
 
 function sha256FileBuffer(absPath) {
   const buf = fs.readFileSync(absPath);
@@ -13,6 +13,17 @@ function sha256FileBuffer(absPath) {
 
 function norm(s) {
   return String(s || '').trim().toLowerCase();
+}
+
+function queryRows(db, sql, params) {
+  const rows = db.exec(sql, params);
+  if (!rows.length || !rows[0].values.length) return [];
+  const cols = rows[0].columns;
+  return rows[0].values.map((row) => {
+    const out = {};
+    cols.forEach((col, i) => { out[col] = row[i]; });
+    return out;
+  });
 }
 
 /**
@@ -25,29 +36,21 @@ function norm(s) {
  * @returns {{ exact: object[], similar: object[] }} raw row objects from wardrobe_items
  */
 function findDuplicateRows(db, userId, contentHash, type, color, style) {
-  const exact = [];
-  const similar = [];
   const t = norm(type);
   const c = norm(color);
   const st = norm(style);
 
-  if (contentHash) {
-    const rows = db.exec(
+  const exact = contentHash
+    ? queryRows(
+      db,
       `SELECT id, user_id, type, color, season, style, notes, image_path, created_at, garment_profile, content_hash
        FROM wardrobe_items WHERE user_id = $uid AND content_hash = $h`,
       { $uid: userId, $h: contentHash }
-    );
-    if (rows.length && rows[0].values.length) {
-      const cols = rows[0].columns;
-      for (const row of rows[0].values) {
-        const o = {};
-        cols.forEach((col, i) => { o[col] = row[i]; });
-        exact.push(o);
-      }
-    }
-  }
+    )
+    : [];
 
-  const simRows = db.exec(
+  const simRows = queryRows(
+    db,
     `SELECT id, user_id, type, color, season, style, notes, image_path, created_at, garment_profile, content_hash
      FROM wardrobe_items
      WHERE user_id = $uid
@@ -57,19 +60,10 @@ function findDuplicateRows(db, userId, contentHash, type, color, style) {
     { $uid: userId, $t: t, $c: c, $s: st }
   );
   const exactIds = new Set(exact.map((e) => e.id));
-  if (simRows.length && simRows[0].values.length) {
-    const cols = simRows[0].columns;
-    for (const row of simRows[0].values) {
-      const o = {};
-      cols.forEach((col, i) => { o[col] = row[i]; });
-      const id = o.id;
-      if (exactIds.has(id)) continue;
-      const sameHash = contentHash && o.content_hash === contentHash;
-      if (!sameHash) {
-        similar.push(o);
-      }
-    }
-  }
+  const similar = simRows.filter((row) => {
+    if (exactIds.has(row.id)) return false;
+    return !(contentHash && row.content_hash === contentHash);
+  });
 
   return { exact, similar: similar.slice(0, 8) };
 }

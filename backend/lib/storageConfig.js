@@ -9,8 +9,8 @@
  * Paths are resolved from process.cwd() when relative.
  */
 
-const path = require('path');
-const fs = require('fs');
+const path = require('node:path');
+const fs = require('node:fs');
 
 const backendRoot = path.resolve(__dirname, '..');
 

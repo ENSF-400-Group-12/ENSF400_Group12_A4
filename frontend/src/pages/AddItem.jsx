@@ -206,6 +206,51 @@ function AddItem() {
     setImageFile(file);
   };
 
+  async function submitEditFlow() {
+    const res = await authFetch(`/api/items/${id}`, {
+      method: "PUT",
+      body: JSON.stringify({ type: type.trim(), color: color.trim(), season: season.trim(), style: style.trim(), notes: notes.trim() }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setError(data.error || "Update failed.");
+      return false;
+    }
+    if (!imageFile) return true;
+    const form = new FormData();
+    form.append("image", imageFile);
+    const resImg = await authFetch(`/api/items/${id}/image`, { method: "POST", body: form });
+    if (!resImg.ok) {
+      const data = await resImg.json().catch(() => ({}));
+      setError(data.error || "Image update failed.");
+      return false;
+    }
+    return true;
+  }
+
+  async function submitCreateFlow(duplicateOverride) {
+    const form = new FormData();
+    form.append("type", type.trim());
+    form.append("color", color.trim());
+    form.append("season", season.trim());
+    form.append("style", style.trim());
+    form.append("notes", notes.trim());
+    form.append("garmentProfile", JSON.stringify(garmentProfile && Object.keys(garmentProfile).length ? garmentProfile : {}));
+    if (imageFile) form.append("image", imageFile);
+    if (duplicateOverride) form.append("duplicateOverride", "1");
+
+    const res = await authFetch("/api/items", { method: "POST", body: form });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok) return { ok: true };
+    if (res.status === 409 && data.code === "DUPLICATE_ITEM") {
+      setDuplicateWarn(data);
+      return { ok: false, conflict: true };
+    }
+    const msg = res.status === 401 ? "Session expired. Please log in again." : (data.error || "Save failed.");
+    setError(msg);
+    return { ok: false, conflict: false };
+  }
+
   const handleSubmit = async (e, opts = {}) => {
     e.preventDefault();
     setError(null);
@@ -215,59 +260,15 @@ function AddItem() {
 
     setSubmitLoading(true);
     try {
-      if (isEdit) {
-        const res = await authFetch(`/api/items/${id}`, {
-          method: "PUT",
-          body: JSON.stringify({ type: type.trim(), color: color.trim(), season: season.trim(), style: style.trim(), notes: notes.trim() }),
-        });
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          setError(data.error || "Update failed.");
-          setSubmitLoading(false);
-          return;
-        }
-        if (imageFile) {
-          const form = new FormData();
-          form.append("image", imageFile);
-          const resImg = await authFetch(`/api/items/${id}/image`, { method: "POST", body: form });
-          if (!resImg.ok) {
-            const data = await resImg.json().catch(() => ({}));
-            setError(data.error || "Image update failed.");
-            setSubmitLoading(false);
-            return;
-          }
-        }
+      const ok = isEdit
+        ? await submitEditFlow()
+        : (await submitCreateFlow(Boolean(opts.duplicateOverride))).ok;
+      if (ok) {
         setDuplicateWarn(null);
         navigate("/dashboard");
         return;
       }
-
-      const form = new FormData();
-      form.append("type", type.trim());
-      form.append("color", color.trim());
-      form.append("season", season.trim());
-      form.append("style", style.trim());
-      form.append("notes", notes.trim());
-      form.append("garmentProfile", JSON.stringify(garmentProfile && Object.keys(garmentProfile).length ? garmentProfile : {}));
-      if (imageFile) form.append("image", imageFile);
-      if (opts.duplicateOverride) form.append("duplicateOverride", "1");
-
-      const res = await authFetch("/api/items", { method: "POST", body: form });
-      const data = await res.json().catch(() => ({}));
-      if (res.ok) {
-        setDuplicateWarn(null);
-        navigate("/dashboard");
-        return;
-      }
-      if (res.status === 409 && data.code === "DUPLICATE_ITEM") {
-        setDuplicateWarn(data);
-        setSubmitLoading(false);
-        return;
-      }
-      const msg = res.status === 401 ? "Session expired. Please log in again." : (data.error || "Save failed.");
-      setError(msg);
       setSubmitLoading(false);
-      return;
     } catch (err) {
       const msg = err.name === "TypeError" && (err.message === "Failed to fetch" || err.message?.includes("fetch"))
         ? "Could not reach the server. Start the backend and try again."
@@ -276,6 +277,35 @@ function AddItem() {
       setSubmitLoading(false);
     }
   };
+
+  function renderDuplicateCards(items, ctaLabel) {
+    return (
+      <div className="additem-dup-grid">
+        {items.map((it) => (
+          <article key={it.id} className="additem-dup-card">
+            <div className="additem-dup-thumb-wrap">
+              {it.image_path ? (
+                <img src={apiUrl(it.image_path)} alt="" className="additem-dup-thumb" />
+              ) : (
+                <span className="additem-dup-thumb additem-dup-thumb--empty">No photo</span>
+              )}
+            </div>
+            <div className="additem-dup-meta">
+              <span className="additem-dup-type">{it.type}</span>
+              <span className="additem-dup-detail">{it.color} · {it.style}</span>
+            </div>
+            <button
+              type="button"
+              className="button-secondary additem-dup-use"
+              onClick={() => navigate(`/edit-item/${it.id}`)}
+            >
+              {ctaLabel}
+            </button>
+          </article>
+        ))}
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -322,15 +352,15 @@ function AddItem() {
             {isEdit || previewUrl ? (
               <div className="additem-preview-wrap">
                 <div className="additem-preview-box">
-                  {previewUrl ? (
-                    <img src={previewUrl} alt={isEdit ? "New photo preview" : "Preview"} className="additem-preview-img" />
-                  ) : existingServerImageUrl ? (
-                    <img src={existingServerImageUrl} alt="Saved wardrobe item" className="additem-preview-img" />
-                  ) : (
-                    <span className="additem-preview-placeholder">
-                      {isEdit ? "No photo on file yet. Choose a photo to add one." : "No image selected"}
-                    </span>
-                  )}
+                  {(() => {
+                    if (previewUrl) return <img src={previewUrl} alt={isEdit ? "New photo preview" : "Preview"} className="additem-preview-img" />;
+                    if (existingServerImageUrl) return <img src={existingServerImageUrl} alt="Saved wardrobe item" className="additem-preview-img" />;
+                    return (
+                      <span className="additem-preview-placeholder">
+                        {isEdit ? "No photo on file yet. Choose a photo to add one." : "No image selected"}
+                      </span>
+                    );
+                  })()}
                 </div>
                 {analyzing && !isEdit && (
                   <p className="additem-analyzing" aria-live="polite">Analyzing item…</p>
@@ -440,7 +470,7 @@ function AddItem() {
             </p>
           )}
           {duplicateWarn && !isEdit && (
-            <div className="additem-dup-panel" role="region" aria-label="Possible duplicate wardrobe items">
+            <section className="additem-dup-panel" aria-label="Possible duplicate wardrobe items">
               <h2 className="additem-dup-title">
                 {(duplicateWarn.duplicateLevel === "exact" || duplicateWarn.duplicateLevel === "both")
                   ? "Strong match: this photo is already saved in your wardrobe."
@@ -452,59 +482,13 @@ function AddItem() {
               {(duplicateWarn.exact?.length > 0) && (
                 <div className="additem-dup-group">
                   <h3 className="additem-dup-group-title">Same image</h3>
-                  <div className="additem-dup-grid">
-                    {duplicateWarn.exact.map((it) => (
-                      <article key={it.id} className="additem-dup-card">
-                        <div className="additem-dup-thumb-wrap">
-                          {it.image_path ? (
-                            <img src={apiUrl(it.image_path)} alt="" className="additem-dup-thumb" />
-                          ) : (
-                            <span className="additem-dup-thumb additem-dup-thumb--empty">No photo</span>
-                          )}
-                        </div>
-                        <div className="additem-dup-meta">
-                          <span className="additem-dup-type">{it.type}</span>
-                          <span className="additem-dup-detail">{it.color} · {it.style}</span>
-                        </div>
-                        <button
-                          type="button"
-                          className="button-secondary additem-dup-use"
-                          onClick={() => navigate(`/edit-item/${it.id}`)}
-                        >
-                          Use this item
-                        </button>
-                      </article>
-                    ))}
-                  </div>
+                  {renderDuplicateCards(duplicateWarn.exact, "Use this item")}
                 </div>
               )}
               {(duplicateWarn.similar?.length > 0) && (
                 <div className="additem-dup-group">
                   <h3 className="additem-dup-group-title">Very similar details</h3>
-                  <div className="additem-dup-grid">
-                    {duplicateWarn.similar.map((it) => (
-                      <article key={it.id} className="additem-dup-card">
-                        <div className="additem-dup-thumb-wrap">
-                          {it.image_path ? (
-                            <img src={apiUrl(it.image_path)} alt="" className="additem-dup-thumb" />
-                          ) : (
-                            <span className="additem-dup-thumb additem-dup-thumb--empty">No photo</span>
-                          )}
-                        </div>
-                        <div className="additem-dup-meta">
-                          <span className="additem-dup-type">{it.type}</span>
-                          <span className="additem-dup-detail">{it.color} · {it.style}</span>
-                        </div>
-                        <button
-                          type="button"
-                          className="button-secondary additem-dup-use"
-                          onClick={() => navigate(`/edit-item/${it.id}`)}
-                        >
-                          Open this item
-                        </button>
-                      </article>
-                    ))}
-                  </div>
+                  {renderDuplicateCards(duplicateWarn.similar, "Open this item")}
                 </div>
               )}
               <div className="additem-dup-actions">
@@ -524,7 +508,7 @@ function AddItem() {
                   {submitLoading ? "Saving…" : "Save anyway"}
                 </button>
               </div>
-            </div>
+            </section>
           )}
           {error && <p className="additem-inline-error additem-error-block" role="alert">{error}</p>}
           <div className="additem-actions">

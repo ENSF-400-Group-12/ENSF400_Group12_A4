@@ -1,6 +1,6 @@
 const express = require('express');
-const path = require('path');
-const fs = require('fs');
+const path = require('node:path');
+const fs = require('node:fs');
 const { getDb, persist } = require('../db/connection');
 const { requireAuth } = require('../middleware/requireAuth');
 const { upload, memoryUpload } = require('../config/upload');
@@ -76,6 +76,75 @@ function validateItemFields(type, color, season, style, notes) {
   if (style.length > MAX_LEN.style) return 'Style is too long.';
   if (notes.length > MAX_LEN.notes) return 'Notes are too long.';
   return null;
+}
+
+function parseDuplicateOverride(v) {
+  return v === '1' || v === 'true' || v === true;
+}
+
+function safeUnlink(absPath) {
+  try {
+    if (absPath && fs.existsSync(absPath)) fs.unlinkSync(absPath);
+    return true;
+  } catch (err) {
+    console.warn('[items] failed to remove file:', err.message);
+    return false;
+  }
+}
+
+function duplicateConflictPayload(exact, similar) {
+  const hasExact = exact.length > 0;
+  const duplicateLevel = hasExact ? (similar.length > 0 ? 'both' : 'exact') : 'similar';
+  const message = hasExact
+    ? 'This image matches an item already in your wardrobe.'
+    : 'You may already have a very similar item (same type, color, and style).';
+  return {
+    code: 'DUPLICATE_ITEM',
+    duplicateLevel,
+    message,
+    exact: exact.map(mapItemRow),
+    similar: similar.map(mapItemRow),
+  };
+}
+
+function itemInputFromRequest(req) {
+  const type = (req.body.type && req.body.type.trim()) || '';
+  const color = (req.body.color && req.body.color.trim()) || '';
+  const season = (req.body.season && req.body.season.trim()) || '';
+  const style = (req.body.style && req.body.style.trim()) || '';
+  const notes = req.body.notes != null ? String(req.body.notes).trim() : '';
+  return { type, color, season, style, notes };
+}
+
+function duplicateCheckWithoutImage(db, userId, fields) {
+  const { exact, similar } = findDuplicateRows(db, userId, null, fields.type, fields.color, fields.style);
+  if (similar.length === 0) return null;
+  return duplicateConflictPayload(exact, similar);
+}
+
+function duplicateCheckWithImage(db, userId, diskPath, fields) {
+  const contentHash = sha256FileBuffer(diskPath);
+  const { exact, similar } = findDuplicateRows(db, userId, contentHash, fields.type, fields.color, fields.style);
+  if (exact.length === 0 && similar.length === 0) return { contentHash, conflict: null };
+  return { contentHash, conflict: duplicateConflictPayload(exact, similar) };
+}
+
+function insertWardrobeItem(db, userId, fields, imagePath, garmentProfileJson, contentHash) {
+  db.run(
+    `INSERT INTO wardrobe_items (user_id, type, color, season, style, notes, image_path, garment_profile, content_hash)
+     VALUES ($uid, $type, $color, $season, $style, $notes, $path, $gp, $hash)`,
+    {
+      $uid: userId,
+      $type: fields.type,
+      $color: fields.color,
+      $season: fields.season,
+      $style: fields.style,
+      $notes: fields.notes,
+      $path: imagePath,
+      $gp: garmentProfileJson,
+      $hash: contentHash,
+    }
+  );
 }
 
 router.get('/', (req, res) => {
@@ -155,82 +224,44 @@ router.post('/', (req, res, next) => {
     next();
   });
 }, (req, res) => {
-  const type = (req.body.type && req.body.type.trim()) || '';
-  const color = (req.body.color && req.body.color.trim()) || '';
-  const season = (req.body.season && req.body.season.trim()) || '';
-  const style = (req.body.style && req.body.style.trim()) || '';
-  const notes = req.body.notes != null ? String(req.body.notes).trim() : '';
+  const fields = itemInputFromRequest(req);
   const garmentProfileJson = parseGarmentProfileFromBody(req.body);
   if (garmentProfileJson && garmentProfileJson.length > MAX_LEN.garmentProfileJson) {
     return res.status(400).json({ error: 'Garment profile data is too large.' });
   }
 
-  const validationError = validateItemFields(type, color, season, style, notes);
+  const validationError = validateItemFields(fields.type, fields.color, fields.season, fields.style, fields.notes);
   if (validationError) {
     return res.status(400).json({ error: validationError });
   }
 
-  const overrideDuplicate = req.body.duplicateOverride === '1'
-    || req.body.duplicateOverride === 'true'
-    || req.body.duplicateOverride === true;
+  const overrideDuplicate = parseDuplicateOverride(req.body.duplicateOverride);
 
   try {
     const db = getDb();
     const uploadsDir = getUploadsDir();
     let contentHash = null;
-    let image_path = req.file ? `/uploads/${req.file.filename}` : null;
+    const image_path = req.file ? `/uploads/${req.file.filename}` : null;
 
     if (req.file) {
       const diskPath = path.join(uploadsDir, req.file.filename);
       try {
-        contentHash = sha256FileBuffer(diskPath);
+        const result = duplicateCheckWithImage(db, req.session.userId, diskPath, fields);
+        contentHash = result.contentHash;
+        if (!overrideDuplicate && result.conflict) {
+          safeUnlink(diskPath);
+          return res.status(409).json(result.conflict);
+        }
       } catch (hashErr) {
-        try { fs.unlinkSync(diskPath); } catch (_) {}
+        safeUnlink(diskPath);
         return res.status(500).json({ error: 'Could not read the uploaded image. Try again.' });
       }
-      const { exact, similar } = findDuplicateRows(db, req.session.userId, contentHash, type, color, style);
-      if (!overrideDuplicate && (exact.length > 0 || similar.length > 0)) {
-        try { fs.unlinkSync(diskPath); } catch (_) {}
-        const duplicateLevel = exact.length > 0 ? (similar.length > 0 ? 'both' : 'exact') : 'similar';
-        const message = exact.length > 0
-          ? 'This image matches an item already in your wardrobe.'
-          : 'You may already have a very similar item (same type, color, and style).';
-        return res.status(409).json({
-          code: 'DUPLICATE_ITEM',
-          duplicateLevel,
-          message,
-          exact: exact.map(mapItemRow),
-          similar: similar.map(mapItemRow),
-        });
-      }
     } else if (!overrideDuplicate) {
-      const { exact: _e, similar } = findDuplicateRows(db, req.session.userId, null, type, color, style);
-      if (similar.length > 0) {
-        return res.status(409).json({
-          code: 'DUPLICATE_ITEM',
-          duplicateLevel: 'similar',
-          message: 'You may already have a very similar item (same type, color, and style).',
-          exact: [],
-          similar: similar.map(mapItemRow),
-        });
-      }
+      const conflict = duplicateCheckWithoutImage(db, req.session.userId, fields);
+      if (conflict) return res.status(409).json(conflict);
     }
 
-    db.run(
-      `INSERT INTO wardrobe_items (user_id, type, color, season, style, notes, image_path, garment_profile, content_hash)
-       VALUES ($uid, $type, $color, $season, $style, $notes, $path, $gp, $hash)`,
-      {
-        $uid: req.session.userId,
-        $type: type,
-        $color: color,
-        $season: season,
-        $style: style,
-        $notes: notes,
-        $path: image_path,
-        $gp: garmentProfileJson,
-        $hash: contentHash,
-      }
-    );
+    insertWardrobeItem(db, req.session.userId, fields, image_path, garmentProfileJson, contentHash);
     const idResult = db.exec('SELECT last_insert_rowid() as id');
     const id = (idResult && idResult[0] && idResult[0].values && idResult[0].values[0]) ? idResult[0].values[0][0] : null;
     if (id == null) {
@@ -349,7 +380,8 @@ router.post('/:id/image', (req, res, next) => {
     let newHash = null;
     try {
       newHash = sha256FileBuffer(diskNew);
-    } catch (_) {
+    } catch (hashErr) {
+      console.warn('[items] could not hash uploaded image:', hashErr.message);
       return res.status(500).json({ error: 'Could not read the uploaded image. Try again.' });
     }
     db.run(

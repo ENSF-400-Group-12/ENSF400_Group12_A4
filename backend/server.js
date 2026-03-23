@@ -58,6 +58,7 @@ app.use((req, res, next) => {
   if (req.is('multipart/form-data')) return next();
   express.json()(req, res, next);
 });
+app.use('/uploads', express.static(getUploadsDir()));
 app.use(cookieParser());
 app.use(session({
   secret: sessionSecret,
@@ -79,7 +80,6 @@ app.use('/api/auth', authRouter);
 app.use('/api/items', itemsRouter);
 app.use('/api/outfits', outfitsRouter);
 app.use('/api/demo', demoRouter);
-app.use('/uploads', express.static(getUploadsDir()));
 
 async function start() {
   try {
