@@ -156,7 +156,7 @@ function occasionVibeSpecificityNudge(item, occasion, vibe) {
 
   if (o === 'outdoor' && v === 'casual') {
     if (st.includes('casual') || st.includes('sport')) n += 6;
-    if (slot === 'shoes' && (type === 'boots' || sub === 'hiking_boots' || sub === 'sneakers')) n += 7;
+    if (slot === 'shoes' && (type === 'boots' || type === 'dress boots' || sub === 'hiking_boots' || sub === 'dress_boots' || sub === 'sneakers')) n += 7;
     if (slot === 'outerwear' || type === 'jacket' || type === 'coat') n += 5;
   }
 
@@ -216,7 +216,7 @@ function weatherItemBonus(item, weather) {
   if (coldLike || wetLike) {
     if (slot === 'outerwear' || type === 'jacket' || type === 'coat') b += 24;
     if (type === 'sweater' || type === 'hoodie') b += 12;
-    if (type === 'boots') b += 10;
+    if (type === 'boots' || type === 'dress boots') b += 10;
     if (type === 'sneakers') b += 4;
     if (type === 'sandals') b -= 22;
     if (type === 'shorts') b -= 18;
