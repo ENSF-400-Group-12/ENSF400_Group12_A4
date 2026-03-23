@@ -124,7 +124,7 @@ function Login() {
         </div>
       </div>
 
-      <div className="login-footer">ENSF 400 — Group 12 Project</div>
+      <div className="login-footer">ENSF 400 · Group 12 Project</div>
     </div>
   );
 }

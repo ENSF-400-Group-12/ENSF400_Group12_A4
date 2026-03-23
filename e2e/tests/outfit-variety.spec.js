@@ -2,7 +2,7 @@ const { test, expect } = require('@playwright/test');
 
 /**
  * Requires CI=1 (outfit rerank off) for stable local scoring.
- * Uses demo wardrobe — asserts different occasion+vibe pairs don't all collapse to one fingerprint.
+ * Uses demo wardrobe; asserts different occasion+vibe pairs don't all collapse to one fingerprint.
  */
 test.describe('F3 outfit variety (demo wardrobe)', () => {
   test('multiple occasion+vibe pairs yield distinct outfit fingerprints; clash rejects', async ({ page }) => {

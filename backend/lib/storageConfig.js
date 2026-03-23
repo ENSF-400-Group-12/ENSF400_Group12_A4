@@ -2,9 +2,9 @@
  * Central place for filesystem paths used by DB and uploads.
  * Override with env vars so a single deploy can point DB + uploads at persistent volumes.
  *
- * - CLOSETAI_DATA_DIR — directory for SQLite file (default: backend/data)
- * - CLOSETAI_DATABASE_PATH — full path to .db file (overrides data dir + app.db)
- * - CLOSETAI_UPLOAD_DIR — user image uploads (default: backend/uploads)
+ * - CLOSETAI_DATA_DIR: directory for SQLite file (default: backend/data)
+ * - CLOSETAI_DATABASE_PATH: full path to .db file (overrides data dir + app.db)
+ * - CLOSETAI_UPLOAD_DIR: user image uploads (default: backend/uploads)
  *
  * Paths are resolved from process.cwd() when relative.
  */

@@ -1,4 +1,4 @@
-// Form for generating outfit recommendations — occasion, vibe, and weather; wired to API
+// Form for generating outfit recommendations: occasion, vibe, and weather; wired to API
 
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
@@ -122,7 +122,7 @@ function GenerateOutfit() {
       <div className="generate-card">
         <h1 className="generate-title">Generate Outfit</h1>
         <p className="generate-subtext">
-          Two quick choices: <strong>where you’re going</strong>, then <strong>how you want to look</strong>. We’ll build from your wardrobe — usually a clean three-piece look; an extra layer only when it clearly helps.
+          Two quick choices: <strong>where you’re going</strong>, then <strong>how you want to look</strong>. We’ll build from your wardrobe: usually a clean three-piece look; an extra layer only when it clearly helps.
         </p>
 
         <form onSubmit={handleSubmit} noValidate className="generate-form-inner">
@@ -149,7 +149,7 @@ function GenerateOutfit() {
           <div className="generate-field generate-field--vibe">
             <span className="generate-label" id="generate-vibe-label">Aesthetic</span>
             <p className="generate-field-help" id="generate-vibe-help">
-              The mood and dress code you want — not the same as occasion (e.g. Work + Minimalist, or Weekend + Streetwear).
+              The mood and dress code you want: not the same as occasion (e.g. Work + Minimalist, or Weekend + Streetwear).
             </p>
             <div
               className="generate-chips"
