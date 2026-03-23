@@ -1,17 +1,13 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useState } from "react";
 import { authFetch } from "../config/api";
+import AuthShellCard from "../components/AuthShellCard";
+import { authFormNetworkErrorMessage } from "../lib/authFormNetworkError";
 
 function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    document.body.classList.add("signup-page-open");
-    return () => document.body.classList.remove("signup-page-open");
-  }, []);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -30,50 +26,34 @@ function ForgotPassword() {
         setError(data.error || "Could not request password reset.");
       }
     } catch (err) {
-      const isNetwork = err instanceof TypeError && err.message?.includes("fetch");
-      setError(isNetwork ? "Could not reach the server. Please try again." : "Something went wrong. Please try again.");
+      setError(authFormNetworkErrorMessage(err));
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="auth-theme signup-page">
-      <div className="auth-page-background" aria-hidden="true">
-        <img src="/closetpic.png" alt="" />
-      </div>
-      <div className="signup-card">
-        <div className="auth-logo-lockup">
-          <img src="/ClosetAI-logo-transparent.png" alt="" className="auth-logo-icon" />
-          <img src="/ClosetAI-transparent.png" alt="ClosetAI" className="auth-logo-wordmark" />
-        </div>
-        <h1>Forgot password</h1>
-        <p className="signup-subtext">
-          Enter your email and we will send a reset link if an account exists.
-        </p>
-        <form onSubmit={handleSubmit} className="signup-form" noValidate>
-          {error && <div className="form-error" role="alert">{error}</div>}
-          <input
-            type="email"
-            className="input-field"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            autoComplete="email"
-            disabled={loading}
-          />
-          <button type="submit" className="button-primary button-full" disabled={loading}>
-            {loading ? "Sending..." : "Send reset link"}
-          </button>
-        </form>
-        {status ? (
-          <output className="verify-note" aria-live="polite">{status}</output>
-        ) : null}
-        <p className="signup-text">
-          <Link to="/">Back to login</Link>
-        </p>
-      </div>
-    </div>
+    <AuthShellCard
+      title="Forgot password"
+      subtext="Enter your email and we will send a reset link if an account exists."
+      status={status}
+    >
+      <form onSubmit={handleSubmit} className="signup-form" noValidate>
+        {error ? <div className="form-error" role="alert">{error}</div> : null}
+        <input
+          type="email"
+          className="input-field"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          autoComplete="email"
+          disabled={loading}
+        />
+        <button type="submit" className="button-primary button-full" disabled={loading}>
+          {loading ? "Sending..." : "Send reset link"}
+        </button>
+      </form>
+    </AuthShellCard>
   );
 }
 

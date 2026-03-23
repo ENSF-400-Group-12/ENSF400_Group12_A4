@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { authFetch } from "../config/api";
+import AuthShellCard from "../components/AuthShellCard";
+import { authFormNetworkErrorMessage } from "../lib/authFormNetworkError";
 
 function ResetPassword() {
   const [searchParams] = useSearchParams();
@@ -10,11 +12,6 @@ function ResetPassword() {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    document.body.classList.add("signup-page-open");
-    return () => document.body.classList.remove("signup-page-open");
-  }, []);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -45,57 +42,39 @@ function ResetPassword() {
         setError(data.error || "Could not reset password.");
       }
     } catch (err) {
-      const isNetwork = err instanceof TypeError && err.message?.includes("fetch");
-      setError(isNetwork ? "Could not reach the server. Please try again." : "Something went wrong. Please try again.");
+      setError(authFormNetworkErrorMessage(err));
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="auth-theme signup-page">
-      <div className="auth-page-background" aria-hidden="true">
-        <img src="/closetpic.png" alt="" />
-      </div>
-      <div className="signup-card">
-        <div className="auth-logo-lockup">
-          <img src="/ClosetAI-logo-transparent.png" alt="" className="auth-logo-icon" />
-          <img src="/ClosetAI-transparent.png" alt="ClosetAI" className="auth-logo-wordmark" />
-        </div>
-        <h1>Reset password</h1>
-        <p className="signup-subtext">Set a new password for your account.</p>
-        <form onSubmit={handleSubmit} className="signup-form" noValidate>
-          {error && <div className="form-error" role="alert">{error}</div>}
-          <input
-            type="password"
-            className="input-field"
-            placeholder="New password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="new-password"
-            disabled={loading}
-          />
-          <input
-            type="password"
-            className="input-field"
-            placeholder="Confirm new password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            autoComplete="new-password"
-            disabled={loading}
-          />
-          <button type="submit" className="button-primary button-full" disabled={loading}>
-            {loading ? "Updating..." : "Reset password"}
-          </button>
-        </form>
-        {status ? (
-          <output className="verify-note" aria-live="polite">{status}</output>
-        ) : null}
-        <p className="signup-text">
-          <Link to="/">Back to login</Link>
-        </p>
-      </div>
-    </div>
+    <AuthShellCard title="Reset password" subtext="Set a new password for your account." status={status}>
+      <form onSubmit={handleSubmit} className="signup-form" noValidate>
+        {error ? <div className="form-error" role="alert">{error}</div> : null}
+        <input
+          type="password"
+          className="input-field"
+          placeholder="New password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          autoComplete="new-password"
+          disabled={loading}
+        />
+        <input
+          type="password"
+          className="input-field"
+          placeholder="Confirm new password"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          autoComplete="new-password"
+          disabled={loading}
+        />
+        <button type="submit" className="button-primary button-full" disabled={loading}>
+          {loading ? "Updating..." : "Reset password"}
+        </button>
+      </form>
+    </AuthShellCard>
   );
 }
 
