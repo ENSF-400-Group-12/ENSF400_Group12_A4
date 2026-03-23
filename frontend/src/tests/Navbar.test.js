@@ -35,7 +35,7 @@ describe("Navbar", () => {
     expect(screen.getByText(/^favorites$/i)).toBeInTheDocument();
     expect(screen.getByText(/profile/i)).toBeInTheDocument();
     expect(screen.getByText(/test@test.com/i)).toBeInTheDocument();
-    expect(screen.getByText(/logout/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /log\s*out/i })).toBeInTheDocument();
   });
 
   test("calls logout and navigates on logout click", async () => {
@@ -52,7 +52,7 @@ describe("Navbar", () => {
       </MemoryRouter>
     );
 
-    fireEvent.click(screen.getByText(/logout/i));
+    fireEvent.click(screen.getByRole("button", { name: /log\s*out/i }));
 
     expect(mockLogout).toHaveBeenCalled();
     await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith("/", { replace: true }));

@@ -4,6 +4,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
 import ClothingCard from "../components/ClothingCard";
+import ConfirmDialog from "../components/ConfirmDialog";
 import { authFetch, apiUrl } from "../config/api";
 
 const clothingTypes = [
@@ -35,6 +36,7 @@ function Dashboard() {
   const [filterColor, setFilterColor] = useState("");
   const [filterSeason, setFilterSeason] = useState("");
   const [filterStyle, setFilterStyle] = useState("");
+  const [deleteItemId, setDeleteItemId] = useState(null);
 
   const fetchItems = useCallback(async () => {
     const gen = ++fetchGenRef.current;
@@ -70,18 +72,20 @@ function Dashboard() {
     fetchItems();
   }, [fetchItems]);
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Delete this item?")) return;
+  const runDeleteItem = async () => {
+    if (deleteItemId == null) return;
+    const id = deleteItemId;
+    setDeleteItemId(null);
     try {
       const res = await authFetch(`/api/items/${id}`, { method: "DELETE" });
       if (res.ok) {
         await fetchItems();
       } else {
         const data = await res.json().catch(() => ({}));
-        alert(data.error || "Delete failed.");
+        window.alert(data.error || "Delete failed.");
       }
-    } catch (err) {
-      alert("Delete failed.");
+    } catch {
+      window.alert("Delete failed.");
     }
   };
 
@@ -124,6 +128,16 @@ function Dashboard() {
 
   return (
     <div className="dashboard-page">
+      <ConfirmDialog
+        open={deleteItemId != null}
+        title="Delete this item?"
+        message="It will be removed from your wardrobe. This cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        danger
+        onCancel={() => setDeleteItemId(null)}
+        onConfirm={runDeleteItem}
+      />
       <header className="dashboard-header">
         <div className="dashboard-header-top">
           <h1 className="dashboard-title">Your Wardrobe</h1>
@@ -202,7 +216,7 @@ function Dashboard() {
               key={item.id}
               item={item}
               imageUrl={item.image_path ? apiUrl(item.image_path) : null}
-              onDelete={handleDelete}
+              onDelete={(itemId) => setDeleteItemId(itemId)}
             />
           ))}
         </div>

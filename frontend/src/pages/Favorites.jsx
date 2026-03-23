@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import OutfitCard from "../components/OutfitCard";
+import ConfirmDialog from "../components/ConfirmDialog";
 import { authFetch } from "../config/api";
 
 function formatSavedAt(createdAt) {
@@ -21,6 +22,7 @@ function Favorites() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [removingId, setRemovingId] = useState(null);
+  const [removeConfirmId, setRemoveConfirmId] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -52,8 +54,10 @@ function Favorites() {
     load();
   }, [load]);
 
-  async function handleRemove(id) {
-    if (!window.confirm("Remove this outfit from favorites?")) return;
+  async function executeRemoveFavorite() {
+    if (removeConfirmId == null) return;
+    const id = removeConfirmId;
+    setRemoveConfirmId(null);
     setRemovingId(id);
     try {
       const res = await authFetch(`/api/outfits/favorites/${id}`, {
@@ -115,6 +119,16 @@ function Favorites() {
 
   return (
     <div className="favorites-page favorites-page--list">
+      <ConfirmDialog
+        open={removeConfirmId != null}
+        title="Remove saved outfit?"
+        message="This outfit will be removed from your favorites. You can save a new one anytime."
+        confirmLabel="Remove"
+        cancelLabel="Cancel"
+        danger
+        onCancel={() => setRemoveConfirmId(null)}
+        onConfirm={executeRemoveFavorite}
+      />
       <h1 className="favorites-title">Favorites</h1>
       <p className="favorites-intro">
         Outfits you saved from recommendations.{" "}
@@ -132,7 +146,7 @@ function Favorites() {
                 <button
                   type="button"
                   className="button-secondary favorites-remove"
-                  onClick={() => handleRemove(id)}
+                  onClick={() => setRemoveConfirmId(id)}
                   disabled={removingId === id}
                 >
                   {removingId === id ? "Removing…" : "Remove"}

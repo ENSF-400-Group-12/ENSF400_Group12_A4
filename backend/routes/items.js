@@ -7,6 +7,7 @@ const { upload, memoryUpload } = require('../config/upload');
 const { analyzeItemImage } = require('../services/imageAnalysis');
 const { getUploadsDir } = require('../lib/storageConfig');
 const { findDuplicateRows, sha256FileBuffer } = require('../lib/wardrobeDuplicate');
+const { normalizeItemImageBuffer } = require('../lib/normalizeItemImage');
 const {
   profileForApi,
   normalizeGarmentProfileInput,
@@ -129,6 +130,33 @@ function duplicateCheckWithImage(db, userId, diskPath, fields) {
   return { contentHash, conflict: duplicateConflictPayload(exact, similar) };
 }
 
+/**
+ * Transcode HEIC/HEIF on disk to JPEG so browsers and OpenAI can use the file.
+ */
+async function normalizeMulterDiskFile(file, uploadsDir) {
+  if (!file?.path) return;
+  let buf;
+  try {
+    buf = fs.readFileSync(file.path);
+  } catch (readErr) {
+    safeUnlink(file.path);
+    throw new Error('Could not read the uploaded image. Try again.');
+  }
+  const { buffer, mimeType } = await normalizeItemImageBuffer(buf, file.mimetype, file.originalname);
+  if (buffer === buf && mimeType === file.mimetype) {
+    return;
+  }
+  safeUnlink(file.path);
+  const stem = path.basename(file.filename, path.extname(file.filename));
+  const newFilename = `${stem}.jpg`;
+  const newPath = path.join(uploadsDir, newFilename);
+  fs.writeFileSync(newPath, buffer);
+  file.filename = newFilename;
+  file.path = newPath;
+  file.size = buffer.length;
+  file.mimetype = mimeType;
+}
+
 function insertWardrobeItem(db, userId, fields, imagePath, garmentProfileJson, contentHash) {
   db.run(
     `INSERT INTO wardrobe_items (user_id, type, color, season, style, notes, image_path, garment_profile, content_hash)
@@ -178,13 +206,23 @@ router.post('/analyze', (req, res, next) => {
     return res.status(400).json({ error: 'No image provided.' });
   }
   try {
-    const metadata = await analyzeItemImage(req.file.buffer, req.file.mimetype, req.file.originalname);
+    const { buffer, mimeType } = await normalizeItemImageBuffer(
+      req.file.buffer,
+      req.file.mimetype,
+      req.file.originalname
+    );
+    const metadata = await analyzeItemImage(buffer, mimeType, req.file.originalname);
     let suggestionSource = 'none';
     if (metadata.fromOpenAI) suggestionSource = 'ai';
     else if (metadata.fromFilename) suggestionSource = 'filename';
     const openaiConfigured = Boolean(process.env.OPENAI_API_KEY?.trim());
     res.json({ ...metadata, suggestionSource, openaiConfigured });
   } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes('Could not read this photo')) {
+      return res.status(400).json({ error: msg });
+    }
+    console.warn('[items/analyze]', msg);
     res.status(500).json({ error: 'Analysis failed. You can still add the item manually.' });
   }
 });
@@ -223,7 +261,7 @@ router.post('/', (req, res, next) => {
     }
     next();
   });
-}, (req, res) => {
+}, async (req, res) => {
   const fields = itemInputFromRequest(req);
   const garmentProfileJson = parseGarmentProfileFromBody(req.body);
   if (garmentProfileJson && garmentProfileJson.length > MAX_LEN.garmentProfileJson) {
@@ -241,6 +279,17 @@ router.post('/', (req, res, next) => {
     const db = getDb();
     const uploadsDir = getUploadsDir();
     let contentHash = null;
+
+    if (req.file) {
+      try {
+        await normalizeMulterDiskFile(req.file, uploadsDir);
+      } catch (normErr) {
+        const msg = normErr instanceof Error ? normErr.message : 'Could not process image.';
+        if (req.file.path) safeUnlink(req.file.path);
+        return res.status(400).json({ error: msg });
+      }
+    }
+
     const image_path = req.file ? `/uploads/${req.file.filename}` : null;
 
     if (req.file) {
@@ -350,7 +399,7 @@ router.post('/:id/image', (req, res, next) => {
     }
     next();
   });
-}, (req, res) => {
+}, async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (Number.isNaN(id)) {
     return res.status(400).json({ error: 'Invalid item id.' });
@@ -370,6 +419,14 @@ router.post('/:id/image', (req, res, next) => {
     }
 
     const uploadsDir = getUploadsDir();
+    try {
+      await normalizeMulterDiskFile(req.file, uploadsDir);
+    } catch (normErr) {
+      const msg = normErr instanceof Error ? normErr.message : 'Could not process image.';
+      if (req.file.path) safeUnlink(req.file.path);
+      return res.status(400).json({ error: msg });
+    }
+
     if (row.image_path) {
       const oldPath = path.join(uploadsDir, path.basename(row.image_path));
       if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);

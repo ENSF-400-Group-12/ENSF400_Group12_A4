@@ -5,7 +5,17 @@ const { getUploadsDir, ensureDir } = require('../lib/storageConfig');
 const uploadsDir = getUploadsDir();
 ensureDir(uploadsDir);
 
-const ALLOWED_MIMES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+/** iPhone often uses HEIC/HEIF; some clients send octet-stream with .heic extension. */
+const ALLOWED_MIMES = [
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'image/heic',
+  'image/heif',
+];
+
+const ALLOWED_EXT = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp', '.heic', '.heif']);
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, uploadsDir),
@@ -20,22 +30,35 @@ const storage = multer.diskStorage({
 const fileFilter = (req, file, cb) => {
   if (ALLOWED_MIMES.includes(file.mimetype)) {
     cb(null, true);
-  } else {
-    cb(new Error('Only image files (JPEG, PNG, GIF, WebP) are allowed.'), false);
+    return;
   }
+  const ext = path.extname(file.originalname || '').toLowerCase();
+  if (ALLOWED_EXT.has(ext)) {
+    cb(null, true);
+    return;
+  }
+  cb(
+    new Error(
+      'Only image files are allowed (JPEG, PNG, GIF, WebP, or iPhone HEIC/HEIF).'
+    ),
+    false
+  );
 };
+
+/** ~18MB: iPhone photos can exceed 5MB before server-side downscale. */
+const maxFileSize = 18 * 1024 * 1024;
 
 const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: maxFileSize },
 });
 
 const memoryStorage = multer.memoryStorage();
 const memoryUpload = multer({
   storage: memoryStorage,
   fileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: maxFileSize },
 });
 
 module.exports = { upload, memoryUpload, ALLOWED_MIMES };
