@@ -641,7 +641,7 @@ body.signup-page-open {
 
 }
 
-/* Dashboard — aligned with auth branding */
+/* Dashboard: aligned with auth branding */
 .dashboard-page {
   padding: 24px 16px 40px;
   max-width: 1200px;
@@ -1159,7 +1159,7 @@ body.signup-page-open {
   font-weight: 500;
 }
 
-/* Results page — outfit recommendation display */
+/* Results page: outfit recommendation display */
 .results-page {
   max-width: 640px;
   margin: 0 auto;
@@ -1388,7 +1388,7 @@ body.signup-page-open {
   border: 1px solid rgba(139, 94, 60, 0.12);
 }
 
-/* Add Item Page — photo-first, premium */
+/* Add Item Page: photo-first, premium */
 .additem-page {
   display: flex;
   justify-content: center;
@@ -1546,6 +1546,109 @@ body.signup-page-open {
 
 .additem-change-photo:hover {
   background: #f5f2ef;
+}
+
+.additem-dup-panel {
+  padding: 16px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(139, 94, 60, 0.25);
+  background: rgba(139, 94, 60, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.additem-dup-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--auth-text, #2a2a2a);
+}
+
+.additem-dup-lead {
+  font-size: 0.875rem;
+  color: var(--auth-text-muted, #6a5a4a);
+  margin: 0;
+  line-height: 1.45;
+}
+
+.additem-dup-group-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--auth-text-muted, #6a5a4a);
+  margin: 0 0 8px;
+}
+
+.additem-dup-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.additem-dup-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 10px;
+  background: var(--auth-bg-card, #fff);
+  border: 1px solid var(--auth-border, rgba(0,0,0,0.08));
+}
+
+.additem-dup-thumb-wrap {
+  border-radius: 8px;
+  overflow: hidden;
+  aspect-ratio: 1;
+  background: #f2ebe5;
+}
+
+.additem-dup-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.additem-dup-thumb--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  color: #9a8a7a;
+  padding: 8px;
+  text-align: center;
+}
+
+.additem-dup-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.8125rem;
+}
+
+.additem-dup-type {
+  font-weight: 600;
+  color: var(--auth-text, #2a2a2a);
+}
+
+.additem-dup-detail {
+  color: var(--auth-text-muted, #6a5a4a);
+}
+
+.additem-dup-use {
+  width: 100%;
+  margin-top: auto;
+  font-size: 0.8125rem;
+}
+
+.additem-dup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 4px;
 }
 
 .additem-analyzing {
@@ -1950,7 +2053,7 @@ body.signup-page-open {
 
 }
 
-/* Favorites — saved outfits list */
+/* Favorites: saved outfits list */
 
 .favorites-page--list {
   display: block;

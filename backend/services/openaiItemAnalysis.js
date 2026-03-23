@@ -70,7 +70,7 @@ confidence:
 - "high" ONLY if garment type and main color are clearly visible (single item, reasonably sharp).
 - "low" if: blurry/dark photo, multiple competing items, face-only, not clothing, packaging, or you would be guessing.
 
-When confidence is "low", still output valid enums for ALL fields. For core fields use placeholders: type "T-Shirt", color "Black", season "All Season", style "Casual". For rich fields use "${UNSPECIFIED}" only — the server discards low-confidence rows.
+When confidence is "low", still output valid enums for ALL fields. For core fields use placeholders: type "T-Shirt", color "Black", season "All Season", style "Casual". For rich fields use "${UNSPECIFIED}" only; the server discards low-confidence rows.
 
 When confidence is "high":
 - Distinguish: blazer vs denim jacket vs hoodie vs button-up vs tee; dress shoes vs sneakers vs boots; dress pants vs jeans vs joggers.
@@ -80,7 +80,7 @@ When confidence is "high":
 - formality: match visible construction (suiting/blazer/dress shoes → higher; jersey/tee/sneakers → lower).
 - materialVibe / patternOrTexture / silhouette / warmth / versatility: best guess from the photo; use "${UNSPECIFIED}" if not visible.
 - Never use lazy generic core combos (e.g. Shirt+Blue+All Season+Casual) unless the photo is clearly that.
-- Footwear must be Shoes, Boots, Sneakers, or Sandals — never Shirt/T-Shirt for shoes.`;
+- Footwear must be Shoes, Boots, Sneakers, or Sandals, never Shirt/T-Shirt for shoes.`;
 
 /**
  * @returns {Promise<object>} full parsed fields including confidence

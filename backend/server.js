@@ -6,6 +6,8 @@ const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const session = require('express-session');
+const { getUploadsDir } = require('./lib/storageConfig');
+const { resolveSessionSecret, sessionCookieSecure, trustProxyEnabled } = require('./lib/sessionConfig');
 const authRouter = require('./routes/auth');
 const itemsRouter = require('./routes/items');
 const outfitsRouter = require('./routes/outfits');
@@ -14,6 +16,19 @@ const { initDb } = require('./db/connection');
 
 const app = express();
 const port = process.env.PORT || 8080;
+
+let sessionSecret;
+try {
+  sessionSecret = resolveSessionSecret();
+} catch (err) {
+  console.error('[fatal]', err.message);
+  process.exit(1);
+}
+
+if (trustProxyEnabled()) {
+  app.set('trust proxy', 1);
+}
+
 logEnvBootstrap(port);
 
 const defaultOrigins = [
@@ -43,15 +58,17 @@ app.use((req, res, next) => {
   if (req.is('multipart/form-data')) return next();
   express.json()(req, res, next);
 });
+app.use('/uploads', express.static(getUploadsDir()));
 app.use(cookieParser());
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'closetai-dev-secret-change-in-production',
+  secret: sessionSecret,
   resave: false,
   saveUninitialized: false,
   cookie: {
     httpOnly: true,
     maxAge: 7 * 24 * 60 * 60 * 1000,
     sameSite: 'lax',
+    secure: sessionCookieSecure(),
   },
 }));
 
@@ -63,7 +80,6 @@ app.use('/api/auth', authRouter);
 app.use('/api/items', itemsRouter);
 app.use('/api/outfits', outfitsRouter);
 app.use('/api/demo', demoRouter);
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 async function start() {
   try {

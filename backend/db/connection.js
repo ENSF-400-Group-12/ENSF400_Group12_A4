@@ -1,8 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-
-const dataDir = path.join(__dirname, '..', 'data');
-const dbPath = path.join(dataDir, 'app.db');
+const { getDataDir, getDbPath, ensureDir } = require('../lib/storageConfig');
 
 let db = null;
 let SQL = null;
@@ -36,6 +34,22 @@ function ensureWardrobeSchema(database) {
   `);
   database.run(`CREATE INDEX IF NOT EXISTS idx_wardrobe_items_user_id ON wardrobe_items(user_id)`);
   ensureGarmentProfileColumn(database);
+  ensureContentHashColumn(database);
+}
+
+function ensureContentHashColumn(database) {
+  try {
+    const info = database.exec('PRAGMA table_info(wardrobe_items)');
+    if (!info.length || !info[0].values.length) return;
+    const nameIdx = info[0].columns.indexOf('name');
+    if (nameIdx < 0) return;
+    const hasHash = info[0].values.some((row) => row[nameIdx] === 'content_hash');
+    if (!hasHash) {
+      database.run('ALTER TABLE wardrobe_items ADD COLUMN content_hash TEXT');
+    }
+  } catch (err) {
+    console.warn('[db] content_hash migration:', err.message);
+  }
 }
 
 function ensureGarmentProfileColumn(database) {
@@ -68,9 +82,8 @@ function ensureFavoriteOutfitsSchema(database) {
 
 function persist() {
   if (!db) return;
-  if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
-  }
+  const dbPath = getDbPath();
+  ensureDir(path.dirname(dbPath));
   const data = db.export();
   const buffer = Buffer.from(data);
   fs.writeFileSync(dbPath, buffer);
@@ -78,6 +91,8 @@ function persist() {
 
 async function initDb() {
   if (db) return db;
+  const dbPath = getDbPath();
+  ensureDir(path.dirname(dbPath));
   const initSqlJs = require('sql.js');
   SQL = await initSqlJs();
   if (fs.existsSync(dbPath)) {
@@ -88,9 +103,6 @@ async function initDb() {
     ensureFavoriteOutfitsSchema(db);
     persist();
   } else {
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
-    }
     db = new SQL.Database();
     initSchema(db);
     ensureWardrobeSchema(db);

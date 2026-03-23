@@ -17,7 +17,7 @@ const FOOTWEAR_IN_NAME =
   /\b(sneaker|trainers?|runners?|jays|jordan|adidas|boots?|loafers?|oxfords?|sandal|slides?|yeezy|campus|footwear|shoes|shoe)\b/i;
 const HOODIE_IN_NAME = /\b(hoodie|hoody|sweatshirt|pullover|zip[\s_-]?up)\b/i;
 
-/** Model sometimes returns "high" with a lazy default combo — treat as unusable. */
+/** Model sometimes returns "high" with a lazy default combo: treat as unusable. */
 function isSuspiciousLazyCombo(normalized) {
   const { type, color, season, style } = normalized;
   if (type === 'Shirt' && color === 'Blue' && season === 'All Season' && style === 'Casual') return true;
