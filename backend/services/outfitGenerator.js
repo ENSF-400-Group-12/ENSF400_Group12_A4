@@ -260,7 +260,7 @@ function scoreItemRich(item, occasion, vibe, weather = '') {
     s += 22;
   }
 
-  /* Formal blazer as mid-layer is usually wrong for relaxed / street contexts — avoid dominating candidates */
+  /* Formal blazer as mid-layer is usually wrong for relaxed / street contexts: avoid dominating candidates */
   if (item.slot === 'mid' && (sub === 'blazer' || item.type === 'Blazer') && casual && !pol) {
     const v = vib;
     if (v === 'streetwear' || v === 'sporty') {
@@ -306,10 +306,10 @@ function buildExplanation(selected, occasion, vibe, outerwearAdded, compare, wea
   const list = parts.join(' · ');
   const occ = (occasion || '').trim() || 'this look';
   const vb = (vibe || '').trim() || 'versatile';
-  let msg = `${list}. Picked for ${occ} with a ${vb.toLowerCase()} read — cohesion and formality line up without over-styling.`;
+  let msg = `${list}. Picked for ${occ} with a ${vb.toLowerCase()} read: cohesion and formality line up without over-styling.`;
   if (selected.mid && isMidBlazer(selected.mid) && selected.top) {
     const base = formatItemLabel(selected.top);
-    msg += ` The blazer is layered over ${base.replace(/\s*\([^)]*\)\s*$/, '')} as the visible base — not worn as a stand-alone shirt.`;
+    msg += ` The blazer is layered over ${base.replace(/\s*\([^)]*\)\s*$/, '')} as the visible base, not worn as a stand-alone shirt.`;
   }
   if (outerwearAdded && selected.outerwear) {
     msg += ` Added ${formatItemLabel(selected.outerwear)} only because it sharpens the outfit.`;
@@ -343,10 +343,19 @@ function selectedKey(selected) {
     .join('-');
 }
 
-function topShoeKey(selected) {
-  const t = selected.top?.id ?? 'n';
-  const sh = selected.shoes?.id ?? 'n';
-  return `${t}-${sh}`;
+/** Groups near-duplicate wardrobe rows (same slot, type, color, style, subtype) so duplicates do not inflate diversity. */
+function wardrobeStyleSignature(item) {
+  if (!item) return 'x';
+  const slot = item.slot || 'u';
+  const t = String(item.type || '').trim().toLowerCase();
+  const c = String(item.color || '').trim().toLowerCase();
+  const st = String(item.style || '').trim().toLowerCase();
+  const sub = String(item.profile?.subtype || '').trim().toLowerCase();
+  return `${slot}|${t}|${c}|${st}|${sub}`;
+}
+
+function topShoeSignatureKey(selected) {
+  return `${wardrobeStyleSignature(selected.top)}__${wardrobeStyleSignature(selected.shoes)}`;
 }
 
 /**
@@ -366,21 +375,21 @@ function selectDiverseCandidates(sortedRaw, max) {
       if (usedOutfitKey.has(k)) continue;
       if (!passFn(c)) continue;
       usedOutfitKey.add(k);
-      usedTopShoe.add(topShoeKey(c.selected));
-      if (c.selected.top?.id != null) usedTop.add(c.selected.top.id);
-      if (c.selected.shoes?.id != null) usedShoe.add(c.selected.shoes.id);
+      usedTopShoe.add(topShoeSignatureKey(c.selected));
+      if (c.selected.top) usedTop.add(wardrobeStyleSignature(c.selected.top));
+      if (c.selected.shoes) usedShoe.add(wardrobeStyleSignature(c.selected.shoes));
       result.push(c);
     }
   }
 
-  take((c) => !usedTopShoe.has(topShoeKey(c.selected)));
+  take((c) => !usedTopShoe.has(topShoeSignatureKey(c.selected)));
   take((c) => {
-    const tid = c.selected.top?.id;
-    return tid != null && !usedTop.has(tid);
+    const sig = wardrobeStyleSignature(c.selected.top);
+    return c.selected.top && !usedTop.has(sig);
   });
   take((c) => {
-    const sid = c.selected.shoes?.id;
-    return sid != null && !usedShoe.has(sid);
+    const sig = wardrobeStyleSignature(c.selected.shoes);
+    return c.selected.shoes && !usedShoe.has(sig);
   });
   take(() => true);
 
@@ -405,7 +414,7 @@ function bottomAllowedForLook(bottom, occasion, vibe) {
   return true;
 }
 
-/** Hoodie-like base (type or analyzed subtype) — not worn under a blazer in polished looks */
+/** Hoodie-like base (type or analyzed subtype): not worn under a blazer in polished looks */
 function topActsAsHoodie(top) {
   if (!top) return false;
   if (top.type === 'Hoodie') return true;
@@ -427,7 +436,7 @@ function strictBlazerUnderlayerRequired(occasion, vibe) {
 }
 
 /**
- * When a blazer is the mid layer, the true "shirt" is the base top — never treat the blazer as the only top in polished contexts.
+ * When a blazer is the mid layer, the true "shirt" is the base top. Never treat the blazer as the only top in polished contexts.
  * @param {boolean} pol - polishedContext
  */
 function blazerBaseTopAllowed(top, occasion, vibe, pol) {
@@ -539,15 +548,20 @@ function pickWithVariety(candidates, userId, occasion, vibe, weather = '') {
   if (band.length <= 1) return band[0];
 
   const topFreq = {};
+  const shoeFreq = {};
   for (const c of band) {
-    const id = c.selected.top?.id ?? 'x';
-    topFreq[id] = (topFreq[id] || 0) + 1;
+    const tk = wardrobeStyleSignature(c.selected.top);
+    const sk = wardrobeStyleSignature(c.selected.shoes);
+    topFreq[tk] = (topFreq[tk] || 0) + 1;
+    shoeFreq[sk] = (shoeFreq[sk] || 0) + 1;
   }
 
   const scored = band.map((c) => {
-    const id = c.selected.top?.id ?? 'x';
-    const freq = topFreq[id] || 1;
-    const softPen = TOP_REPEAT_SOFT_PENALTY * Math.max(0, freq - 1);
+    const tk = wardrobeStyleSignature(c.selected.top);
+    const sk = wardrobeStyleSignature(c.selected.shoes);
+    const tf = topFreq[tk] || 1;
+    const sf = shoeFreq[sk] || 1;
+    const softPen = TOP_REPEAT_SOFT_PENALTY * (Math.max(0, tf - 1) + Math.max(0, sf - 1));
     return { c, adj: c.localScore - softPen };
   });
   scored.sort((a, b) => b.adj - a.adj);
@@ -660,7 +674,7 @@ function rejectHint(occasion, vibe, candidates) {
   if (pol) {
     const hasBlazer = candidates?.some((c) => c?.selected?.mid && isMidBlazer(c.selected.mid));
     if (hasBlazer) {
-      return 'If you use a blazer, add a button-up, polo, knit, or clean tee to wear underneath — plus tailored pants and dress shoes or loafers.';
+      return 'If you use a blazer, add a button-up, polo, knit, or clean tee to wear underneath, plus tailored pants and dress shoes or loafers.';
     }
     return 'Try adding a neutral button-up or Oxford shirt (to layer under a blazer if you have one), tailored trousers or chinos, and leather dress shoes or loafers.';
   }
@@ -763,7 +777,7 @@ async function generateOutfit(userId, occasion, vibe, weather = 'Cloudy') {
   } else if (!explanation.trim()) {
     explanation = buildExplanation(selected, occasion, vibe, owResult.added, null, weather);
   } else if (owResult.added && selected.outerwear) {
-    explanation = `${explanation.trim()} Added ${formatItemLabel(selected.outerwear)} as outerwear — only because it improves the look.`;
+    explanation = `${explanation.trim()} Added ${formatItemLabel(selected.outerwear)} as outerwear, only because it improves the look.`;
   }
 
   const outfitItems = [selected.top, selected.mid, selected.bottom, selected.shoes, selected.outerwear].filter(Boolean);
