@@ -30,11 +30,9 @@ async function sendMail(message) {
     return { delivered: true, mode };
   }
 
-  // Development-safe fallback: log instead of sending.
+  // Development-safe fallback: log without recipient/subject/body (avoids log injection / S5145).
   // eslint-disable-next-line no-console
-  console.log('[mailer:log] to=%s subject=%s', message.to, message.subject);
-  // eslint-disable-next-line no-console
-  console.log('[mailer:log] text=%s', message.text || '');
+  console.log('[mailer:log] mode=log email queued (contents omitted)');
   return { delivered: false, mode };
 }
 

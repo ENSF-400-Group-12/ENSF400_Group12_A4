@@ -119,8 +119,8 @@ async function issueResetTokenAndSend(db, userId, email) {
 }
 
 router.post('/signup', signupLimiter, (req, res) => {
-  const { email, password } = req.body || {};
-  const emailTrimmed = email && typeof email === 'string' ? email.trim().toLowerCase() : '';
+  const { email, password } = req.body ?? {};
+  const emailTrimmed = typeof email === 'string' ? email.trim().toLowerCase() : '';
 
   if (!validateEmail(emailTrimmed)) {
     return res.status(400).json({ error: 'Valid email required (at least 3 characters).' });
@@ -147,8 +147,9 @@ router.post('/signup', signupLimiter, (req, res) => {
 
     issueVerificationTokenAndSend(db, userId, emailTrimmed)
       .catch((err) => {
+        const msg = err instanceof Error ? err.message : String(err);
         // eslint-disable-next-line no-console
-        console.warn('[auth] verification email send failed:', err.message);
+        console.warn('[auth] verification email send failed:', msg);
       });
 
     req.session.userId = userId;
@@ -165,13 +166,16 @@ router.post('/signup', signupLimiter, (req, res) => {
       message: 'Account created. Check your email for a verification link.',
     });
   } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    // eslint-disable-next-line no-console
+    console.error('[auth] signup error:', msg);
     res.status(500).json({ error: 'Signup failed. Please try again.' });
   }
 });
 
 router.post('/login', loginLimiter, (req, res) => {
-  const { email, password } = req.body || {};
-  const emailTrimmed = email && typeof email === 'string' ? email.trim().toLowerCase() : '';
+  const { email, password } = req.body ?? {};
+  const emailTrimmed = typeof email === 'string' ? email.trim().toLowerCase() : '';
 
   if (!emailTrimmed || !password) {
     return res.status(400).json({ error: 'Email and password required.' });
@@ -197,6 +201,9 @@ router.post('/login', loginLimiter, (req, res) => {
       verificationRequired: !row.email_verified_at,
     });
   } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    // eslint-disable-next-line no-console
+    console.error('[auth] login error:', msg);
     res.status(500).json({ error: 'Login failed. Please try again.' });
   }
 });
@@ -212,7 +219,7 @@ router.post('/logout', (req, res) => {
 });
 
 router.get('/me', (req, res) => {
-  if (!req.session || !req.session.userId) {
+  if (!req.session?.userId) {
     return res.json({ user: null });
   }
   try {
@@ -224,7 +231,10 @@ router.get('/me', (req, res) => {
     );
     if (!row) return res.json({ user: null });
     return res.json({ user: mapUser(row) });
-  } catch (_) {
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    // eslint-disable-next-line no-console
+    console.error('[auth] /me error:', msg);
     return res.json({
       user: {
         id: req.session.userId,
@@ -237,7 +247,7 @@ router.get('/me', (req, res) => {
 });
 
 router.post('/resend-verification', resendLimiter, async (req, res) => {
-  if (!req.session || !req.session.userId) {
+  if (!req.session?.userId) {
     return res.status(401).json({ error: 'Not authenticated.' });
   }
   try {
@@ -263,12 +273,15 @@ router.post('/resend-verification', resendLimiter, async (req, res) => {
     persist();
     return res.json({ ok: true, message: 'Verification email sent.' });
   } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    // eslint-disable-next-line no-console
+    console.error('[auth] resend-verification error:', msg);
     return res.status(500).json({ error: 'Could not send verification email. Please try again.' });
   }
 });
 
 router.post('/verify-email', (req, res) => {
-  const rawToken = String((req.body && req.body.token) || '').trim();
+  const rawToken = String(req.body?.token || '').trim();
   if (!rawToken) return res.status(400).json({ error: 'Verification token is required.' });
   try {
     const db = getDb();
@@ -310,6 +323,9 @@ router.post('/verify-email', (req, res) => {
       user: mapUser({ ...row, email_verified_at: now }),
     });
   } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    // eslint-disable-next-line no-console
+    console.error('[auth] verify-email error:', msg);
     return res.status(500).json({ error: 'Could not verify email. Please try again.' });
   }
 });
@@ -319,7 +335,7 @@ router.post('/forgot-password', forgotLimiter, async (req, res) => {
     ok: true,
     message: 'If an account exists for that email, a reset link has been sent.',
   };
-  const emailRaw = req.body && typeof req.body.email === 'string' ? req.body.email : '';
+  const emailRaw = typeof req.body?.email === 'string' ? req.body.email : '';
   const emailTrimmed = emailRaw.trim().toLowerCase();
   if (!validateEmail(emailTrimmed)) return res.json(genericResponse);
   try {
@@ -334,14 +350,17 @@ router.post('/forgot-password', forgotLimiter, async (req, res) => {
     persist();
     return res.json(genericResponse);
   } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    // eslint-disable-next-line no-console
+    console.error('[auth] forgot-password error:', msg);
     // Same response to avoid account enumeration signal.
     return res.json(genericResponse);
   }
 });
 
 router.post('/reset-password', resetLimiter, (req, res) => {
-  const rawToken = String((req.body && req.body.token) || '').trim();
-  const newPassword = String((req.body && req.body.password) || '');
+  const rawToken = String(req.body?.token || '').trim();
+  const newPassword = String(req.body?.password || '');
   if (!rawToken) return res.status(400).json({ error: 'Reset token is required.' });
   if (!validatePassword(newPassword)) {
     return res.status(400).json({ error: 'Password must be at least 6 characters.' });
@@ -357,7 +376,7 @@ router.post('/reset-password', resetLimiter, (req, res) => {
       { $hash: tokenHash }
     );
     if (!row || isExpired(row.reset_expires_at)) {
-      if (row && row.id) {
+      if (row?.id) {
         db.run(
           'UPDATE users SET reset_token_hash = NULL, reset_expires_at = NULL WHERE id = $id',
           { $id: row.id }
@@ -378,6 +397,9 @@ router.post('/reset-password', resetLimiter, (req, res) => {
     persist();
     return res.json({ ok: true, message: 'Password reset successful. Please log in.' });
   } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    // eslint-disable-next-line no-console
+    console.error('[auth] reset-password error:', msg);
     return res.status(500).json({ error: 'Could not reset password. Please try again.' });
   }
 });

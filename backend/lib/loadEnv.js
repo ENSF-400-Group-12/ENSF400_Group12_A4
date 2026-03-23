@@ -94,7 +94,10 @@ function readCommitForLog() {
 function logEnvBootstrap(port, runtime = {}) {
   const keyOk = Boolean(process.env.OPENAI_API_KEY && String(process.env.OPENAI_API_KEY).trim());
   const gitShort = readCommitForLog();
-  const nodeEnv = runtime.nodeEnv != null ? runtime.nodeEnv : (process.env.NODE_ENV || 'development');
+  let nodeEnv = process.env.NODE_ENV || 'development';
+  if (runtime.nodeEnv !== undefined && runtime.nodeEnv !== null) {
+    nodeEnv = runtime.nodeEnv;
+  }
   console.log('[boot] ClosetAI backend git=%s NODE_ENV=%s PORT=%s', gitShort, nodeEnv, port);
   if (runtime.listenHost != null) {
     console.log('[boot] listen host=%s (set LISTEN_HOST to override)', runtime.listenHost);

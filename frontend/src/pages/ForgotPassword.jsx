@@ -24,13 +24,14 @@ function ForgotPassword() {
         body: JSON.stringify({ email: email.trim() }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setError(data.error || "Could not request password reset.");
-      } else {
+      if (res.ok) {
         setStatus(data.message || "If an account exists for that email, a reset link has been sent.");
+      } else {
+        setError(data.error || "Could not request password reset.");
       }
     } catch (err) {
-      setError("Could not reach the server. Please try again.");
+      const isNetwork = err instanceof TypeError && err.message?.includes("fetch");
+      setError(isNetwork ? "Could not reach the server. Please try again." : "Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -65,7 +66,9 @@ function ForgotPassword() {
             {loading ? "Sending..." : "Send reset link"}
           </button>
         </form>
-        {status && <p className="verify-note" role="status">{status}</p>}
+        {status ? (
+          <output className="verify-note" aria-live="polite">{status}</output>
+        ) : null}
         <p className="signup-text">
           <Link to="/">Back to login</Link>
         </p>

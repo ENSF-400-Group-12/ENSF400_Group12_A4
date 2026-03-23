@@ -91,6 +91,13 @@ function VerifyEmail() {
     navigate("/", { replace: true });
   }
 
+  let resendButtonLabel = "Resend verification email";
+  if (resendSecondsLeft > 0) {
+    resendButtonLabel = `Resend in ${resendSecondsLeft}s`;
+  } else if (busy) {
+    resendButtonLabel = "Sending...";
+  }
+
   return (
     <div className="verify-card-wrap">
       <div className="verify-card">
@@ -105,17 +112,21 @@ function VerifyEmail() {
             disabled={busy || resendSecondsLeft > 0}
             onClick={handleResend}
           >
-            {resendSecondsLeft > 0 ? `Resend in ${resendSecondsLeft}s` : (busy ? "Sending..." : "Resend verification email")}
+            {resendButtonLabel}
           </button>
         )}
-        {status && <p className="verify-note" role="status">{status}</p>}
-        {error && <p className="form-error" role="alert">{error}</p>}
+        {status ? (
+          <output className="verify-note" aria-live="polite">{status}</output>
+        ) : null}
+        {error ? <p className="form-error" role="alert">{error}</p> : null}
         <p className="verify-sub-actions">
-          Wrong email? <Link to="/profile">Check your account</Link> or{" "}
+          <span>Wrong email? </span>
+          <Link to="/profile">Check your account</Link>
+          <span> or </span>
           <button type="button" className="verify-link-btn" onClick={handleLogout}>
             log out
           </button>
-          .
+          <span>.</span>
         </p>
       </div>
     </div>

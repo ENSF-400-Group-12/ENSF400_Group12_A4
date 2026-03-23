@@ -39,13 +39,14 @@ function ResetPassword() {
         body: JSON.stringify({ token, password }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setError(data.error || "Could not reset password.");
-      } else {
+      if (res.ok) {
         setStatus(data.message || "Password reset successful. Please log in.");
+      } else {
+        setError(data.error || "Could not reset password.");
       }
-    } catch (_) {
-      setError("Could not reach the server. Please try again.");
+    } catch (err) {
+      const isNetwork = err instanceof TypeError && err.message?.includes("fetch");
+      setError(isNetwork ? "Could not reach the server. Please try again." : "Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -87,7 +88,9 @@ function ResetPassword() {
             {loading ? "Updating..." : "Reset password"}
           </button>
         </form>
-        {status && <p className="verify-note" role="status">{status}</p>}
+        {status ? (
+          <output className="verify-note" aria-live="polite">{status}</output>
+        ) : null}
         <p className="signup-text">
           <Link to="/">Back to login</Link>
         </p>

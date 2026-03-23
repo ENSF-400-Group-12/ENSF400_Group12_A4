@@ -699,13 +699,13 @@ body.signup-page-open {
 }
 
 .nav-user-badge--verified {
-  background: rgba(54, 179, 126, 0.2);
-  color: #dff5eb;
+  background: rgba(54, 179, 126, 0.45);
+  color: #f4fffa;
 }
 
 .nav-user-badge--unverified {
-  background: rgba(255, 184, 77, 0.2);
-  color: #ffe9bf;
+  background: rgba(255, 184, 77, 0.4);
+  color: #2b1f0a;
 }
 
 /* Dashboard: aligned with auth branding */
