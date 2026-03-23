@@ -47,7 +47,7 @@ function Results() {
       <div className="results-page">
         <h1>Outfit Recommendations</h1>
         <p className="results-empty">
-          Generate an outfit first by choosing an occasion and vibe on the Generate page.
+          Generate an outfit first by choosing an occasion, vibe, and weather on the Generate page.
         </p>
         <div className="results-actions">
           <button
@@ -77,7 +77,7 @@ function Results() {
         )}
         {isWardrobe && (
           <p className="results-cta">
-            <Link to="/add-item">Add items</Link> or <Link to="/dashboard">view your wardrobe</Link>, then try again.
+            <Link to="/add-item">Add more wardrobe pieces</Link> or <Link to="/dashboard">view your wardrobe</Link>, then try again.
           </p>
         )}
         <button

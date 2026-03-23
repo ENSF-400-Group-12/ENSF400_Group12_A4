@@ -3,24 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { authFetch, apiUrl } from "../config/api";
-
-const clothingTypes = [
-  "Shirt", "Blouse", "T-Shirt", "Tank", "Camisole", "Bodysuit",
-  "Hoodie", "Sweater", "Cardigan", "Jacket", "Coat", "Blazer",
-  "Dress", "Jumpsuit", "Romper",
-  "Pants", "Jeans", "Leggings", "Shorts", "Skirt",
-  "Shoes", "Heels", "Flats", "Boots", "Dress Boots", "Sneakers", "Sandals",
-  "Hat", "Accessories"
-];
-const colors = [
-  "Black", "White", "Gray", "Brown", "Beige", "Navy", "Blue", "Light Blue",
-  "Red", "Burgundy", "Green", "Olive", "Yellow", "Orange", "Purple", "Pink", "Cream"
-];
-const seasons = ["Spring", "Summer", "Fall", "Winter", "All Season"];
-const styles = [
-  "Casual", "Formal", "Business", "Streetwear", "Sport", "Athletic",
-  "Minimalist", "Vintage", "Smart Casual"
-];
+import { clothingTypes, colors, seasons, styles } from "../lib/wardrobeOptions";
 
 /** Map API/fuzzy value to an allowed option (case-insensitive, contains). */
 function formatGarmentProfileSummary(p) {
@@ -399,7 +382,7 @@ function AddItem() {
               >
                 <span className="additem-upload-icon" aria-hidden>📷</span>
                 <span className="additem-upload-text">Tap to add a photo</span>
-                <span className="additem-upload-hint">JPEG, PNG, GIF or WebP · max 5MB</span>
+                <span className="additem-upload-hint">JPEG, PNG, GIF, WebP, HEIC or HEIF · max 5MB</span>
               </button>
             )}
           </div>
@@ -420,7 +403,7 @@ function AddItem() {
               </details>
             )}
             <h2 className="additem-metadata-heading">Confirm or edit</h2>
-            <p className="additem-metadata-hint">Change any field if we got it wrong. Fill only what’s missing.</p>
+            <p className="additem-metadata-hint">Change any field if we got it wrong. Types include tops, layers, one-piece garments, bottoms, and footwear.</p>
             <div className="additem-metadata-grid">
               <div className={`additem-field ${!type.trim() && analysisDone ? "additem-field--needs-value" : ""}`}>
                 <label htmlFor="additem-type">Type {prefilledByAi.type && type && <span className="additem-badge">{fromOpenAI ? "AI" : fromFilename ? "file" : "filled"}</span>}</label>
