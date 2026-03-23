@@ -1,8 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-
-const dataDir = path.join(__dirname, '..', 'data');
-const dbPath = path.join(dataDir, 'app.db');
+const { getDataDir, getDbPath, ensureDir } = require('../lib/storageConfig');
 
 let db = null;
 let SQL = null;
@@ -68,9 +66,8 @@ function ensureFavoriteOutfitsSchema(database) {
 
 function persist() {
   if (!db) return;
-  if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
-  }
+  const dbPath = getDbPath();
+  ensureDir(path.dirname(dbPath));
   const data = db.export();
   const buffer = Buffer.from(data);
   fs.writeFileSync(dbPath, buffer);
@@ -78,6 +75,8 @@ function persist() {
 
 async function initDb() {
   if (db) return db;
+  const dbPath = getDbPath();
+  ensureDir(path.dirname(dbPath));
   const initSqlJs = require('sql.js');
   SQL = await initSqlJs();
   if (fs.existsSync(dbPath)) {
@@ -88,9 +87,6 @@ async function initDb() {
     ensureFavoriteOutfitsSchema(db);
     persist();
   } else {
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
-    }
     db = new SQL.Database();
     initSchema(db);
     ensureWardrobeSchema(db);

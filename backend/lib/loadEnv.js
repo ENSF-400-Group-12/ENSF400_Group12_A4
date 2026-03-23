@@ -63,19 +63,26 @@ function loadAllEnv() {
   return results;
 }
 
+function readCommitForLog() {
+  const candidates = [
+    process.env.GIT_COMMIT_SHA,
+    process.env.GITHUB_SHA,
+    process.env.VERCEL_GIT_COMMIT_SHA,
+    process.env.COMMIT_REF,
+    process.env.RAILWAY_GIT_COMMIT_SHA,
+  ];
+  for (const c of candidates) {
+    if (c && String(c).trim()) {
+      const s = String(c).trim();
+      return s.length > 12 ? s.slice(0, 12) : s;
+    }
+  }
+  return 'unknown';
+}
+
 function logEnvBootstrap(port) {
   const keyOk = Boolean(process.env.OPENAI_API_KEY && String(process.env.OPENAI_API_KEY).trim());
-  let gitShort = 'unknown';
-  try {
-    const { execSync } = require('child_process');
-    gitShort = execSync('git rev-parse --short HEAD', {
-      cwd: path.resolve(__dirname, '..', '..'),
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'ignore'],
-    }).trim();
-  } catch (_) {
-    /* optional */
-  }
+  const gitShort = readCommitForLog();
   console.log('[boot] ClosetAI backend git=%s PORT=%s', gitShort, port);
   console.log('[boot] Mounted: /api/auth /api/items /api/outfits /api/demo');
   console.log('[boot] OPENAI_API_KEY loaded: %s', keyOk ? 'yes' : 'no');

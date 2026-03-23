@@ -1,12 +1,9 @@
 const path = require('path');
 const multer = require('multer');
-const fs = require('fs');
+const { getUploadsDir, ensureDir } = require('../lib/storageConfig');
 
-const uploadsDir = path.join(__dirname, '..', 'uploads');
-
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
+const uploadsDir = getUploadsDir();
+ensureDir(uploadsDir);
 
 const ALLOWED_MIMES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 
