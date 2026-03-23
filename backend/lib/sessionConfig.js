@@ -2,6 +2,10 @@
  * Session secret and cookie flags for express-session.
  * Production: SESSION_SECRET required (min length enforced).
  * Development: random secret per process start if unset (sessions reset on restart; set SESSION_SECRET for stability).
+ *
+ * Scaling note: express-session defaults to an in-memory store. That is fine for one Railway
+ * instance. Multiple instances or zero-downtime deploys need a shared session store (for example Redis)
+ * and sticky sessions or shared cookies across instances. This pass keeps the simplest single-node setup.
  */
 
 const crypto = require('node:crypto');
