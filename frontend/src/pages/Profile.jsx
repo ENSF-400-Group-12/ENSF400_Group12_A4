@@ -1,4 +1,4 @@
-// Profile — real account and wardrobe info
+// Profile: account and wardrobe summary
 
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
@@ -7,22 +7,40 @@ import { authFetch } from "../config/api";
 function Profile() {
   const { user } = useAuth();
   const [itemCount, setItemCount] = useState(null);
-  const [loadError, setLoadError] = useState(null);
+  const [favoriteCount, setFavoriteCount] = useState(null);
+  const [itemsError, setItemsError] = useState(false);
+  const [favoritesError, setFavoritesError] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const res = await authFetch("/api/items");
+        const [itemsRes, favRes] = await Promise.all([
+          authFetch("/api/items"),
+          authFetch("/api/outfits/favorites"),
+        ]);
         if (cancelled) return;
-        if (res.ok) {
-          const data = await res.json();
+        if (itemsRes.ok) {
+          const data = await itemsRes.json();
           setItemCount(Array.isArray(data.items) ? data.items.length : 0);
+          setItemsError(false);
         } else {
-          setLoadError("Could not load wardrobe count.");
+          setItemsError(true);
+          setItemCount(null);
+        }
+        if (favRes.ok) {
+          const favData = await favRes.json();
+          setFavoriteCount(Array.isArray(favData.favorites) ? favData.favorites.length : 0);
+          setFavoritesError(false);
+        } else {
+          setFavoritesError(true);
+          setFavoriteCount(null);
         }
       } catch (_) {
-        if (!cancelled) setLoadError("Could not load wardrobe count.");
+        if (!cancelled) {
+          setItemsError(true);
+          setFavoritesError(true);
+        }
       }
     })();
     return () => { cancelled = true; };
@@ -39,19 +57,21 @@ function Profile() {
         <div className="profile-info">
           <div className="profile-row">
             <span className="profile-label">Email</span>
-            <span className="profile-value">{user?.email ?? "—"}</span>
+            <span className="profile-value">{user?.email ?? "Not signed in"}</span>
           </div>
 
           <div className="profile-row">
             <span className="profile-label">Wardrobe items</span>
             <span className="profile-value">
-              {loadError ? "—" : itemCount !== null ? itemCount : "…"}
+              {itemsError ? "Unavailable" : itemCount !== null ? itemCount : "…"}
             </span>
           </div>
 
           <div className="profile-row">
             <span className="profile-label">Saved outfits</span>
-            <span className="profile-value profile-value--muted">Coming soon</span>
+            <span className="profile-value">
+              {favoritesError ? "Unavailable" : favoriteCount !== null ? favoriteCount : "…"}
+            </span>
           </div>
         </div>
       </div>
