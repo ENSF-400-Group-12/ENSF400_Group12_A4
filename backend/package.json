@@ -9,6 +9,7 @@
   },
   "scripts": {
     "start": "node server.js",
+    "verify:runtime": "node scripts/verify-backend-runtime.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "normalize-clothes": "node scripts/normalize-clothes.js",
     "seed-demo": "node scripts/seed-demo.js"
