@@ -46,6 +46,19 @@ function sessionCookieSecure() {
   return isProductionNodeEnv();
 }
 
+/**
+ * Cross-site deployments (for example Vercel frontend + Railway backend) need SameSite=None.
+ * Keep Lax by default for local development safety.
+ * @returns {'lax'|'none'|'strict'}
+ */
+function sessionCookieSameSite() {
+  const raw = String(process.env.SESSION_COOKIE_SAME_SITE || '').trim().toLowerCase();
+  if (raw === 'none') return 'none';
+  if (raw === 'strict') return 'strict';
+  if (raw === 'lax') return 'lax';
+  return isProductionNodeEnv() ? 'none' : 'lax';
+}
+
 function trustProxyEnabled() {
   if (process.env.TRUST_PROXY === '1') return true;
   if (process.env.TRUST_PROXY === '0') return false;
@@ -55,6 +68,7 @@ function trustProxyEnabled() {
 module.exports = {
   resolveSessionSecret,
   sessionCookieSecure,
+  sessionCookieSameSite,
   trustProxyEnabled,
   isProductionNodeEnv,
   MIN_PROD_SECRET_LEN,

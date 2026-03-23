@@ -7,7 +7,12 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const session = require('express-session');
 const { getUploadsDir, getDataDir, getDbPath, ensureDir } = require('./lib/storageConfig');
-const { resolveSessionSecret, sessionCookieSecure, trustProxyEnabled } = require('./lib/sessionConfig');
+const {
+  resolveSessionSecret,
+  sessionCookieSecure,
+  sessionCookieSameSite,
+  trustProxyEnabled,
+} = require('./lib/sessionConfig');
 const authRouter = require('./routes/auth');
 const itemsRouter = require('./routes/items');
 const outfitsRouter = require('./routes/outfits');
@@ -56,20 +61,33 @@ const defaultOrigins = [
   'http://127.0.0.1:3001',
   'http://127.0.0.1:13000',
 ];
-const allowedOrigins = process.env.FRONTEND_ORIGIN
-  ? process.env.FRONTEND_ORIGIN.split(',').map((s) => s.trim()).filter(Boolean)
-  : defaultOrigins;
+function normalizeOrigin(value) {
+  return String(value || '').trim().replace(/\/+$/, '').toLowerCase();
+}
 
-app.use(cors({
+const allowedOrigins = (
+  process.env.FRONTEND_ORIGIN
+    ? process.env.FRONTEND_ORIGIN.split(',').map((s) => s.trim()).filter(Boolean)
+    : defaultOrigins
+).map(normalizeOrigin);
+const allowedOriginSet = new Set(allowedOrigins);
+
+const corsOptions = {
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin) {
       callback(null, true);
-    } else {
-      callback(null, false);
+      return;
     }
+    const normalizedOrigin = normalizeOrigin(origin);
+    callback(null, allowedOriginSet.has(normalizedOrigin));
   },
   credentials: true,
-}));
+  methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+  optionsSuccessStatus: 204,
+};
+
+app.use(cors(corsOptions));
+app.options(/.*/, cors(corsOptions));
 // Do not parse body as JSON for multipart (leave stream for multer)
 app.use((req, res, next) => {
   if (req.is('multipart/form-data')) return next();
@@ -107,7 +125,7 @@ app.use(session({
   cookie: {
     httpOnly: true,
     maxAge: 7 * 24 * 60 * 60 * 1000,
-    sameSite: 'lax',
+    sameSite: sessionCookieSameSite(),
     secure: sessionCookieSecure(),
   },
 }));
