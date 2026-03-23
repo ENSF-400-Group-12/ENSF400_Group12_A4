@@ -9,7 +9,11 @@ const fs = require('fs');
 const path = require('path');
 const sharp = require('sharp');
 
-const VALID_EXT = ['.jpg', '.jpeg', '.png', '.webp', '.avif'];
+const VALID_EXT = ['.jpg', '.jpeg', '.png', '.webp', '.avif', '.svg'];
+const SKIP_SOURCE_FILES = new Set([
+  'brown_sweat_pants_source.png',
+  'womens-white-brown-shoes.avif',
+]);
 const SRC_DIR = path.join(__dirname, '../../frontend/public/clothes');
 const OUT_DIR_FRONTEND = path.join(__dirname, '../../frontend/public/clothes-demo');
 const OUT_DIR_BACKEND = path.join(__dirname, '../demo/clothes-demo');
@@ -28,6 +32,22 @@ const OVERRIDES = {
   'white_jays.webp': { type: 'Sneakers', color: 'White', season: 'All Season', style: 'Sport' },
   'red_jays.jpg': { type: 'Sneakers', color: 'Red', season: 'All Season', style: 'Sport' },
   'black_casual_shoes.jpg': { type: 'Shoes', color: 'Black', season: 'All Season', style: 'Casual' },
+  'ivory_work_blouse.svg': { type: 'Blouse', color: 'Ivory', season: 'All Season', style: 'Business' },
+  'navy_cardigan_layer.svg': { type: 'Cardigan', color: 'Navy', season: 'Fall', style: 'Smart Casual' },
+  'black_camisole_evening.svg': { type: 'Camisole', color: 'Black', season: 'Summer', style: 'Formal' },
+  'white_tank_summer.svg': { type: 'Tank', color: 'White', season: 'Summer', style: 'Casual' },
+  'black_bodysuit_minimal.svg': { type: 'Bodysuit', color: 'Black', season: 'All Season', style: 'Minimalist' },
+  'emerald_wrap_dress_formal.svg': { type: 'Dress', color: 'Green', season: 'All Season', style: 'Formal' },
+  'black_jumpsuit_evening.svg': { type: 'Jumpsuit', color: 'Black', season: 'All Season', style: 'Formal' },
+  'berry_romper_summer.svg': { type: 'Romper', color: 'Burgundy', season: 'Summer', style: 'Casual' },
+  'black_midi_skirt_work.svg': { type: 'Skirt', color: 'Black', season: 'All Season', style: 'Business' },
+  'charcoal_leggings_cold.svg': { type: 'Leggings', color: 'Gray', season: 'Winter', style: 'Casual' },
+  'nude_flats_polished.svg': { type: 'Flats', color: 'Beige', season: 'All Season', style: 'Smart Casual' },
+  'black_heels_formal.svg': { type: 'Heels', color: 'Black', season: 'All Season', style: 'Formal' },
+  'burgundy_dress_boots_cold.svg': { type: 'Dress Boots', color: 'Burgundy', season: 'Winter', style: 'Smart Casual' },
+  'tan_sandals_summer.svg': { type: 'Sandals', color: 'Beige', season: 'Summer', style: 'Casual' },
+  'camel_wool_coat_cold.svg': { type: 'Coat', color: 'Beige', season: 'Winter', style: 'Formal' },
+  'navy_pleated_trousers_work.svg': { type: 'Pants', color: 'Navy', season: 'All Season', style: 'Business' },
 };
 
 const TYPE_PATTERNS = [
@@ -82,7 +102,22 @@ function inferMetadata(filename) {
 
 function isValidImageFile(filename) {
   const ext = path.extname(filename).toLowerCase();
-  return VALID_EXT.includes(ext) && !/!|#|\?/.test(filename);
+  return VALID_EXT.includes(ext) && !SKIP_SOURCE_FILES.has(filename.toLowerCase()) && !/!|#|\?/.test(filename);
+}
+
+function listSourceFiles(dir) {
+  const out = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      out.push(...listSourceFiles(full));
+      continue;
+    }
+    if (entry.isFile()) {
+      out.push(full);
+    }
+  }
+  return out;
 }
 
 async function main() {
@@ -97,15 +132,11 @@ async function main() {
     }
   }
 
-  const files = fs.readdirSync(SRC_DIR).filter(f => {
-    const full = path.join(SRC_DIR, f);
-    return fs.statSync(full).isFile() && isValidImageFile(f);
-  });
-
-  const ignored = fs.readdirSync(SRC_DIR).filter(f => {
-    const full = path.join(SRC_DIR, f);
-    return fs.statSync(full).isFile() && !isValidImageFile(f);
-  });
+  const sourceFiles = listSourceFiles(SRC_DIR);
+  const files = sourceFiles.filter((full) => isValidImageFile(path.basename(full)));
+  const ignored = sourceFiles
+    .map((full) => path.relative(SRC_DIR, full))
+    .filter((rel) => !isValidImageFile(path.basename(rel)));
 
   if (ignored.length) {
     console.log('Ignored (invalid):', ignored.join(', '));
@@ -113,9 +144,10 @@ async function main() {
 
   const manifest = [];
 
-  for (const file of files) {
-    const srcPath = path.join(SRC_DIR, file);
-    const baseName = path.basename(file, path.extname(file));
+  for (const srcPath of files) {
+    const relPath = path.relative(SRC_DIR, srcPath);
+    const sourceName = path.basename(srcPath);
+    const baseName = path.basename(srcPath, path.extname(srcPath));
     const outName = baseName + '.webp';
     const outPathFrontend = path.join(OUT_DIR_FRONTEND, outName);
     const outPathBackend = path.join(OUT_DIR_BACKEND, outName);
@@ -127,18 +159,18 @@ async function main() {
       await makeWebp().toFile(outPathFrontend);
       await makeWebp().toFile(outPathBackend);
     } catch (err) {
-      console.error('Failed:', file, err.message);
+      console.error('Failed:', relPath, err.message);
       continue;
     }
 
-    const metadata = inferMetadata(file);
+    const metadata = inferMetadata(sourceName);
     manifest.push({
-      sourceFile: file,
+      sourceFile: relPath,
       outputFile: outName,
       imagePath: `/clothes-demo/${outName}`,
       ...metadata,
     });
-    console.log('OK:', file, '->', outName);
+    console.log('OK:', relPath, '->', outName);
   }
 
   const json = JSON.stringify(manifest, null, 2);

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#faf7f2" />
+      <stop offset="100%" stop-color="#f1ece3" />
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="16" stdDeviation="16" flood-color="#2d2216" flood-opacity="0.15" />
+    </filter>
+  </defs>
+  <rect width="800" height="800" fill="url(#bg)" />
+  <ellipse cx="400" cy="706" rx="180" ry="28" fill="#d8d1c8" opacity="0.42" />
+  <g filter="url(#shadow)">
+    
+        <path d="M244 504 Q276 458 334 458 Q350 458 360 478 L356 510 L262 522 Q232 522 244 504 Z"
+          fill="#c79b6d" stroke="#212121" stroke-opacity="0.18" stroke-width="8" />
+        <path d="M444 504 Q476 458 534 458 Q550 458 560 478 L556 510 L462 522 Q432 522 444 504 Z"
+          fill="#c79b6d" stroke="#212121" stroke-opacity="0.18" stroke-width="8" />
+        <path d="M268 486 L340 486 M462 486 L534 486 M286 508 L320 466 M480 508 L514 466"
+          stroke="#eed4b7" stroke-width="10" stroke-linecap="round" />
+  </g>
+</svg>

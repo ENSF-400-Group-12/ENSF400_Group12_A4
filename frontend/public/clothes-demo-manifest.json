@@ -232,5 +232,221 @@
     "color": "White",
     "season": "All Season",
     "style": "Casual"
+  },
+  {
+    "sourceFile": "womens\\berry_romper_summer.svg",
+    "outputFile": "berry_romper_summer.webp",
+    "imagePath": "/clothes-demo/berry_romper_summer.webp",
+    "type": "Romper",
+    "color": "Burgundy",
+    "season": "Summer",
+    "style": "Casual"
+  },
+  {
+    "sourceFile": "womens\\black_bodysuit_minimal.svg",
+    "outputFile": "black_bodysuit_minimal.webp",
+    "imagePath": "/clothes-demo/black_bodysuit_minimal.webp",
+    "type": "Bodysuit",
+    "color": "Black",
+    "season": "All Season",
+    "style": "Minimalist"
+  },
+  {
+    "sourceFile": "womens\\black_camisole_evening.svg",
+    "outputFile": "black_camisole_evening.webp",
+    "imagePath": "/clothes-demo/black_camisole_evening.webp",
+    "type": "Camisole",
+    "color": "Black",
+    "season": "Summer",
+    "style": "Formal"
+  },
+  {
+    "sourceFile": "womens\\black_heels_formal.svg",
+    "outputFile": "black_heels_formal.webp",
+    "imagePath": "/clothes-demo/black_heels_formal.webp",
+    "type": "Heels",
+    "color": "Black",
+    "season": "All Season",
+    "style": "Formal"
+  },
+  {
+    "sourceFile": "womens\\black_jumpsuit_evening.svg",
+    "outputFile": "black_jumpsuit_evening.webp",
+    "imagePath": "/clothes-demo/black_jumpsuit_evening.webp",
+    "type": "Jumpsuit",
+    "color": "Black",
+    "season": "All Season",
+    "style": "Formal"
+  },
+  {
+    "sourceFile": "womens\\black_midi_skirt_work.svg",
+    "outputFile": "black_midi_skirt_work.webp",
+    "imagePath": "/clothes-demo/black_midi_skirt_work.webp",
+    "type": "Skirt",
+    "color": "Black",
+    "season": "All Season",
+    "style": "Business"
+  },
+  {
+    "sourceFile": "womens\\burgundy_dress_boots_cold.svg",
+    "outputFile": "burgundy_dress_boots_cold.webp",
+    "imagePath": "/clothes-demo/burgundy_dress_boots_cold.webp",
+    "type": "Dress Boots",
+    "color": "Burgundy",
+    "season": "Winter",
+    "style": "Smart Casual"
+  },
+  {
+    "sourceFile": "womens\\camel_wool_coat_cold.svg",
+    "outputFile": "camel_wool_coat_cold.webp",
+    "imagePath": "/clothes-demo/camel_wool_coat_cold.webp",
+    "type": "Coat",
+    "color": "Beige",
+    "season": "Winter",
+    "style": "Formal"
+  },
+  {
+    "sourceFile": "womens\\charcoal_leggings_cold.svg",
+    "outputFile": "charcoal_leggings_cold.webp",
+    "imagePath": "/clothes-demo/charcoal_leggings_cold.webp",
+    "type": "Leggings",
+    "color": "Gray",
+    "season": "Winter",
+    "style": "Casual"
+  },
+  {
+    "sourceFile": "womens\\emerald_wrap_dress_formal.svg",
+    "outputFile": "emerald_wrap_dress_formal.webp",
+    "imagePath": "/clothes-demo/emerald_wrap_dress_formal.webp",
+    "type": "Dress",
+    "color": "Green",
+    "season": "All Season",
+    "style": "Formal"
+  },
+  {
+    "sourceFile": "womens\\ivory_work_blouse.svg",
+    "outputFile": "ivory_work_blouse.webp",
+    "imagePath": "/clothes-demo/ivory_work_blouse.webp",
+    "type": "Blouse",
+    "color": "Ivory",
+    "season": "All Season",
+    "style": "Business"
+  },
+  {
+    "sourceFile": "womens\\navy_cardigan_layer.svg",
+    "outputFile": "navy_cardigan_layer.webp",
+    "imagePath": "/clothes-demo/navy_cardigan_layer.webp",
+    "type": "Cardigan",
+    "color": "Navy",
+    "season": "Fall",
+    "style": "Smart Casual"
+  },
+  {
+    "sourceFile": "womens\\navy_pleated_trousers_work.svg",
+    "outputFile": "navy_pleated_trousers_work.webp",
+    "imagePath": "/clothes-demo/navy_pleated_trousers_work.webp",
+    "type": "Pants",
+    "color": "Navy",
+    "season": "All Season",
+    "style": "Business"
+  },
+  {
+    "sourceFile": "womens\\nude_flats_polished.svg",
+    "outputFile": "nude_flats_polished.webp",
+    "imagePath": "/clothes-demo/nude_flats_polished.webp",
+    "type": "Flats",
+    "color": "Beige",
+    "season": "All Season",
+    "style": "Smart Casual"
+  },
+  {
+    "sourceFile": "womens\\tan_sandals_summer.svg",
+    "outputFile": "tan_sandals_summer.webp",
+    "imagePath": "/clothes-demo/tan_sandals_summer.webp",
+    "type": "Sandals",
+    "color": "Beige",
+    "season": "Summer",
+    "style": "Casual"
+  },
+  {
+    "sourceFile": "womens\\white_tank_summer.svg",
+    "outputFile": "white_tank_summer.webp",
+    "imagePath": "/clothes-demo/white_tank_summer.webp",
+    "type": "Tank",
+    "color": "White",
+    "season": "Summer",
+    "style": "Casual"
+  },
+  {
+    "sourceFile": "womens\\womens-beige-pants.jpg",
+    "outputFile": "womens-beige-pants.webp",
+    "imagePath": "/clothes-demo/womens-beige-pants.webp",
+    "type": "Pants",
+    "color": "Beige",
+    "season": "All Season",
+    "style": "Casual"
+  },
+  {
+    "sourceFile": "womens\\womens-black-comfy-shoes.webp",
+    "outputFile": "womens-black-comfy-shoes.webp",
+    "imagePath": "/clothes-demo/womens-black-comfy-shoes.webp",
+    "type": "Sneakers",
+    "color": "Black",
+    "season": "All Season",
+    "style": "Casual"
+  },
+  {
+    "sourceFile": "womens\\womens-black-formal-pants.webp",
+    "outputFile": "womens-black-formal-pants.webp",
+    "imagePath": "/clothes-demo/womens-black-formal-pants.webp",
+    "type": "Pants",
+    "color": "Black",
+    "season": "All Season",
+    "style": "Formal"
+  },
+  {
+    "sourceFile": "womens\\womens-black-shoes-formal.jpg",
+    "outputFile": "womens-black-shoes-formal.webp",
+    "imagePath": "/clothes-demo/womens-black-shoes-formal.webp",
+    "type": "Sneakers",
+    "color": "Black",
+    "season": "All Season",
+    "style": "Formal"
+  },
+  {
+    "sourceFile": "womens\\womens-brown-formal-pants.webp",
+    "outputFile": "womens-brown-formal-pants.webp",
+    "imagePath": "/clothes-demo/womens-brown-formal-pants.webp",
+    "type": "Pants",
+    "color": "Brown",
+    "season": "All Season",
+    "style": "Formal"
+  },
+  {
+    "sourceFile": "womens\\womens-button-up-blue.webp",
+    "outputFile": "womens-button-up-blue.webp",
+    "imagePath": "/clothes-demo/womens-button-up-blue.webp",
+    "type": "T-Shirt",
+    "color": "Blue",
+    "season": "All Season",
+    "style": "Casual"
+  },
+  {
+    "sourceFile": "womens\\womens-button-up-green.webp",
+    "outputFile": "womens-button-up-green.webp",
+    "imagePath": "/clothes-demo/womens-button-up-green.webp",
+    "type": "T-Shirt",
+    "color": "Green",
+    "season": "All Season",
+    "style": "Casual"
+  },
+  {
+    "sourceFile": "womens\\womens-button-up.webp",
+    "outputFile": "womens-button-up.webp",
+    "imagePath": "/clothes-demo/womens-button-up.webp",
+    "type": "T-Shirt",
+    "color": "Black",
+    "season": "All Season",
+    "style": "Casual"
   }
 ]
