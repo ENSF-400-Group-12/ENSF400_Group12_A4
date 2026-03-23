@@ -191,6 +191,34 @@ router.get('/', (req, res) => {
   }
 });
 
+/** Remove every wardrobe item for the current user (and delete /uploads/ files). */
+router.post('/clear', (req, res) => {
+  try {
+    const db = getDb();
+    const uid = req.session.userId;
+    const rows = rowsToObjects(
+      db.exec(
+        `${ITEM_SELECT} WHERE user_id = $uid`,
+        { $uid: uid }
+      )
+    );
+    const uploadsDir = getUploadsDir();
+    for (const row of rows) {
+      const p = row.image_path;
+      if (p && String(p).startsWith('/uploads/')) {
+        const filePath = path.join(uploadsDir, path.basename(p));
+        safeUnlink(filePath);
+      }
+    }
+    db.run('DELETE FROM wardrobe_items WHERE user_id = $uid', { $uid: uid });
+    persist();
+    res.json({ ok: true, removed: rows.length });
+  } catch (err) {
+    console.error('[items] clear wardrobe failed:', err);
+    res.status(500).json({ error: 'Failed to clear wardrobe.' });
+  }
+});
+
 router.post('/analyze', (req, res, next) => {
   memoryUpload.single('image')(req, res, (err) => {
     if (err) {

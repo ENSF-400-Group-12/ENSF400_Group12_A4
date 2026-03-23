@@ -19,6 +19,15 @@ function normalizeDemoSection(value) {
   return DEMO_SECTIONS.has(raw) ? raw : null;
 }
 
+/** Prefer manifest field; fall back to source path for older bundles or stripped JSON fields. */
+function itemDemoSection(item) {
+  const tagged = String(item.demoSection || '').trim().toLowerCase();
+  if (tagged === 'womens' || tagged === 'mens') return tagged;
+  const src = String(item.sourceFile || '').replace(/\\/g, '/').toLowerCase();
+  if (src.startsWith('womens/')) return 'womens';
+  return 'mens';
+}
+
 /**
  * Resolve demo manifest path. Order: DEMO_MANIFEST_PATH, committed backend/demo, monorepo fallbacks.
  * @returns {{ path: string | null, checked: string[] }}
@@ -92,7 +101,13 @@ router.get('/status', (_req, res) => {
 
 router.post('/seed', requireAuth, (req, res) => {
   try {
-    const requestedSection = normalizeDemoSection(req.body?.section);
+    const sectionFromQuery = req.query?.section;
+    const sectionFromBody = req.body?.section;
+    const requestedSection = normalizeDemoSection(
+      sectionFromQuery !== undefined && sectionFromQuery !== null && String(sectionFromQuery).trim() !== ''
+        ? sectionFromQuery
+        : sectionFromBody
+    );
     if (requestedSection == null) {
       return res.status(400).json({
         error: 'Demo section must be "mens" or "womens".',
@@ -133,7 +148,7 @@ router.post('/seed', requireAuth, (req, res) => {
 
     const filteredManifest = requestedSection === 'all'
       ? manifest
-      : manifest.filter((item) => String(item.demoSection || 'mens').toLowerCase() === requestedSection);
+      : manifest.filter((item) => itemDemoSection(item) === requestedSection);
 
     if (filteredManifest.length === 0) {
       return res.status(422).json({
