@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { authFetch } from "../config/api";
 
@@ -7,6 +7,11 @@ function ForgotPassword() {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    document.body.classList.add("signup-page-open");
+    return () => document.body.classList.remove("signup-page-open");
+  }, []);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -32,11 +37,21 @@ function ForgotPassword() {
   }
 
   return (
-    <div className="verify-card-wrap">
-      <div className="verify-card">
+    <div className="auth-theme signup-page">
+      <div className="auth-page-background" aria-hidden="true">
+        <img src="/closetpic.png" alt="" />
+      </div>
+      <div className="signup-card">
+        <div className="auth-logo-lockup">
+          <img src="/ClosetAI-logo-transparent.png" alt="" className="auth-logo-icon" />
+          <img src="/ClosetAI-transparent.png" alt="ClosetAI" className="auth-logo-wordmark" />
+        </div>
         <h1>Forgot password</h1>
-        <p>Enter your email and we will send a password reset link if an account exists.</p>
+        <p className="signup-subtext">
+          Enter your email and we will send a reset link if an account exists.
+        </p>
         <form onSubmit={handleSubmit} className="signup-form" noValidate>
+          {error && <div className="form-error" role="alert">{error}</div>}
           <input
             type="email"
             className="input-field"
@@ -51,8 +66,7 @@ function ForgotPassword() {
           </button>
         </form>
         {status && <p className="verify-note" role="status">{status}</p>}
-        {error && <p className="form-error" role="alert">{error}</p>}
-        <p className="verify-sub-actions">
+        <p className="signup-text">
           <Link to="/">Back to login</Link>
         </p>
       </div>

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { authFetch } from "../config/api";
 
@@ -10,6 +10,11 @@ function ResetPassword() {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    document.body.classList.add("signup-page-open");
+    return () => document.body.classList.remove("signup-page-open");
+  }, []);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -47,11 +52,19 @@ function ResetPassword() {
   }
 
   return (
-    <div className="verify-card-wrap">
-      <div className="verify-card">
+    <div className="auth-theme signup-page">
+      <div className="auth-page-background" aria-hidden="true">
+        <img src="/closetpic.png" alt="" />
+      </div>
+      <div className="signup-card">
+        <div className="auth-logo-lockup">
+          <img src="/ClosetAI-logo-transparent.png" alt="" className="auth-logo-icon" />
+          <img src="/ClosetAI-transparent.png" alt="ClosetAI" className="auth-logo-wordmark" />
+        </div>
         <h1>Reset password</h1>
-        <p>Set a new password for your account.</p>
+        <p className="signup-subtext">Set a new password for your account.</p>
         <form onSubmit={handleSubmit} className="signup-form" noValidate>
+          {error && <div className="form-error" role="alert">{error}</div>}
           <input
             type="password"
             className="input-field"
@@ -75,8 +88,7 @@ function ResetPassword() {
           </button>
         </form>
         {status && <p className="verify-note" role="status">{status}</p>}
-        {error && <p className="form-error" role="alert">{error}</p>}
-        <p className="verify-sub-actions">
+        <p className="signup-text">
           <Link to="/">Back to login</Link>
         </p>
       </div>
