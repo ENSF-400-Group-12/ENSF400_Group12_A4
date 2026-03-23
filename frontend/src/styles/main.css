@@ -42,6 +42,18 @@ body {
   padding: 12px 20px;
   background: #252850;
   color: white;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.18);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.nav-links-wrapper {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  justify-content: flex-end;
 }
 
 .nav-logo {
@@ -92,7 +104,8 @@ body {
   .navbar {
     padding: 10px 12px;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 10px;
+    align-items: flex-start;
   }
   .nav-logo img {
     height: 36px;
@@ -100,30 +113,67 @@ body {
   .nav-logo a {
     font-size: 0.9375rem;
   }
-  .nav-links {
+  .nav-links-wrapper {
     width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
     justify-content: flex-start;
-    gap: 4px;
+    mask-image: linear-gradient(to right, #000 92%, transparent 100%);
+  }
+  .nav-links-wrapper::-webkit-scrollbar {
+    display: none;
+  }
+  .nav-links {
+    flex-wrap: nowrap;
+    width: max-content;
+    min-width: min(100%, 100%);
+    gap: 2px 10px;
+    padding-bottom: 2px;
   }
   .nav-links a {
-    padding: 8px 10px;
+    padding: 10px 14px;
     font-size: 0.875rem;
+    border-radius: 10px;
+    touch-action: manipulation;
+  }
+  .nav-link--primary {
+    background: rgba(255, 255, 255, 0.12);
   }
   .nav-user-email {
-    max-width: 100px;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.75rem;
+    opacity: 0.9;
+    padding: 8px 0;
+  }
+  .nav-user-badge {
+    flex-shrink: 0;
+  }
+  .logout-button {
+    margin-left: 4px;
+    touch-action: manipulation;
   }
 }
 
 .logout-button {
   margin-left: 16px;
   padding: 8px 16px;
-  min-height: 36px;
-  background: transparent;
+  min-height: 40px;
+  background: rgba(255, 255, 255, 0.08);
   color: white;
-  border: 1px solid rgba(255,255,255,0.5);
-  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 10px;
   cursor: pointer;
   font-size: 14px;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.logout-button:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.65);
 }
 
 @media (max-width: 640px) {
@@ -134,9 +184,70 @@ body {
   }
 }
 
-.logout-button:hover {
-  background: rgba(255,255,255,0.1);
-  border-color: rgba(255,255,255,0.8);
+/* Confirm dialog (mobile-safe delete flows) */
+.confirm-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  background: rgba(15, 18, 42, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
+  touch-action: none;
+}
+
+.confirm-dialog {
+  width: 100%;
+  max-width: 380px;
+  background: var(--auth-bg-card, #fff);
+  border-radius: 14px;
+  padding: 22px 20px 18px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.22);
+  border: 1px solid var(--auth-border, rgba(0, 0, 0, 0.08));
+}
+
+.confirm-dialog-title {
+  margin: 0 0 10px;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--auth-text, #1a1a1a);
+}
+
+.confirm-dialog-message {
+  margin: 0 0 20px;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  color: var(--auth-text-muted, #4a4a4a);
+}
+
+.confirm-dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.confirm-dialog-btn {
+  min-height: 44px;
+  padding: 10px 18px;
+  touch-action: manipulation;
+}
+
+.button-danger-solid {
+  background: #a63d3d;
+  color: #fff;
+  border: 1px solid #8f3434;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.button-danger-solid:hover {
+  background: #943636;
+  border-color: #7d2d2d;
 }
 
 /* Buttons */
@@ -998,6 +1109,17 @@ body.signup-page-open {
   margin-top: auto;
   flex-wrap: wrap;
 }
+
+@media (max-width: 640px) {
+  .clothing-card-actions .button-small {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 10px 14px;
+    font-size: 14px;
+    touch-action: manipulation;
+  }
+}
+
 .button-small {
   padding: 6px 12px;
   font-size: 13px;
@@ -2202,6 +2324,8 @@ body.signup-page-open {
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 10px;
+  position: relative;
+  z-index: 2;
 }
 
 .favorites-saved-at {
@@ -2211,6 +2335,7 @@ body.signup-page-open {
 
 .favorites-remove {
   padding: 8px 16px;
-  min-height: 36px;
+  min-height: 44px;
   font-size: 0.875rem;
+  touch-action: manipulation;
 }

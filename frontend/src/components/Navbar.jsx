@@ -11,7 +11,7 @@ function Navbar() {
   }
 
   return (
-    <div className="navbar">
+    <header className="navbar">
       <div className="nav-logo">
         <Link to="/dashboard">
           <img src="/ClosetAI-logo-transparent.png" alt="" aria-hidden="true" />
@@ -19,25 +19,29 @@ function Navbar() {
         </Link>
       </div>
 
-      <div className="nav-links">
-        <Link to="/dashboard" className="nav-link nav-link--primary">Wardrobe</Link>
-        <Link to="/favorites" className="nav-link">Favorites</Link>
-        <Link to="/profile" className="nav-link">Profile</Link>
-        {user?.email && (
-          <span className="nav-user-email" title={user.email}>
-            {user.email}
-          </span>
-        )}
-        {user && (
-          <span className={`nav-user-badge ${user.emailVerified ? "nav-user-badge--verified" : "nav-user-badge--unverified"}`}>
-            {user.emailVerified ? "Verified" : "Unverified"}
-          </span>
-        )}
-        <button type="button" className="logout-button" onClick={handleLogout}>
-          Logout
-        </button>
+      <div className="nav-links-wrapper">
+        <nav className="nav-links" aria-label="Main">
+          <Link to="/dashboard" className="nav-link nav-link--primary">Wardrobe</Link>
+          <Link to="/favorites" className="nav-link">Favorites</Link>
+          <Link to="/profile" className="nav-link">Profile</Link>
+          {user?.email ? (
+            <span className="nav-user-email" title={user.email}>
+              {user.email}
+            </span>
+          ) : null}
+          {user ? (
+            <span
+              className={`nav-user-badge ${user.emailVerified ? "nav-user-badge--verified" : "nav-user-badge--unverified"}`}
+            >
+              {user.emailVerified ? "Verified" : "Unverified"}
+            </span>
+          ) : null}
+          <button type="button" className="logout-button" onClick={handleLogout}>
+            Log out
+          </button>
+        </nav>
       </div>
-    </div>
+    </header>
   );
 }
 

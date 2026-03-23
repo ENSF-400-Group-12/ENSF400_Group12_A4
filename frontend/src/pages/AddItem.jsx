@@ -344,7 +344,7 @@ function AddItem() {
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/gif,image/webp,image/heic,image/heif,.heic,.heif"
               className="additem-file-input"
               onChange={handleFileChange}
               aria-label="Choose item photo"
