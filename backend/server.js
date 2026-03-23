@@ -76,6 +76,28 @@ app.use((req, res, next) => {
   express.json()(req, res, next);
 });
 
+app.get('/health', (_req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.json({
+    status: 'ok',
+    service: 'closetai-api',
+    env: process.env.NODE_ENV || 'development',
+    port,
+    listenHost,
+    uptimeSeconds: Math.floor(process.uptime()),
+    paths: {
+      dataDir: dataDirAbs,
+      dbPath: dbPathAbs,
+      uploadsDir: uploadsDirAbs,
+    },
+    session: {
+      store: 'memory',
+      cookieSecure: sessionCookieSecure(),
+      trustProxy: trustProxyEnabled(),
+    },
+  });
+});
+
 app.use('/uploads', express.static(getUploadsDir()));
 app.use(cookieParser());
 app.use(session({
